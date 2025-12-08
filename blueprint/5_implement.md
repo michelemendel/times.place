@@ -23,7 +23,6 @@ Note: As of 2025-12-07 we haven't started coding, so the text below is just an e
 ### Editing UI (Prototyping)
 
 - Built dynamic input fields: add/remove event/times, edit all details.
-- Also mocked up a markdown textarea parser; agent provided sample parsing code.
 
 ### Data Persistence
 
@@ -33,7 +32,6 @@ Note: As of 2025-12-07 we haven't started coding, so the text below is just an e
 
 - Hebrew LTR/RTL tested, used `dir="auto"` attribute and i18n toggle.
 - All tasks in tasks.md updated with completion.
-- Next: refine markdown venue owner UX and get user feedback.
 
 ## 2025-??-??
 

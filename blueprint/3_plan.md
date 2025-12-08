@@ -23,9 +23,7 @@
 
 ### Venue owner page - form
 
-- Option 1: Dynamic form fields (input/add/remove for each event).
-- Option 2: Markdown input field for all info, parsed/rendered live
-- Will prototype both, and let user feedback guide choice.
+- Dynamic form fields (input/add/remove for each event)
 - Undo functionality
 
 ## Venue Owner System & Authentication
@@ -53,7 +51,6 @@
 ## Risks & Uncertainties
 
 - Security is minimal for demo
-- Markdown editor usability (especially for bi-lingual content)
 - Local storage limitations for images
 
 ## Deployment & Hosting

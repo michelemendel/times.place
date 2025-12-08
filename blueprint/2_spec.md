@@ -40,7 +40,6 @@ To prototype a simple, user-friendly web app (frontend-only) for listing venues 
 
 - Learn Svelte and SvelteKit
 - Apply agentic, specification-driven development with Svelte
-- Compare dynamic forms vs markdown-parsing input for venue owner editing
 
 ## References
 

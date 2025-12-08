@@ -37,7 +37,7 @@
 
 ## Venue Form
 
-- [ ] Form UI with two panes: editing pane (dynamic fields or markdown input prototype) and live preview pane
+- [ ] Form UI with two panes: editing pane (dynamic fields) and live preview pane
 - [ ] Dynamic fields: functionality to add, delete, duplicate, and move fields up and down
 - [ ] Input validation: date, time, XSS/SQL injection
 - [ ] Undo functionality
@@ -52,7 +52,6 @@
 
 ## Decision/Exploration Tasks
 
-- [ ] Prototype and compare dynamic vs markdown editing or maybe the possibility to switch between them.
 - [ ] Evaluate multilingual switching UX: Do we need an English/Hebrew switch in the application, or will it work using the computer's keyboard input source?
 
 ## Deployment

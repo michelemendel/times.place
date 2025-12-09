@@ -2,11 +2,12 @@
 
 ## Installation and setup
 
-- [ ] Install Svelte and SvelteKit
-- [ ] Set up Svelte and SvelteKit project structure
-- [ ] Set up Tailwind CSS
-- [ ] Makefile: Add commands for Svelte and Tailwaind
-- [ ] Start the app with a demo page to see that everything is set up correctly
+- [x] Set up folder structure: frontend/, backend/ (move current go and backend related files and folders here)
+- [x] Install SvelteKit with javascript, not typescript
+- [x] Set up SvelteKit project structure in frontend/
+- [x] Set up Tailwind CSS
+- [x] Makefile: Add commands for Svelte and Tailwaind
+- [x] Start the app with a demo page to see that everything is set up correctly
 
 ## Data model
 

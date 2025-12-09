@@ -1,41 +1,56 @@
 # Implementation Log
 
-Note: As of 2025-12-07 we haven't started coding, so the text below is just an example.
+## 2025-12-09
 
-## 2025-12-??
+### Project Structure Setup
 
-### SvelteKit Scaffolding
+- Created monorepo structure with `frontend/` and `backend/` directories
+- Moved all Go-related files to `backend/`:
+  - `cmd/`, `domain/`, `utils/`, `go.mod`
+- Decided on monorepo approach for easier code sharing and coordinated development
 
-- Initialized with default SvelteKit template and Tailwind CSS.
-- Created `/venues` component with hard-coded demo data.
-- Agent suggested using Svelte stores for state; implemented as recommended.
+### Frontend Setup (SvelteKit)
 
-### Dropdown Component
+- Initialized SvelteKit project in `frontend/` using JavaScript (not TypeScript)
+- Configured for static site export using `@sveltejs/adapter-static`
+- Set up prerendering with `export const prerender = true` in `+layout.js`
+- Created basic project structure:
+  - `src/routes/` for pages
+  - `src/lib/` for reusable components
+  - `static/` for static assets
 
-- Built dropdown linked to demo venue list.
-- Selecting shows details panel.
+### Tailwind CSS Configuration
 
-### Venue Owner Flow
+- Installed Tailwind CSS v4
+- Configured PostCSS with `@tailwindcss/postcss` plugin (v4 requires separate package)
+- Updated CSS to use v4 syntax: `@import 'tailwindcss'` instead of `@tailwind` directives
+- Created `tailwind.config.js` and `postcss.config.js`
 
-- Added "Venue Owner" button; simple modal for password entry.
-- On successful entry, navigates to edit mode.
+### Makefile Setup
 
-### Editing UI (Prototyping)
+- Created Makefile with clear naming convention:
+  - Frontend targets: `f-dev`, `f-build`, `f-preview`, `f-install`
+  - Backend targets: `b-build`, `b-run`, `b-install` (placeholders)
+  - Convenience shortcuts: `dev`, `build`, `preview` (default to frontend)
+- Organized help output by component
 
-- Built dynamic input fields: add/remove event/times, edit all details.
+### Assets and Logo
 
-### Data Persistence
+- Copied `house_clock.png` logo from `assets/` to `frontend/static/`
+- Created favicon from logo:
+  - Generated `favicon.ico` (32x32) using `sharp` and `to-ico` packages
+  - Also kept `favicon.png` as fallback
+  - Updated `app.html` to reference favicon
+- Established convention: all static assets go in `frontend/static/` and are served from root path
 
-- Used localStorage for all updates; agent wrote utility for serialization.
+### Demo Page
 
-### Notes
+- Created initial demo page at `src/routes/+page.svelte` to verify setup
+- Used Tailwind classes to confirm CSS is working
+- Verified dev server runs successfully on `http://localhost:5173/`
 
-- Hebrew LTR/RTL tested, used `dir="auto"` attribute and i18n toggle.
-- All tasks in tasks.md updated with completion.
+### Issues Resolved
 
-## 2025-??-??
-
-### Deployment
-
-- Built for static export; deployed frontend to Render.com.
-- Used Render’s default project URL for demo sharing. No custom domain yet.
+- Fixed Tailwind CSS v4 PostCSS configuration (required `@tailwindcss/postcss` package)
+- Fixed static adapter prerendering requirement
+- Fixed missing favicon 404 error during build

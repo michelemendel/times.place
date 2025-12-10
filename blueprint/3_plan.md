@@ -7,6 +7,20 @@
 - Data: Initially, static JS object/JSON, persisted to local storage.
 - Backend (planned later): Golang with PostgreSQL
 
+## Data Model Structure
+
+**Reference**: See the complete data model specification in `2_spec.md` → Structure → Data Model section.
+
+### Implementation Details
+
+- **Storage Format**: Data will be stored as nested JavaScript objects/JSON in localStorage
+- **UUID Generation**: Use `crypto.randomUUID()` (available in modern browsers) to generate all entity UUIDs
+- **Date/Time Implementation**: See utility functions in `frontend/src/utils/datetime.js`
+  - Event List dates: Store and validate as ISO 8601 date strings (YYYY-MM-DD)
+  - Event DateTime: Store as Unix epoch timestamp (seconds since January 1, 1970 UTC) representing the full date and time
+  - Event Display: Extract only the time portion from the stored datetime for display to users
+  - Timezone and locale handling: Automatically uses browser settings for timezone and locale
+
 ## UI Structure
 
 ### Visitor page
@@ -14,7 +28,9 @@
 - Header with an image and navigation: Times, About, Venue Owner
 - Times:
   - Landing page: Dropdown to select venue, details panel, venue owner button.
-  - Detail panel: Banner image, venue name, contact info, times list.
+  - Detail panel: Banner image, venue name, contact info, event list selector (if venue has multiple event lists), events display.
+  - Event list selector: Dropdown or tabs to switch between event lists when a venue has multiple event lists
+  - Events display: Shows events from the selected event list (or the only event list if there's just one)
 - About: info about the prototype
 - Venue Owner:
   - Button shows login (simple password for demo), then edit page/modal.
@@ -23,7 +39,9 @@
 
 ### Venue owner page - form
 
-- Dynamic form fields (input/add/remove for each event)
+- Dynamic form fields for managing event lists (add/remove event lists)
+- For each event list: dynamic fields for managing events (input/add/remove for each event)
+- Event list selector in preview pane to test how different event lists appear
 - Undo functionality
 
 ## Venue Owner System & Authentication
@@ -31,7 +49,7 @@
 - For demo: Use simple password-based authentication (hardcoded credentials)
 - Support multiple venue owners: Each venue owner has a unique identifier and can only see/edit venues they created
 - Demo setup: Two venue owner accounts will be created to verify multi-owner isolation
-- Venue owner data isolation: Venues will have an `ownerId` field (or `venueOwnerId`); filtering happens client-side
+- Venue owner data isolation: Venues will have an `ownerUUID` field (UUID format); filtering happens client-side
 - Future: Replace with proper authentication and authorization system
 
 ## Data Storage

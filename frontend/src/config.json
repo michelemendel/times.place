@@ -1,0 +1,4 @@
+{
+  "hour12": false,
+  "description": "Application configuration. hour12: false for 24-hour format, true for 12-hour format (AM/PM)"
+}

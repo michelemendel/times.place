@@ -8,7 +8,8 @@ To prototype a simple, user-friendly web app (frontend-only) for listing venues 
 
 - **Venue**: A location (synagogue, community center, etc.) that hosts events with scheduled times.
 - **Visitor**: A user visiting the application searching for venues and events.
-- **Venue Owner**: A registered user who can create and manage their own venues. Similar to Facebook pages, each person registers and manages venues related to them. A venue owner can have multiple venues but can only see and edit venues they own.
+- **Venue Owner**: A registered user who can create and manage their own venues. Similar to Facebook pages, each person registers and manages venues related to them. A venue owner can have multiple venues but can only see and edit venues they own. A venue owner has:
+  - ownerUUID (unique identifier, UUID format)
 
 ## User Stories
 
@@ -18,7 +19,61 @@ To prototype a simple, user-friendly web app (frontend-only) for listing venues 
 - As a venue owner, I want to add a new venue that I manage
 - As a venue owner, I want to delete one of my venues
 - As a venue owner, I want to select one of my venues to edit
-- As a venue owner, I want to update any detail (name, banner/image, contact, events, times, extra info) for my selected venue
+- As a venue owner, I want to update any detail (name, banner/image, contact, events, times, description) for my selected venue
+
+## Structure
+
+### Data Model
+
+The application manages four main entities with the following relationships:
+
+- **Venue Owner**: A registered user who can create and manage venues. A venue owner has:
+
+  - ownerUUID (unique identifier, UUID format)
+
+- **Venue**: A location that can have zero or more event lists. A venue has:
+
+  - venueUUID (unique identifier, UUID format)
+  - Name
+  - Banner/image
+  - Contact details (mobile, email, address)
+  - Description (optional)
+  - ownerUUID (identifier linking venue to venue owner for multi-owner support, UUID format)
+  - Zero or more event lists
+
+- **Event List**: A named collection of events belonging to a venue. An event list has:
+
+  - eventListUUID (unique identifier, UUID format)
+  - venueUUID (identifier linking event list to venue, UUID format)
+  - Name/title
+  - Date (ISO 8601 date format, e.g., "2024-12-25")
+  - Description (optional)
+  - Zero or more events
+
+- **Event**: A scheduled occurrence with a specific time. An event has:
+  - eventUUID (unique identifier, UUID format)
+  - eventListUUID (identifier linking event to event list, UUID format)
+  - Event name
+  - DateTime (stored as full date and time in Unix epoch timestamp format; only the time portion is displayed to users)
+  - Description (optional)
+
+### Data Format Specifications
+
+- **UUIDs**: All entity identifiers use UUID format (e.g., `550e8400-e29b-41d4-a716-446655440000`)
+- **Date Format**: Event list dates are stored and displayed in ISO 8601 date format (YYYY-MM-DD, e.g., "2024-12-25")
+- **Time Format**:
+  - Event DateTime is stored internally as full date and time in Unix epoch timestamp format (seconds since January 1, 1970 UTC)
+  - When displaying events, only the time portion is shown to users (e.g., "14:30" or "2:30 PM")
+  - The date is not displayed for events since it comes from the event list they belong to
+  - For internal operations (sorting, filtering), the full datetime stored in the event is used
+
+### User Interface Behavior
+
+- Event lists are selectable on both the visitor's page and the edit page when a venue has been selected
+- When a venue is selected, users can choose which event list to view (if the venue has multiple event lists)
+- If a venue has no event lists, no events are displayed
+- Venue owners can reorder event lists when editing a venue
+- Events are displayed with only the time (the date comes from the event list they belong to)
 
 ## Success Criteria
 

@@ -1,10 +1,10 @@
-# times.place
+# time.place
 
 A web application for listing venues and their event times, built using **Spec-Driven Development (SDD)** methodology.
 
 ## Project Overview
 
-**times.place** is a venue management and event scheduling platform designed to serve communities by providing accurate event times (e.g. prayer times).
+**time.place** is a venue management and event scheduling platform designed to serve communities by providing accurate event times (e.g. prayer times).
 
 This is a prototype web application that allows:
 
@@ -19,12 +19,12 @@ The current prototype is frontend-only, using Svelete and SvelteKit with local s
 A high-level overview of the codebase:
 
 ```bash
-times.place/
+time.place/
 ├── blueprint/       # SDD documentation (Single Source of Truth)
 ├── cmd/             # Go application entry points (planned)
 ├── docs/            # General project documentation
 ├── domain/          # Domain logic and entities
-├── minyanim/        # Examples of how synagogues are presenting the prayer times. These are the documents that triggered the idea of times.place.
+├── minyanim/        # Examples of how synagogues are presenting the prayer times. These are the documents that triggered the idea of time.place.
 ├── frontend/        # SvelteKit frontend source code
 ├── static/          # Static assets
 └── utils/           # Backend (Go) utility functions (planned)
@@ -67,7 +67,7 @@ The `blueprint/` folder contains the core SDD documentation that guides all deve
 
 ## My Notes
 
-- [Perplexity Space: times.place](https://www.perplexity.ai/spaces/times-place-0QMkL8qGR16UjuPLu0HfIw)
+- [Perplexity Space: time.place](https://www.perplexity.ai/spaces/times-place-0QMkL8qGR16UjuPLu0HfIw)
 - [Svelte Notes](docs/svelte.md) - My notes while learning Svelte
 
 ## Getting Started

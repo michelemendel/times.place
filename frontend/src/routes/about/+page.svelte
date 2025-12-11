@@ -8,15 +8,15 @@
 
 <div class="bg-white rounded-xl shadow-lg p-8 md:p-12">
   <h1 class="text-4xl font-bold mb-8 text-gray-900 text-center">
-    About times.place
+    About time.place
   </h1>
 
   <div class="space-y-6 text-gray-700 leading-relaxed text-center">
     <p class="text-lg">
-      times.place is a prototype web application designed to help venues share
+      time.place is a prototype web application designed to help venues share
       their event schedules with the public. Whether you're looking for prayer
       times at a synagogue, community events, or other scheduled activities,
-      times.place makes it easy to find up-to-date information.
+      time.place makes it easy to find up-to-date information.
     </p>
 
     <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-900">

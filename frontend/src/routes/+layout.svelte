@@ -12,11 +12,11 @@
         >
           <img
             src="/house_clock.png"
-            alt="Times & Place logo"
+            alt="time.place logo"
             class="h-14 w-auto object-contain"
             style="aspect-ratio: 886/762;"
           />
-          <span class="text-2xl font-bold text-gray-900">Times & Place</span>
+          <span class="text-2xl font-bold text-gray-900">time.place</span>
         </a>
       </div>
       <div class="flex items-center gap-8">
@@ -44,7 +44,7 @@
     <div class="container mx-auto py-12">
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
         <p class="text-gray-600 text-sm">
-          &copy; 2024 times.place. All rights reserved.
+          &copy; 2024 time.place. All rights reserved.
         </p>
         <p class="text-gray-600 text-sm">
           Contact: <a

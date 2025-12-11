@@ -3,7 +3,7 @@
 </script>
 
 <div class="flex flex-col min-h-screen">
-  <header class="bg-white shadow-sm">
+  <header class="bg-gray-100 shadow-sm">
     <nav class="container mx-auto h-20 flex items-center justify-between">
       <div class="flex items-center">
         <a
@@ -34,13 +34,13 @@
     </nav>
   </header>
 
-  <main class="flex-1 bg-gray-50 w-full">
+  <main class="flex-1 bg-white w-full">
     <div class="container mx-auto py-12">
       <slot />
     </div>
   </main>
 
-  <footer class="bg-white border-t border-gray-100">
+  <footer class="bg-gray-100 border-t border-gray-200">
     <div class="container mx-auto py-12">
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
         <p class="text-gray-600 text-sm">
@@ -48,11 +48,11 @@
         </p>
         <p class="text-gray-600 text-sm">
           Contact: <a
-            href="mailto:timesplaceadmin@atomicmail.io"
+            href="mailto:timeplaceadmin@atomicmail.io"
             target="_blank"
             rel="noopener noreferrer"
             class="text-blue-600 hover:text-blue-800 font-medium transition-colors"
-            >timesplaceadmin@atomicmail.io</a
+            >timeplaceadmin@atomicmail.io</a
           >
         </p>
       </div>

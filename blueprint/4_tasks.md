@@ -21,8 +21,8 @@
 ## Setup overall layout with some dummy text
 
 - [x] Create header with navigation (About, Login). Use /frontend/static/house_clock.png as logo icon and Times & Place as logo title in header.
-- [x] Create footer. Add standard copyright text with symbol. Add mailto contact email, `timesplaceadmin@atomicmail.io`.
-- [x] Create About page with prototype information and contact info `timesplaceadmin@atomicmail.io`.
+- [x] Create footer. Add standard copyright text with symbol. Add mailto contact email, `timeplaceadmin@atomicmail.io`.
+- [x] Create About page with prototype information and contact info `timeplaceadmin@atomicmail.io`.
 - [x] Add the other pages
 - [x] Check navigation
 

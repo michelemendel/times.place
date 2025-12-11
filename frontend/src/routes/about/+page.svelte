@@ -40,12 +40,12 @@
     <p>For questions, support, or feedback, please contact us at:</p>
     <p>
       <a
-        href="mailto:timesplaceadmin@atomicmail.io"
+        href="mailto:timeplaceadmin@atomicmail.io"
         target="_blank"
         rel="noopener noreferrer"
         class="text-blue-600 hover:text-blue-800 font-medium transition-colors"
       >
-        timesplaceadmin@atomicmail.io
+        timeplaceadmin@atomicmail.io
       </a>
     </p>
   </div>

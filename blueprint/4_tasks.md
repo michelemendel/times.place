@@ -11,20 +11,20 @@
 
 ## Setup routes
 
-- [ ] Registration page
-- [ ] Login page
-- [ ] About page
-- [ ] Visitor page
-- [ ] Venue owner page
-- [ ] Venue form page
+- [x] Registration page
+- [x] Login page
+- [x] About page
+- [x] Visitor page (merged into landing page)
+- [x] Venue owner page
+- [x] Venue form page
 
 ## Setup overall layout with some dummy text
 
-- [ ] Create header with navigation (Venues, About, Login). Use /frontend/static/house_clock.png as logo icon and Times & Place as logo title in header.
-- [ ] Create footer. Add standard copyright text with symbol. Add mailto contact email, `timesplaceadmin@atomicmail.io`.
-- [ ] Create About page with prototype information and contact info `timesplaceadmin@atomicmail.io`.
-- [ ] Add the other pages
-- [ ] Check navigation
+- [x] Create header with navigation (About, Login). Use /frontend/static/house_clock.png as logo icon and Times & Place as logo title in header.
+- [x] Create footer. Add standard copyright text with symbol. Add mailto contact email, `timesplaceadmin@atomicmail.io`.
+- [x] Create About page with prototype information and contact info `timesplaceadmin@atomicmail.io`.
+- [x] Add the other pages
+- [x] Check navigation
 
 ## Data model
 

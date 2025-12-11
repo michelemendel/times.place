@@ -1,15 +1,20 @@
 <script>
-	// Demo page to verify setup
+  // Home page - Visitor content
 </script>
 
 <svelte:head>
-	<title>times.place - Setup Demo</title>
+  <title>Find Venues and Event Times</title>
 </svelte:head>
 
-<div class="max-w-3xl mx-auto mt-8 p-8 text-center">
-	<h1 class="text-4xl font-bold mb-4 text-gray-800">times.place</h1>
-	<p class="text-xl mb-2 text-gray-600">Frontend setup successful! 🎉</p>
-	<p class="text-lg text-gray-500">SvelteKit is running correctly.</p>
-	<p class="text-sm mt-4 text-gray-400">Tailwind CSS is configured and working.</p>
+<div class="mb-8 text-center">
+  <h1 class="text-4xl font-bold mb-4 text-gray-900">Find Venues and Events</h1>
+  <p class="text-lg text-gray-600">
+    Select a venue to view its event schedules and contact information.
+  </p>
 </div>
 
+<div class="bg-white rounded-xl shadow-lg p-8 md:p-12">
+  <p class="text-gray-500 italic text-center">
+    Venue selector and event display will be implemented here.
+  </p>
+</div>

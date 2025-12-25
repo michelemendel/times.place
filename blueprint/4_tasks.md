@@ -28,10 +28,10 @@
 
 ## Data model
 
-- [ ] Create venue owner data model (ownerUUID)
-- [ ] Create venue data model (venueUUID, name, banner/image, contact details, optional description, ownerUUID, event lists array)
-- [ ] Create event list data model (eventListUUID, venueUUID, name/title, date in ISO 8601 format, optional description, events array)
-- [ ] Create event data model (eventUUID, eventListUUID, event name, DateTime as full date and time in Unix epoch timestamp, optional description)
+- [ ] Create venue owner data model (see spec for details)
+- [ ] Create venue data model (see spec for details)
+- [ ] Create event list data model (see spec for details)
+- [ ] Create event data model (see spec for details)
 - [ ] Implement UUID generation for all entities (use crypto.randomUUID() or similar)
 - [ ] Implement date/time formatting: store event list dates as ISO 8601, store event DateTime as Unix epoch (full date+time), display only time portion from events
 - [ ] Add demo data with venues that have multiple event lists and venues with no event lists

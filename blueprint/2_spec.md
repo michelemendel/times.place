@@ -8,8 +8,7 @@ To prototype a simple, user-friendly web app (frontend-only) for listing venues 
 
 - **Venue**: A location (synagogue, community center, etc.) that hosts events with scheduled times.
 - **Visitor**: A user visiting the application searching for venues and events.
-- **Venue Owner**: A registered user who can create and manage their own venues. Similar to Facebook pages, each person registers and manages venues related to them. A venue owner can have multiple venues but can only see and edit venues they own. A venue owner has:
-  - ownerUUID (unique identifier, UUID format)
+- **Venue Owner**: A registered user who can create and manage their own venues. Similar to Facebook pages, each person registers and manages venues related to them. A venue owner can have multiple venues but can only see and edit venues they own.
 
 ## User Stories
 
@@ -29,43 +28,52 @@ The application manages four main entities with the following relationships:
 
 - **Venue Owner**: A registered user who can create and manage venues. A venue owner has:
 
-  - ownerUUID (unique identifier, UUID format)
+  - `owner_uuid` (UUID, unique identifier)
+  - `name` (STRING, venue owner's name)
+  - `mobile` (STRING, contact mobile phone number)
+  - `email` (STRING, contact email address)
+  - `created_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
+  - `modified_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
 
 - **Venue**: A location that can have zero or more event lists. A venue has:
 
-  - venueUUID (unique identifier, UUID format)
-  - Name
-  - Banner/image
-  - Contact details (mobile, email, address)
-  - Description (optional)
-  - ownerUUID (identifier linking venue to venue owner for multi-owner support, UUID format)
-  - Zero or more event lists
+  - `venue_uuid` (UUID, unique identifier)
+  - `name` (STRING, venue name)
+  - `banner_image` (STRING, banner/image URL or base64 encoded data)
+  - `address` (STRING, physical address of the venue)
+  - `geolocation` (STRING, geolocation coordinates, e.g., "latitude,longitude" or JSON format)
+  - `description` (STRING, optional description)
+  - `owner_uuid` (UUID, foreign key linking venue to venue owner for multi-owner support)
+  - `event_list_uuids` (ARRAY[UUID], array of event list UUIDs belonging to this venue; cardinality: 0..\*)
+  - `created_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
+  - `modified_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
 
 - **Event List**: A named collection of events belonging to a venue. An event list has:
 
-  - eventListUUID (unique identifier, UUID format)
-  - venueUUID (identifier linking event list to venue, UUID format)
-  - Name/title
-  - Date (ISO 8601 date format, e.g., "2024-12-25")
-  - Description (optional)
-  - Zero or more events
+  - `event_list_uuid` (UUID, unique identifier)
+  - `venue_uuid` (UUID, foreign key linking event list to venue)
+  - `name` (STRING, event list name/title)
+  - `description` (STRING, optional description)
+  - `event_uuids` (ARRAY[UUID], array of event UUIDs belonging to this event list; cardinality: 0..\*)
+  - `created_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
+  - `modified_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
 
 - **Event**: A scheduled occurrence with a specific time. An event has:
-  - eventUUID (unique identifier, UUID format)
-  - eventListUUID (identifier linking event to event list, UUID format)
-  - Event name
-  - DateTime (stored as full date and time in Unix epoch timestamp format; only the time portion is displayed to users)
-  - Description (optional)
+  - `event_uuid` (UUID, unique identifier)
+  - `event_list_uuid` (UUID, foreign key linking event to event list)
+  - `event_name` (STRING, event name)
+  - `datetime` (STRING, RFC3339 datetime with timezone offset, e.g., "2025-12-25T14:30:00-05:00")
+  - `description` (STRING, optional description)
+  - `created_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
+  - `modified_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
 
 ### Data Format Specifications
 
 - **UUIDs**: All entity identifiers use UUID format (e.g., `550e8400-e29b-41d4-a716-446655440000`)
-- **Date Format**: Event list dates are stored and displayed in ISO 8601 date format (YYYY-MM-DD, e.g., "2024-12-25")
-- **Time Format**:
-  - Event DateTime is stored internally as full date and time in Unix epoch timestamp format (seconds since January 1, 1970 UTC)
-  - When displaying events, only the time portion is shown to users (e.g., "14:30" or "2:30 PM")
-  - The date is not displayed for events since it comes from the event list they belong to
-  - For internal operations (sorting, filtering), the full datetime stored in the event is used
+- **DateTime Format**: All datetime fields use RFC3339 format with timezone offset (e.g., "2025-12-25T14:30:00-05:00")
+  - Event `datetime` field stores the full date and time with timezone information
+  - `created_at` and `modified_at` fields track when entities were created and last modified
+  - The presentation layer determines what portion of the datetime to display (date only, time only, or full datetime) based on context
 
 ### User Interface Behavior
 
@@ -73,7 +81,7 @@ The application manages four main entities with the following relationships:
 - When a venue is selected, users can choose which event list to view (if the venue has multiple event lists)
 - If a venue has no event lists, no events are displayed
 - Venue owners can reorder event lists when editing a venue
-- Events are displayed with only the time (the date comes from the event list they belong to)
+- The presentation layer determines how to display event datetimes (e.g., time only, date and time, or grouped by date)
 
 ## Success Criteria
 

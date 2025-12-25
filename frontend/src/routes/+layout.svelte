@@ -21,6 +21,11 @@
       </div>
       <div class="flex items-center gap-8">
         <a
+          href="/"
+          class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
+          >Home</a
+        >
+        <a
           href="/about"
           class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
           >About</a

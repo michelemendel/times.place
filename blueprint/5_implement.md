@@ -54,3 +54,31 @@
 - Fixed Tailwind CSS v4 PostCSS configuration (required `@tailwindcss/postcss` package)
 - Fixed static adapter prerendering requirement
 - Fixed missing favicon 404 error during build
+
+## 2025-12-25
+
+### Data Model Implementation
+
+- **Type Definitions (`src/lib/types.ts`)**:
+
+  - Defined TypeScript interfaces for `VenueOwner`, `Venue`, `EventList`, and `Event`.
+  - Established relationships using UUIDs (`owner_uuid`, `venue_uuid`, etc.).
+
+- **State Management (`src/lib/stores.ts`)**:
+
+  - Implemented Svelte `writable` stores for all data entities.
+  - Added automatic persistence to `localStorage` (with safety check for SSR).
+  - Used generic `load` helper to initialize stores from storage or default values.
+
+- **Date/Time Handling (`src/lib/utils/datetime.js`)**:
+
+  - Created utility functions for timezone-aware formatting:
+    - `formatEventTime`: formats Unix timestamp to time string based on user locale/timezone.
+    - `formatEventListDate`: formats ISO date string to full date string.
+    - `formatFullDateTime`: useful for debugging/admin views.
+  - Implemented JSDoc type safety (refining optional parameters).
+
+- **Demo Data (`src/lib/demo_data.ts`)**:
+  - Implemented `seedDemoData` function to generate initial valid data.
+  - Includes a Venue Owner, Venue ("Beth El Synagogue"), Event List ("Daily Minyan"), and Events.
+  - Uses a UUID generator fallback for wider compatibility.

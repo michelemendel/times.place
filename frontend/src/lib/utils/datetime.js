@@ -10,7 +10,7 @@
  * These are independent - you can have Hebrew locale with New York timezone, or English locale with Jerusalem timezone.
  */
 
-import config from '../config.json';
+import config from '../../config.json';
 
 /**
  * Get the user's timezone from browser settings
@@ -42,8 +42,8 @@ function getDefaultHour12() {
  * 
  * @param {number} unixTimestamp - Unix epoch timestamp in seconds
  * @param {object} options - Optional formatting options
- * @param {boolean} options.hour12 - Use 12-hour format (default: from config file)
- * @param {string} options.locale - Override locale (default: user's browser locale)
+ * @param {boolean} [options.hour12] - Use 12-hour format (default: from config file)
+ * @param {string} [options.locale] - Override locale (default: user's browser locale)
  * @returns {string} Formatted time string (e.g., "14:30" for 24-hour or "2:30 PM" for 12-hour)
  */
 export function formatEventTime(unixTimestamp, options = {}) {
@@ -68,7 +68,7 @@ export function formatEventTime(unixTimestamp, options = {}) {
  * 
  * @param {string} isoDateString - ISO 8601 date string (e.g., "2024-12-25")
  * @param {object} options - Optional formatting options
- * @param {string} options.locale - Override locale (default: user's browser locale)
+ * @param {string} [options.locale] - Override locale (default: user's browser locale)
  * @returns {string} Formatted date string (e.g., "December 25, 2024" or "25/12/2024")
  */
 export function formatEventListDate(isoDateString, options = {}) {
@@ -91,7 +91,7 @@ export function formatEventListDate(isoDateString, options = {}) {
  * 
  * @param {number} unixTimestamp - Unix epoch timestamp in seconds
  * @param {object} options - Optional formatting options
- * @param {string} options.locale - Override locale (default: user's browser locale)
+ * @param {string} [options.locale] - Override locale (default: user's browser locale)
  * @returns {string} Formatted date and time string in ISO 8601 format adjusted for timezone
  */
 export function formatFullDateTime(unixTimestamp, options = {}) {

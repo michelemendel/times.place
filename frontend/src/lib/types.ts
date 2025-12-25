@@ -1,0 +1,43 @@
+export interface VenueOwner {
+  owner_uuid: string;
+  name: string;
+  mobile: string;
+  email: string;
+  created_at: string;
+  modified_at: string;
+}
+
+export interface Venue {
+  venue_uuid: string;
+  owner_uuid: string;
+  name: string;
+  banner_image: string;
+  address: string;
+  geolocation: string;
+  description?: string;
+  event_list_uuids: string[];
+  timezone: string;
+  created_at: string;
+  modified_at: string;
+}
+
+export interface EventList {
+  event_list_uuid: string;
+  venue_uuid: string;
+  event_uuids: string[];
+  name: string;
+  description?: string;
+  created_at: string;
+  modified_at: string;
+}
+
+export interface Event {
+  event_uuid: string;
+  event_list_uuid: string;
+  event_name: string;
+  datetime: string; // RFC3339
+  description?: string;
+  duration_minutes?: number;
+  created_at: string;
+  modified_at: string;
+}

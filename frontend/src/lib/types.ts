@@ -14,7 +14,7 @@ export interface Venue {
   banner_image: string;
   address: string;
   geolocation: string;
-  description?: string;
+  comment?: string;
   event_list_uuids: string[];
   timezone: string;
   created_at: string;
@@ -26,7 +26,7 @@ export interface EventList {
   venue_uuid: string;
   event_uuids: string[];
   name: string;
-  description?: string;
+  comment?: string;
   created_at: string;
   modified_at: string;
 }
@@ -36,7 +36,7 @@ export interface Event {
   event_list_uuid: string;
   event_name: string;
   datetime: string; // RFC3339
-  description?: string;
+  comment?: string;
   duration_minutes?: number;
   created_at: string;
   modified_at: string;

@@ -18,7 +18,7 @@ To prototype a simple, user-friendly web app (frontend-only) for listing venues 
 - As a venue owner, I want to add a new venue that I manage
 - As a venue owner, I want to delete one of my venues
 - As a venue owner, I want to select one of my venues to edit
-- As a venue owner, I want to update any detail (name, banner/image, contact, events, times, description) for my selected venue
+- As a venue owner, I want to update any detail (name, banner/image, contact, events, times, comment) for my selected venue
 
 ## Structure
 
@@ -42,7 +42,7 @@ The application manages four main entities with the following relationships:
   - `banner_image` (STRING, banner/image URL or base64 encoded data)
   - `address` (STRING, physical address of the venue)
   - `geolocation` (STRING, geolocation coordinates, e.g., "latitude,longitude" or JSON format)
-  - `description` (STRING, optional description)
+  - `comment` (STRING, optional comment)
   - `owner_uuid` (UUID, foreign key linking venue to venue owner for multi-owner support)
   - `timezone` (STRING, timezone identifier, e.g., "Asia/Jerusalem")
   - `event_list_uuids` (ARRAY[UUID], array of event list UUIDs belonging to this venue; cardinality: 0..\*)
@@ -54,7 +54,7 @@ The application manages four main entities with the following relationships:
   - `event_list_uuid` (UUID, unique identifier)
   - `venue_uuid` (UUID, foreign key linking event list to venue)
   - `name` (STRING, event list name/title)
-  - `description` (STRING, optional description)
+  - `comment` (STRING, optional comment)
   - `event_uuids` (ARRAY[UUID], array of event UUIDs belonging to this event list; cardinality: 0..\*)
   - `created_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
   - `modified_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
@@ -65,7 +65,7 @@ The application manages four main entities with the following relationships:
   - `event_name` (STRING, event name)
   - `datetime` (STRING, RFC3339 datetime with timezone offset, e.g., "2025-12-25T14:30:00-05:00")
   - `duration_minutes` (INTEGER, duration of the event in minutes)
-  - `description` (STRING, optional description)
+  - `comment` (STRING, optional comment)
   - `created_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
   - `modified_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
 

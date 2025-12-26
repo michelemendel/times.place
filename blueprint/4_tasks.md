@@ -40,7 +40,7 @@
 ## Visitor Page
 
 - [ ] Create dropdown for list of venues using demo data
-- [ ] Display selected venue details: banner, contacts, description
+- [ ] Display selected venue details: banner, contacts, comment
 - [ ] Implement event list selector (dropdown/tabs) when venue has multiple event lists
 - [ ] Display events from selected event list (or only event list if there's just one)
 - [ ] Display only the time portion from each event (date comes from the event list)
@@ -63,7 +63,7 @@
 
 - [ ] Form UI with two panes: editing pane (dynamic fields) and live preview pane
 - [ ] Event list management: functionality to add, delete, and reorder event lists
-- [ ] For each event list: manage name, date (ISO 8601 format), description, and events
+- [ ] For each event list: manage name, date (ISO 8601 format), comment, and events
 - [ ] Event management within event lists: functionality to add, delete, duplicate, and move events up and down
 - [ ] Event DateTime input: allow venue owners to input time, combine with event list date to create full datetime, convert to Unix epoch timestamp for storage
 - [ ] Display event times (time portion only) in both edit and preview panes

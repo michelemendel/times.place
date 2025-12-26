@@ -41,7 +41,7 @@ export function seedDemoData() {
         banner_image: "https://placehold.co/600x200?text=Beth+El",
         address: "123 Shalom Street, Jerusalem",
         geolocation: "31.7767,35.2345",
-        description: "A welcoming community in the heart of the city.",
+        comment: "A welcoming community in the heart of the city.",
         owner_uuid: ownerId,
         event_list_uuids: [], // Will link later
         timezone: "Asia/Jerusalem",
@@ -54,7 +54,7 @@ export function seedDemoData() {
         event_list_uuid: listId,
         venue_uuid: venueId,
         name: "Daily Minyan",
-        description: "Morning and afternoon prayers",
+        comment: "Morning and afternoon prayers",
         event_uuids: [], // Will link later
         created_at: now,
         modified_at: now

@@ -3,7 +3,8 @@ import { browser } from '$app/environment';
 import type { VenueOwner, Venue, EventList, Event } from './types';
 
 // Persistence keys
-const STORAGE_KEY_USER = 'times_place_user';
+const STORAGE_KEY_CURRENT_OWNER = 'times_place_current_owner';
+const STORAGE_KEY_OWNERS = 'times_place_owners';
 const STORAGE_KEY_VENUES = 'times_place_venues';
 const STORAGE_KEY_EVENT_LISTS = 'times_place_event_lists';
 const STORAGE_KEY_EVENTS = 'times_place_events';
@@ -16,14 +17,16 @@ function load<T>(key: string, fallback: T): T {
 }
 
 // Stores
-export const userStore = writable<VenueOwner | null>(load(STORAGE_KEY_USER, null));
+export const currentOwnerStore = writable<VenueOwner | null>(load(STORAGE_KEY_CURRENT_OWNER, null));
+export const ownersStore = writable<VenueOwner[]>(load(STORAGE_KEY_OWNERS, []));
 export const venueStore = writable<Venue[]>(load(STORAGE_KEY_VENUES, []));
 export const eventListStore = writable<EventList[]>(load(STORAGE_KEY_EVENT_LISTS, []));
 export const eventStore = writable<Event[]>(load(STORAGE_KEY_EVENTS, []));
 
 // Subscribe and save to localStorage
 if (browser) {
-  userStore.subscribe((val) => localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(val)));
+  currentOwnerStore.subscribe((val) => localStorage.setItem(STORAGE_KEY_CURRENT_OWNER, JSON.stringify(val)));
+  ownersStore.subscribe((val) => localStorage.setItem(STORAGE_KEY_OWNERS, JSON.stringify(val)));
   venueStore.subscribe((val) => localStorage.setItem(STORAGE_KEY_VENUES, JSON.stringify(val)));
   eventListStore.subscribe((val) => localStorage.setItem(STORAGE_KEY_EVENT_LISTS, JSON.stringify(val)));
   eventStore.subscribe((val) => localStorage.setItem(STORAGE_KEY_EVENTS, JSON.stringify(val)));

@@ -1,5 +1,11 @@
 <script>
+  import { onMount } from 'svelte';
+  import { seedDemoData } from '../lib/demo_data';
   import '../app.css';
+
+  onMount(() => {
+    seedDemoData();
+  });
 </script>
 
 <div class="flex flex-col min-h-screen">

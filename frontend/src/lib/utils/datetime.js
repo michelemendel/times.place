@@ -139,3 +139,27 @@ export function createEventTimestamp(eventListDate, hours, minutes) {
   return Math.floor(date.getTime() / 1000); // Convert to seconds
 }
 
+/**
+ * Get the current timestamp as an ISO 8601 string (RFC3339 format with timezone offset)
+ * Used for created_at and modified_at fields in entities
+ *
+ * @returns {string} ISO 8601 datetime string (e.g., "2024-12-25T10:00:00-05:00")
+ */
+export function getCurrentTimestamp() {
+  return new Date().toISOString();
+}
+
+/**
+ * Update the modified_at field of an entity with the current timestamp
+ * Creates a new object with the updated modified_at field
+ *
+ * @param {object} entity - Entity object with created_at and modified_at fields
+ * @returns {object} New entity object with updated modified_at timestamp
+ */
+export function updateModifiedTimestamp(entity) {
+  return {
+    ...entity,
+    modified_at: getCurrentTimestamp()
+  };
+}
+

@@ -82,3 +82,35 @@
   - Implemented `seedDemoData` function to generate initial valid data.
   - Includes a Venue Owner, Venue ("Beth El Synagogue"), Event List ("Daily Minyan"), and Events.
   - Uses a UUID generator fallback for wider compatibility.
+
+## 2026-01-12
+
+### Store Naming Refinement
+
+- **Renamed `userStore` to `currentOwnerStore`** (`src/lib/stores.ts`):
+  - Clarified that this store tracks the currently logged-in venue owner (not anonymous public users).
+  - Updated localStorage key from `times_place_user` to `times_place_current_owner`.
+  - Updated all imports and references in `demo_data.ts`.
+  - Public visitors are anonymous and don't require any stored user data.
+
+### Multiple Venue Owner Demo Accounts
+
+- **Extended demo data** (`src/lib/demo_data.ts`):
+  - Added `ownersStore` to store all venue owner accounts (for login functionality).
+  - Created two venue owner accounts for testing isolation:
+    - **Owner 1: "Demo Rabbi"** with 2 venues:
+      - "Beth El Synagogue" (has 2 event lists: "Daily Minyan" and "Shabbat Services")
+      - "Community Center" (has no event lists)
+    - **Owner 2: "Sarah Cohen"** with 2 venues:
+      - "Beit Midrash" (has 1 event list: "Weekly Schedule")
+      - "Chabad House" (has no event lists)
+  - Updated seed function to check for existing data in `ownersStore` or `venueStore` instead of just checking for logged-in user.
+  - Added `seedDemoData()` call to layout (`src/routes/+layout.svelte`) to automatically seed on app load.
+
+### Date/Time Utility Functions
+
+- **Centralized date creation** (`src/lib/utils/datetime.js`):
+  - Added `getCurrentTimestamp()`: Returns current timestamp as ISO 8601 string (RFC3339 format) for `created_at` and `modified_at` fields.
+  - Added `updateModifiedTimestamp(entity)`: Helper function to update `modified_at` field when entities are modified (for future use).
+  - Updated `demo_data.ts` to use `getCurrentTimestamp()` instead of direct `new Date().toISOString()` calls.
+  - All date creation and modification operations are now centralized behind utility functions for easier maintenance.

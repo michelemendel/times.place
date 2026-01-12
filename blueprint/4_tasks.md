@@ -35,7 +35,7 @@
 - [x] Implement UUID generation for all entities (use crypto.randomUUID() or similar)
 - [x] Implement date/time formatting: store event list dates as ISO 8601, store event DateTime as Unix epoch (full date+time), display only time portion from events
 - [x] Add demo data with venues that have multiple event lists and venues with no event lists
-- [ ] Set up multiple venue owner demo accounts (at least two for testing isolation)
+- [x] Set up multiple venue owner demo accounts (at least two for testing isolation)
 
 ## Visitor Page
 

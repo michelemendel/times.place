@@ -35,8 +35,8 @@ time.place/
 The project follows **Spec-Driven Development**, a methodology where documentation drives the development process. Instead of (vibe-)coding first and documenting later, we:
 
 1. **Govern** the process through `constitution.md` (governance, principles, and process rules goes here)
-2. **Specify** requirements, user stories, and success criteria in `spec.md`
-3. **Plan** technical approaches and implementation decisions in `plan.md`
+2. **Specify** requirements, user stories, and success criteria in `spec.md`. This the WHAT
+3. **Plan** technical approaches and implementation decisions in `plan.md`. This is the HOW
 4. **Track** tasks and progress in `tasks.md`
 5. **Implement** following the spec and plan, logging decisions in `implement.md`
 

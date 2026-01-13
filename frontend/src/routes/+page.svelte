@@ -228,6 +228,30 @@
   }
 
   /**
+   * Generate Google Maps directions URL
+   * Prefers coordinates if available (more accurate), otherwise uses address
+   * @param {any} venue
+   * @returns {string | null}
+   */
+  function getDirectionsUrl(venue) {
+    if (!venue) return null;
+
+    // Prefer coordinates if available
+    const coords = parseGeolocation(venue.geolocation);
+    if (coords) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`;
+    }
+
+    // Fall back to address if available
+    if (venue.address) {
+      const encodedAddress = encodeURIComponent(venue.address);
+      return `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+    }
+
+    return null;
+  }
+
+  /**
    * Initialize the map
    */
   function initMap() {
@@ -508,7 +532,19 @@
           <div class="flex flex-col justify-start">
             {#if selectedVenue.address}
               <p class="text-sm text-gray-600 mb-2">
-                <span class="font-medium text-gray-700">Address:</span> {selectedVenue.address}
+                <span class="font-medium text-gray-700">Address:</span>
+                {#if getDirectionsUrl(selectedVenue)}
+                  <a
+                    href={getDirectionsUrl(selectedVenue)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {selectedVenue.address}
+                  </a>
+                {:else}
+                  {selectedVenue.address}
+                {/if}
               </p>
             {/if}
             {#if venueOwner}

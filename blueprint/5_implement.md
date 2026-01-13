@@ -114,3 +114,46 @@
   - Added `updateModifiedTimestamp(entity)`: Helper function to update `modified_at` field when entities are modified (for future use).
   - Updated `demo_data.ts` to use `getCurrentTimestamp()` instead of direct `new Date().toISOString()` calls.
   - All date creation and modification operations are now centralized behind utility functions for easier maintenance.
+
+## 2025-01-13
+
+### Search Functionality Specification and Implementation
+
+- **Searchable Fields Specification** (`blueprint/2_spec.md`):
+
+  - Added "Searchable Fields" section after Data Model section.
+  - Documented all fields that should be searchable:
+    - Venue Owner: `name`, `mobile`
+    - Venue: `name`, `address`, `comment`
+    - Event List: `name`, `comment`
+    - Event: `event_name`, `comment`
+  - Specified that venues appear in search results if query matches any searchable field across venue, owner, event lists, or events.
+
+- **Comprehensive Search Implementation** (`frontend/src/routes/+page.svelte`):
+  - Implemented `venueMatchesSearch()` function that searches across all specified fields.
+  - Replaced simple venue name filter with comprehensive multi-field search.
+  - Search is case-insensitive and handles optional fields safely.
+  - Users can now find venues by searching owner names, mobile numbers, addresses, comments, event list names, and event names.
+
+### Clickable Address Links for Directions
+
+- **Google Maps Integration** (`frontend/src/routes/+page.svelte`):
+  - Added `getDirectionsUrl()` function that generates Google Maps directions URLs.
+  - Prefers coordinates (from `geolocation` field) when available for accuracy.
+  - Falls back to address string if coordinates are not available.
+  - Made venue addresses clickable links that open Google Maps in a new tab.
+  - Uses free Google Maps URL scheme (no API key required):
+    - With coordinates: `https://www.google.com/maps/dir/?api=1&destination={lat},{lng}`
+    - With address: `https://www.google.com/maps/search/?api=1&query={encoded_address}`
+  - Links styled as blue clickable text with hover effects.
+
+### Demo Data Updates
+
+- **Real Jerusalem Addresses** (`frontend/src/lib/demo_data.ts`):
+  - Updated all venue addresses to real Jerusalem street addresses for testing:
+    - "Beth El Synagogue": `15 King George Street, Jerusalem` (31.7787, 35.2175)
+    - "Community Center": `42 Ben Yehuda Street, Jerusalem` (31.7800, 35.2167)
+    - "Beit Midrash": `28 Jaffa Road, Jerusalem` (31.7820, 35.2180)
+    - "Chabad House": `12 Rechov Agron, Jerusalem` (31.7750, 35.2200)
+  - Updated geolocation coordinates to match real Jerusalem locations.
+  - All addresses are now testable with Google Maps links.

@@ -69,6 +69,32 @@ The application manages four main entities with the following relationships:
   - `created_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
   - `modified_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
 
+### Searchable Fields
+
+The search functionality allows users to find venues by matching search queries against fields that are visible on the home page. The following fields are searchable:
+
+- **Venue Owner**:
+
+  - `name` (STRING, venue owner's name)
+  - `mobile` (STRING, contact mobile phone number)
+
+- **Venue**:
+
+  - `name` (STRING, venue name)
+  - `address` (STRING, physical address of the venue)
+  - `comment` (STRING, optional comment)
+
+- **Event List**:
+
+  - `name` (STRING, event list name/title)
+  - `comment` (STRING, optional comment)
+
+- **Event**:
+  - `event_name` (STRING, event name)
+  - `comment` (STRING, optional comment)
+
+When a user performs a search, the system should match the query against all of these fields across all entities. A venue should appear in search results if the query matches any of the searchable fields associated with that venue, its owner, its event lists, or its events.
+
 ### Data Format Specifications
 
 - **UUIDs**: All entity identifiers use UUID format (e.g., `550e8400-e29b-41d4-a716-446655440000`)

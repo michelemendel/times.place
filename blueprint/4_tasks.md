@@ -39,13 +39,13 @@
 
 ## Visitor Page
 
-- [ ] Create dropdown for list of venues using demo data
-- [ ] Display selected venue details: banner, contacts, comment
-- [ ] Implement event list selector (dropdown/tabs) when venue has multiple event lists
-- [ ] Display events from selected event list (or only event list if there's just one)
-- [ ] Display only the time portion from each event (date comes from the event list)
-- [ ] Format event times for display (extract time from stored Unix epoch datetime, format for user's timezone)
-- [ ] Handle case when venue has no event lists (show appropriate message)
+- [x] Create dropdown for list of venues using demo data
+- [x] Display selected venue details: banner, contacts, comment
+- [x] Implement event list selector (dropdown/tabs) when venue has multiple event lists
+- [x] Display events from selected event list (or only event list if there's just one)
+- [x] Display only the time portion from each event (date comes from the event list)
+- [x] Format event times for display (extract time from stored Unix epoch datetime, format for user's timezone)
+- [x] Handle case when venue has no event lists (show appropriate message)
 
 ## Venue Owner Page
 

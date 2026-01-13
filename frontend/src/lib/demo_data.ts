@@ -14,11 +14,20 @@ const generateUUID = () => {
     });
 };
 
-export function seedDemoData() {
-    // Only seed if no data exists
-    if (get(ownersStore).length > 0 || get(venueStore).length > 0) {
+export function seedDemoData(force: boolean = false) {
+    // Only seed if no data exists, unless force is true
+    if (!force && (get(ownersStore).length > 0 || get(venueStore).length > 0)) {
         console.log('Data already exists, skipping seed.');
         return;
+    }
+
+    // If forcing, clear existing data first
+    if (force) {
+        console.log('Force re-seeding: clearing existing data...');
+        ownersStore.set([]);
+        venueStore.set([]);
+        eventListStore.set([]);
+        eventStore.set([]);
     }
 
     console.log('Seeding demo data...');
@@ -78,8 +87,9 @@ export function seedDemoData() {
         event_uuid: event1Id,
         event_list_uuid: list1Id,
         event_name: "Shacharis",
-        datetime: "2025-12-25T07:00:00+02:00",
-        duration_minutes: 45,
+        datetime: "2025-12-25T06:00:00+02:00",
+        comment: "we start on time",
+        duration_minutes: 0,
         created_at: now,
         modified_at: now
     };
@@ -91,7 +101,7 @@ export function seedDemoData() {
         event_list_uuid: list1Id,
         event_name: "Mincha",
         datetime: "2025-12-25T16:30:00+02:00",
-        duration_minutes: 30,
+        duration_minutes: 0,
         created_at: now,
         modified_at: now
     };

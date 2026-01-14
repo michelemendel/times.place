@@ -157,3 +157,66 @@
     - "Chabad House": `12 Rechov Agron, Jerusalem` (31.7750, 35.2200)
   - Updated geolocation coordinates to match real Jerusalem locations.
   - All addresses are now testable with Google Maps links.
+
+## 2026-01-14
+
+### Venue Owner Registration, Authentication, and Authorization
+
+- **Registration Flow** (`frontend/src/routes/registration/+page.svelte`):
+
+  - Implemented complete registration form with fields: name, email, mobile, password, and confirm password.
+  - Added form validation:
+    - Name: required, non-empty
+    - Email: required, must contain '@'
+    - Mobile: required, validated with regex pattern (allows digits, spaces, +, -, parentheses, minimum 7 characters)
+    - Password: required, minimum 4 characters
+    - Confirm password: must match password
+  - Creates new `VenueOwner` entity and stores in `ownersStore` (persisted to localStorage).
+  - Automatically logs in the newly registered user by setting `currentOwnerStore`.
+  - Redirects to `/venue-owner` after successful registration.
+
+- **Login Flow** (`frontend/src/routes/login/+page.svelte`):
+
+  - Implemented email + password authentication form.
+  - Validates credentials by:
+    - Looking up owner by email (case-insensitive, normalized)
+    - Comparing provided password with stored password (or fallback to "demo" for legacy accounts)
+  - Sets `currentOwnerStore` on successful login and redirects to `/venue-owner`.
+  - Auto-redirects to `/venue-owner` if user is already logged in.
+
+- **Authorization / Route Protection** (`frontend/src/routes/venue-owner/+page.svelte`):
+
+  - Added client-side authorization guard: checks `currentOwnerStore` on mount.
+  - Redirects to `/login` if no owner is logged in.
+  - Displays logged-in owner information when authenticated.
+
+- **Navigation Updates** (`frontend/src/routes/+layout.svelte`):
+
+  - Updated header navigation to conditionally show:
+    - **When logged out**: "Login" and "Register" links
+    - **When logged in**: "My Venues" link and "Logout" button
+  - Implemented logout functionality that clears `currentOwnerStore` and redirects to home.
+  - Applied same conditional navigation to mobile menu.
+
+- **Data Model Updates** (`frontend/src/lib/types.ts`):
+
+  - Added optional `password?: string` field to `VenueOwner` interface for prototype password storage.
+  - Documented that password storage is prototype-only and not secure.
+
+- **Demo Data Updates** (`frontend/src/lib/demo_data.ts`):
+
+  - Added `password: "demo"` to both demo venue owner accounts for testing.
+
+- **UUID Utility Refactoring** (`frontend/src/lib/utils/uuid.js`):
+
+  - Extracted `generateUUID()` function from inline implementations into shared utility module.
+  - Updated `demo_data.ts` and `registration/+page.svelte` to import from `$lib/utils/uuid.js`.
+  - Centralized UUID generation logic for consistency across the codebase.
+
+- **Critical Bug Fixes**:
+  - **Fixed data persistence issue**: Changed `seedDemoData(dev)` to `seedDemoData(false)` in both `+layout.svelte` and `+page.svelte`.
+    - Previously, force re-seeding in dev mode was clearing localStorage and wiping newly registered accounts.
+    - Now demo data only seeds when storage is empty, preserving user-registered accounts.
+  - **Password field implementation**: Added password and confirm password fields to registration form.
+    - Passwords are stored per-owner in localStorage (prototype-only, not secure).
+    - Login validates against stored password with fallback to "demo" for legacy accounts without passwords.

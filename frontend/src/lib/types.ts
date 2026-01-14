@@ -3,6 +3,11 @@ export interface VenueOwner {
   name: string;
   mobile: string;
   email: string;
+  /**
+   * Prototype-only password stored in localStorage.
+   * Not secure; for demo purposes only.
+   */
+  password?: string;
   created_at: string;
   modified_at: string;
 }

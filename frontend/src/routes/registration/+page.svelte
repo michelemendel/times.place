@@ -1,5 +1,91 @@
 <script>
-  // Registration page
+  import { get } from 'svelte/store';
+  import { ownersStore, currentOwnerStore } from '$lib/stores';
+  import { goto } from '$app/navigation';
+  import { getCurrentTimestamp } from '$lib/utils/datetime.js';
+  import { generateUUID } from '$lib/utils/uuid.js';
+
+  let name = '';
+  let mobile = '';
+  let email = '';
+  let password = '';
+  let confirmPassword = '';
+
+  let error = '';
+  let success = '';
+
+  /** @param {string} value */
+  function normalizeEmail(value) {
+    return value.trim().toLowerCase();
+  }
+
+  /** @param {string} value */
+  function normalizeMobile(value) {
+    return value.trim();
+  }
+
+  /** @param {string} value */
+  function isValidMobile(value) {
+    // Very light validation for demo purposes: allow digits, spaces, +, -, ()
+    const v = value.trim();
+    if (!v) return false;
+    return /^[0-9+\-()\s]{7,}$/.test(v);
+  }
+
+  /** @param {SubmitEvent} e */
+  function handleSubmit(e) {
+    e.preventDefault();
+    error = '';
+    success = '';
+
+    const n = name.trim();
+    const m = normalizeMobile(mobile);
+    const em = normalizeEmail(email);
+
+    if (!n) {
+      error = 'Please enter your name.';
+      return;
+    }
+    if (!em || !em.includes('@')) {
+      error = 'Please enter a valid email address.';
+      return;
+    }
+    if (!isValidMobile(m)) {
+      error = 'Please enter a valid mobile number.';
+      return;
+    }
+    if (!password || password.length < 4) {
+      error = 'Please choose a password (at least 4 characters).';
+      return;
+    }
+    if (password !== confirmPassword) {
+      error = 'Passwords do not match.';
+      return;
+    }
+
+    const owners = get(ownersStore);
+    const existing = owners.find((o) => normalizeEmail(o.email) === em);
+    if (existing) {
+      error = 'An account with this email already exists. Please log in instead.';
+      return;
+    }
+
+    const now = getCurrentTimestamp();
+    const owner = {
+      owner_uuid: generateUUID(),
+      name: n,
+      mobile: m,
+      email: em,
+      password,
+      created_at: now,
+      modified_at: now
+    };
+
+    ownersStore.set([...owners, owner]);
+    currentOwnerStore.set(owner);
+    success = `Account created. You are now logged in as ${owner.name}.`;
+    goto('/venue-owner');
+  }
 </script>
 
 <svelte:head>
@@ -15,10 +101,102 @@
       Create an account to manage your venues and event schedules.
     </p>
 
-    <div class="bg-gray-50 p-8 rounded-lg">
-      <p class="text-gray-500 italic text-center">
-        Registration form will be implemented here.
-      </p>
+    <div class="bg-gray-50 p-6 md:p-8 rounded-lg">
+      <div class="max-w-xl mx-auto">
+        <form class="space-y-5" on:submit={handleSubmit}>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="name">Name</label>
+            <input
+              id="name"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              bind:value={name}
+              autocomplete="name"
+              placeholder="Your name"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              bind:value={email}
+              autocomplete="email"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="mobile">Mobile</label>
+            <input
+              id="mobile"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              bind:value={mobile}
+              autocomplete="tel"
+              placeholder="+1 555-555-5555"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              bind:value={password}
+              autocomplete="new-password"
+              placeholder="Choose a password"
+              required
+            />
+            <p class="mt-2 text-sm text-gray-600">
+              Prototype note: passwords are stored locally in your browser (not secure).
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="confirmPassword"
+              >Confirm password</label
+            >
+            <input
+              id="confirmPassword"
+              type="password"
+              class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              bind:value={confirmPassword}
+              autocomplete="new-password"
+              placeholder="Re-enter password"
+              required
+            />
+          </div>
+
+          {#if error}
+            <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
+            </div>
+          {/if}
+
+          {#if success}
+            <div class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              {success}
+            </div>
+          {/if}
+
+          <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <button
+              type="submit"
+              class="inline-flex justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 transition-colors"
+            >
+              Create account
+            </button>
+            <a class="text-sm text-blue-600 hover:text-blue-800 font-medium" href="/login">
+              Already have an account? Log in
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>

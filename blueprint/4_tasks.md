@@ -47,10 +47,13 @@
 - [x] Format event times for display (extract time from stored Unix epoch datetime, format for user's timezone)
 - [x] Handle case when venue has no event lists (show appropriate message)
 
+## Venue Owner Page Registration, Authentication, and Authorization
+
+- [x] Build venue owner registration/account creation flow (for demo: simple form with hardcoded validation)
+- [x] Build venue owner login flow with hardcoded password for prototype
+
 ## Venue Owner Page
 
-- [ ] Build venue owner registration/account creation flow (for demo: simple form with hardcoded validation)
-- [ ] Build venue owner login flow with hardcoded password for prototype
 - [ ] Create venue owner dashboard/list view showing all venues owned by logged-in owner
 - [ ] Implement client-side filtering to show only venues owned by current venue owner
 - [ ] Add functionality to add a venue

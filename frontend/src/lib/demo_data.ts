@@ -2,17 +2,7 @@ import { currentOwnerStore, ownersStore, venueStore, eventListStore, eventStore 
 import type { VenueOwner, Venue, EventList, Event } from './types';
 import { get } from 'svelte/store';
 import { getCurrentTimestamp } from './utils/datetime.js';
-
-// Helper to generate IDs if not available in environment (e.g. older browsers)
-const generateUUID = () => {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-        return crypto.randomUUID();
-    }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-};
+import { generateUUID } from './utils/uuid.js';
 
 export function seedDemoData(force: boolean = false) {
     // Only seed if no data exists, unless force is true
@@ -46,6 +36,7 @@ export function seedDemoData(force: boolean = false) {
         name: "Demo Rabbi",
         mobile: "+1-555-0199",
         email: "demo@synagogue.org",
+        password: "demo",
         created_at: now,
         modified_at: now
     };
@@ -171,6 +162,7 @@ export function seedDemoData(force: boolean = false) {
         name: "Sarah Cohen",
         mobile: "+1-555-0200",
         email: "sarah@community.org",
+        password: "demo",
         created_at: now,
         modified_at: now
     };

@@ -61,8 +61,9 @@
 
   onMount(() => {
     // Seed demo data if needed
-    // Force re-seed in development mode so changes to demo_data.ts are reflected
-    seedDemoData(dev);
+    // Seed demo data only when storage is empty.
+    // Note: forcing a re-seed clears localStorage and will wipe newly-registered accounts.
+    seedDemoData(false);
 
     // Load Leaflet.js dynamically
     /** @type {any} */

@@ -3,6 +3,8 @@
   import { seedDemoData } from '../lib/demo_data';
   import '../app.css';
   import { dev } from '$app/environment';
+  import { currentOwnerStore } from '$lib/stores';
+  import { goto } from '$app/navigation';
 
   let mobileMenuOpen = false;
 
@@ -15,9 +17,16 @@
   }
 
   onMount(() => {
-    // Force re-seed in development mode so changes to demo_data.ts are reflected
-    seedDemoData(dev);
+    // Seed demo data only when storage is empty.
+    // Note: forcing a re-seed clears localStorage and will wipe newly-registered accounts.
+    seedDemoData(false);
   });
+
+  function logout() {
+    currentOwnerStore.set(null);
+    closeMobileMenu();
+    goto('/');
+  }
 </script>
 
 <div class="flex flex-col min-h-screen">
@@ -51,11 +60,31 @@
           class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
           >About</a
         >
-        <a
-          href="/login"
-          class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
-          >Login</a
-        >
+        {#if $currentOwnerStore}
+          <a
+            href="/venue-owner"
+            class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
+            >My Venues</a
+          >
+          <button
+            type="button"
+            class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
+            on:click={logout}
+          >
+            Logout
+          </button>
+        {:else}
+          <a
+            href="/login"
+            class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
+            >Login</a
+          >
+          <a
+            href="/registration"
+            class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
+            >Register</a
+          >
+        {/if}
       </div>
 
       <!-- Mobile Hamburger Button -->
@@ -115,12 +144,34 @@
               on:click={closeMobileMenu}
               >About</a
             >
-            <a
-              href="/login"
-              class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-              on:click={closeMobileMenu}
-              >Login</a
-            >
+            {#if $currentOwnerStore}
+              <a
+                href="/venue-owner"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                on:click={closeMobileMenu}
+                >My Venues</a
+              >
+              <button
+                type="button"
+                class="text-left text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                on:click={logout}
+              >
+                Logout
+              </button>
+            {:else}
+              <a
+                href="/login"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                on:click={closeMobileMenu}
+                >Login</a
+              >
+              <a
+                href="/registration"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                on:click={closeMobileMenu}
+                >Register</a
+              >
+            {/if}
           </div>
         </div>
       {/if}

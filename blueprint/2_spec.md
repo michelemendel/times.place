@@ -111,6 +111,44 @@ When a user performs a search, the system should match the query against all of 
 - Venue owners can reorder event lists when editing a venue
 - The presentation layer determines how to display event datetimes (e.g., time only, date and time, or grouped by date)
 
+## Security & Safety Considerations
+
+### Public Visibility & Physical Safety
+
+- **Primary Concern**: Publicizing Jewish places of gathering could make them targets for attacks. The platform must balance accessibility for community members with physical safety considerations.
+- A venue owner can choose if a venue is public (searchable on the public page) or private (only users with the link can view the venue).
+- **Recommendation**: Consider defaulting venues to private/unlisted, requiring explicit opt-in for public visibility. This ensures venues are only publicized when owners consciously choose to do so.
+
+### Privacy & Data Protection
+
+- **Venue Owner Information**: Email addresses and mobile phone numbers should not be publicly visible. Consider:
+  - Only displaying contact information to authenticated venue owners
+  - Providing a contact form that forwards messages without exposing owner details
+  - Allowing venue owners to choose what contact information (if any) is publicly displayed
+- **Location Privacy**: Consider options for:
+  - Showing approximate location (neighborhood/area) instead of exact addresses for public venues
+  - Allowing venue owners to hide precise geolocation coordinates
+  - Requiring explicit consent before displaying exact addresses publicly
+
+### Access Control & Link Security
+
+- **Private Link Security**: If venues can be accessed via private links:
+  - Use cryptographically secure, unguessable tokens (not sequential IDs)
+  - Consider expiration dates for shared links
+  - Allow venue owners to revoke/regenerate private links
+- **Venue Owner Authentication**: Ensure proper access control so venue owners can only edit their own venues (already mentioned in constraints, but critical for security)
+
+### Content & Abuse Prevention
+
+- **Verification**: Consider a verification process to ensure venue owners are legitimate (e.g., email verification, manual approval for sensitive venues)
+- **Rate Limiting**: Implement measures to prevent automated scraping or enumeration of venues (especially important for private venues)
+- **Content Moderation**: Define policies for handling malicious or inappropriate content
+
+### Operational Security
+
+- **Time-based Privacy**: Consider whether exact event times should be publicly visible, or if approximate times (e.g., "evening services") would be safer
+- **Search Functionality**: For public venues, ensure search doesn't inadvertently expose private information or enable targeted discovery of all venues in a specific area
+
 ## Success Criteria
 
 - App displays demo data with multiple venues and their times.

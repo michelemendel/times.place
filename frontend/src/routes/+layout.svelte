@@ -3,7 +3,8 @@
   import { seedDemoData } from '../lib/demo_data';
   import '../app.css';
   import { dev } from '$app/environment';
-  import { currentOwnerStore } from '$lib/stores';
+  import { currentOwnerStore, ownersStore } from '$lib/stores';
+  import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
 
   let mobileMenuOpen = false;
@@ -26,6 +27,30 @@
     currentOwnerStore.set(null);
     closeMobileMenu();
     goto('/');
+  }
+
+  function handleResetData() {
+    if (confirm('Reset all demo data? This will restore all deleted venues and clear any changes you\'ve made. You may need to log in again.')) {
+      const currentOwner = get(currentOwnerStore);
+      const currentEmail = currentOwner?.email;
+
+      // Reset the data
+      seedDemoData(true);
+
+      // If the user was logged in as a demo owner, restore their login with the new owner object
+      if (currentEmail) {
+        const owners = get(ownersStore);
+        const matchingOwner = owners.find(o => o.email === currentEmail);
+        if (matchingOwner) {
+          currentOwnerStore.set(matchingOwner);
+        } else {
+          // User was logged in as a non-demo owner, log them out
+          currentOwnerStore.set(null);
+          goto('/');
+        }
+      }
+      closeMobileMenu();
+    }
   }
 </script>
 
@@ -72,6 +97,14 @@
             on:click={logout}
           >
             Logout
+          </button>
+          <button
+            type="button"
+            class="text-red-700 hover:text-gray-900 font-medium text-base transition-colors"
+            on:click={handleResetData}
+            title="Reset demo data (development only)"
+          >
+            Reset Data
           </button>
         {:else}
           <a
@@ -151,6 +184,14 @@
                 on:click={closeMobileMenu}
                 >My Venues</a
               >
+              <button
+                type="button"
+                class="text-left text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                on:click={handleResetData}
+                title="Reset demo data (development only)"
+              >
+                Reset Data
+              </button>
               <button
                 type="button"
                 class="text-left text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"

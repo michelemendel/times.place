@@ -52,6 +52,41 @@
 - Venue owner data isolation: Venues will have an `ownerUUID` field (UUID format); filtering happens client-side
 - Future: Replace with proper authentication and authorization system
 
+## Security & Safety Implementation
+
+### Public/Private Venue Visibility
+
+- **Data Model**: Add a `visibility` field to the Venue entity with values: `"public"` (searchable on public page) or `"private"` (only accessible via shareable link)
+- **Default Behavior**: Default all new venues to `"private"` to ensure venues are only publicized when owners explicitly choose to do so
+- **UI Implementation**:
+  - Add visibility toggle/radio buttons in venue form (Public/Private)
+  - For private venues, generate and display a shareable link (cryptographically secure token, not sequential ID)
+  - On visitor page, filter venues by visibility: public venues appear in dropdown/search, private venues only accessible via direct link
+- **Link Security**: Use `crypto.randomUUID()` or similar to generate unguessable tokens for private venue links (store as `private_link_token` field on venue)
+
+### Privacy Protection
+
+- **Contact Information**:
+  - Venue owner email and mobile phone numbers should NOT be displayed on public visitor page
+  - Only show contact info to authenticated venue owners (on their own venue edit pages)
+  - Consider adding a contact form option for public venues that forwards messages without exposing owner details
+- **Location Privacy**:
+  - For public venues, consider showing approximate location (neighborhood/area) instead of exact address
+  - Add venue owner option to hide precise geolocation coordinates
+  - Store both `address` (full) and `address_public` (approximate) fields; use `address_public` for public display
+- **Time Privacy**: Consider venue owner option to show approximate times (e.g., "evening services") instead of exact times for public venues
+
+### Access Control
+
+- **Venue Owner Authorization**: Ensure client-side filtering strictly enforces that venue owners can only see/edit venues where `ownerUUID` matches their own UUID
+- **Private Link Access**: When accessing a venue via private link, verify the `private_link_token` matches before displaying venue details
+
+### Demo Limitations
+
+- For prototype: Focus on implementing public/private visibility toggle and basic link sharing
+- Contact information hiding can be implemented by simply not displaying owner email/mobile on visitor page
+- Advanced features (link expiration, revocation, approximate locations) can be deferred to future iterations
+
 ## Data Storage
 
 - Default/demo data pre-loaded on first use

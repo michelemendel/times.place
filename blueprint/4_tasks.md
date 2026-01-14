@@ -54,13 +54,13 @@
 
 ## Venue Owner Page
 
-- [ ] Create venue owner dashboard/list view showing all venues owned by logged-in owner
-- [ ] Implement client-side filtering to show only venues owned by current venue owner
-- [ ] Add functionality to add a venue
-- [ ] Add functionality to delete a venue
-- [ ] Add functionality to edit a venue (see Venue Form below)
-- [ ] Venues are sorted alphabetically
-- [ ] Test on mobile + desktop
+- [x] Create venue owner dashboard/list view showing all venues owned by logged-in owner
+- [x] Implement client-side filtering to show only venues owned by current venue owner
+- [x] Add functionality to add a venue
+- [x] Add functionality to delete a venue
+- [x] Add functionality to edit a venue (see Venue Form below)
+- [x] Venues are sorted alphabetically
+- [x] Test on mobile + desktop
 
 ## Venue Form
 
@@ -76,6 +76,21 @@
 - [ ] Undo functionality
 - [ ] Prototype: Save to local storage for all edits
 - [ ] Add image upload for banners (prototype: local storage as base64/blob)
+
+## Security & Safety Features
+
+- [ ] Add `visibility` field to Venue data model (values: "public" or "private")
+- [ ] Default all new venues to "private" visibility
+- [ ] Add visibility toggle/radio buttons in venue form (Public/Private option)
+- [ ] Implement private link generation: generate cryptographically secure token (using crypto.randomUUID() or similar) for private venues
+- [ ] Store `private_link_token` field on venue entity for private venues
+- [ ] Update visitor page to filter venues: only show public venues in dropdown/search
+- [ ] Implement private link access: allow visitors to access private venues via URL with token parameter (e.g., `/venue?token=...`)
+- [ ] Hide venue owner contact information (email, mobile) from public visitor page
+- [ ] Only display contact information to authenticated venue owners on their own venue edit pages
+- [ ] Update demo data to include mix of public and private venues for testing
+- [ ] Test that private venues are not searchable/visible in public dropdown
+- [ ] Test that private venue links work correctly and are unguessable
 
 ## Localization
 

@@ -282,3 +282,241 @@
   - Implemented modal backdrop click handling by checking `event.target === event.currentTarget` instead of using `stopPropagation` to avoid accessibility warnings.
   - Used JSDoc type annotations (`@type`, `@param`) instead of TypeScript syntax since project uses JavaScript.
   - All linter errors resolved, including accessibility warnings for modal interactions.
+
+## 2026-01-16
+
+### Venue Form Implementation
+
+- **Two-Pane Layout** (`frontend/src/routes/venue-form/+page.svelte`):
+
+  - Implemented split-screen layout with editing pane (left) and live preview pane (right).
+  - Preview pane updates in real-time as user edits venue information, event lists, and events.
+  - Both panes scroll independently with `max-h-[calc(100vh-200px)]` for better UX on long forms.
+
+- **Venue Basic Information Form**:
+
+  - Venue name (required), address, geolocation, comment, banner image, timezone, and visibility fields.
+  - All optional fields labeled with "(optional)" for clarity.
+  - Form validation ensures venue name is required before saving.
+
+- **Event List Management**:
+
+  - Add event list: Creates new event list with default name "New Event List" and today's date.
+  - Delete event list: With confirmation dialog to prevent accidental deletion.
+  - Reorder event lists: Move up/down buttons with proper disabled states at boundaries.
+  - Each event list has: name (optional), date (required, ISO 8601 format), comment (optional), and events.
+
+- **Event Management**:
+
+  - Add event: Creates new event with default name "New Event" and time "12:00".
+  - Delete event: Removes event from list and updates event_uuids array.
+  - Duplicate event: Creates copy with "(Copy)" suffix in name.
+  - Reorder events: Move up/down buttons with proper disabled states.
+  - Each event has: name (optional), time (required, HH:MM format), duration (optional, minutes), comment (optional).
+
+- **Event DateTime Handling**:
+
+  - Time input uses HTML5 `type="time"` for native time picker.
+  - Time is combined with event list date to create full RFC3339 datetime string.
+  - Datetime is converted to Unix epoch timestamp (seconds) for storage.
+  - Real-time datetime updates when time or event list date changes.
+  - Preview pane shows formatted time using venue timezone (or user's timezone if venue timezone not set).
+
+- **Input Validation**:
+
+  - Date validation: Ensures ISO 8601 format (YYYY-MM-DD) and valid date values.
+  - Time validation: Regex pattern ensures HH:MM format.
+  - XSS prevention: `sanitizeInput()` function escapes HTML entities in all text inputs.
+  - UUID validation: `isValidUUID()` function validates UUID format for all entity identifiers.
+  - Clear error messages guide users to fix validation issues.
+
+- **Undo Functionality**:
+
+  - Implements undo stack with maximum 50 steps.
+  - Saves state before each modification (add, delete, move, duplicate operations).
+  - Undo button appears in header when undo stack has items.
+  - Restores previous venue and event lists state.
+
+- **Local Storage Persistence**:
+
+  - All venue, event list, and event changes saved to localStorage via Svelte stores.
+  - Automatic persistence on every save operation.
+  - Data persists across page refreshes and browser sessions.
+
+- **Image Upload**:
+
+  - Banner image upload converts images to base64 data URLs.
+  - 5MB file size limit with validation.
+  - Preview shows uploaded image immediately.
+  - Stored as base64 string in venue's `banner_image` field.
+
+- **Reactivity Fixes**:
+
+  - Fixed event duplication issues by ensuring proper array reassignment triggers Svelte reactivity.
+  - Fixed event list visibility by improving reactive statement logic for data loading.
+  - All array mutations now create new arrays/objects to trigger Svelte updates.
+  - Fixed event moving functionality by properly reassigning arrays after swaps.
+
+- **Accessibility Improvements**:
+
+  - All form inputs have matching `id` and `label` `for` attributes.
+  - Section headers changed from `<label>` to `<div>` where not associated with controls.
+  - Proper ARIA attributes on interactive elements.
+  - Keyboard navigation support throughout form.
+
+- **Prerendering Fixes**:
+  - Wrapped `$page.url.searchParams` access in `browser` checks to prevent SSR errors.
+  - All client-only code properly guarded with `browser` checks.
+
+### Security & Safety Features Implementation
+
+- **Visibility Field** (`frontend/src/lib/types.ts`):
+
+  - Added `visibility: 'public' | 'private'` field to `Venue` interface.
+  - Added optional `private_link_token?: string` field for private venues.
+
+- **Visibility Toggle** (`frontend/src/routes/venue-form/+page.svelte`):
+
+  - Radio button group for Public/Private selection.
+  - Private link token automatically generated when visibility set to private.
+  - Private link displayed in form when venue is private.
+  - Link format: `{origin}/?token={private_link_token}`.
+
+- **Private Link Generation**:
+
+  - Uses `crypto.randomUUID()` or fallback UUID generator for cryptographically secure tokens.
+  - Token generated automatically when venue visibility changed to private.
+  - Token cleared when venue changed to public.
+
+- **Visitor Page Filtering** (`frontend/src/routes/+page.svelte`):
+
+  - Filters venues to show only public venues OR private venues accessed via valid token.
+  - Token extracted from URL query parameter: `/?token=...`
+  - Private venues not accessible without valid token are hidden from search/dropdown.
+
+- **Contact Information Privacy**:
+
+  - Venue owner email and mobile hidden from public visitor page.
+  - Contact information only visible to authenticated venue owners on their own venue edit pages.
+  - Preview pane in venue form shows contact info for venue owner's reference.
+
+- **Demo Data Updates** (`frontend/src/lib/demo_data.ts`):
+  - Updated all venues to include `visibility` field (mix of public and private).
+  - Added `private_link_token` to private venues.
+  - Added `date` field to all event lists (ISO 8601 format).
+
+### Timezone Implementation
+
+- **Timezone Field** (`frontend/src/routes/venue-form/+page.svelte`):
+
+  - Replaced text input with organized dropdown selector.
+  - Timezones grouped by region: Americas, Europe, Asia & Middle East, Oceania, Africa.
+  - Human-readable labels (e.g., "Israel Time (Jerusalem)" instead of "Asia/Jerusalem").
+  - Default option: "No timezone" (uses visitor's browser timezone).
+  - Label: "Timezone (optional, leave empty for your current timezone)".
+
+- **Timezone-Aware Time Display**:
+
+  - Updated `formatEventTime()` function to accept optional `timeZone` parameter.
+  - Preview pane displays event times in venue's timezone when set.
+  - Public page displays event times in venue's timezone when set.
+  - Falls back to visitor's browser timezone if venue timezone not set.
+  - Times update immediately when venue timezone changes.
+
+- **Timezone Display**:
+  - Timezone shown on preview pane and public page when set.
+  - Displayed after address field with consistent styling.
+
+### Geolocation Picker Implementation
+
+- **Interactive Map** (`frontend/src/routes/venue-form/+page.svelte`):
+
+  - Integrated Leaflet.js map for visual location selection.
+  - Map shows existing geolocation when editing venue.
+  - Default center: Jerusalem (31.7683, 35.2137) if no location set.
+
+- **Address Geocoding**:
+
+  - "Find on Map" button next to address field.
+  - Uses OpenStreetMap Nominatim API (free, no API key required).
+  - Improved query parameters for better partial address matching:
+    - `format=jsonv2`: Better response format
+    - `limit=5`: Get multiple results
+    - `addressdetails=1`: Include detailed address components
+    - `dedupe=1`: Remove duplicates
+  - Handles partial addresses (e.g., "Jerusalem", "Main Street").
+  - Shows dropdown with multiple results when multiple matches found.
+  - Auto-selects single result when only one match.
+
+- **Map Interaction**:
+
+  - Click anywhere on map to set location.
+  - Draggable marker for fine-tuning location.
+  - Marker updates coordinates and triggers reverse geocoding to update address field.
+  - Two-way sync: address → map, map → address.
+
+- **Reverse Geocoding**:
+
+  - When marker moved or map clicked, reverse geocodes coordinates to address.
+  - Updates address field automatically with full address string.
+  - Uses OpenStreetMap Nominatim reverse geocoding API.
+
+- **Coordinates Display**:
+
+  - Shows latitude,longitude in text field below map.
+  - Can be edited manually.
+  - Updates map when coordinates changed manually.
+  - Format: `{lat.toFixed(6)},{lng.toFixed(6)}` for precision.
+
+- **User Experience**:
+  - Helper text explains how to use the picker.
+  - Loading state on "Find on Map" button during geocoding.
+  - Results dropdown styled with hover effects.
+  - Map height: 256px (h-64) for good visibility without taking too much space.
+
+### Bug Fixes and Refinements
+
+- **Event Duplication Fix**:
+
+  - Fixed issue where events were duplicated when loading/saving.
+  - Improved deduplication logic in `loadVenueData()` and `saveVenue()`.
+  - Ensures events appear only once per event list.
+
+- **Event List Visibility Fix**:
+
+  - Fixed reactive statement logic to properly load event lists when stores become available.
+  - Improved `dataLoaded` flag management to prevent infinite retries.
+  - Event lists now display correctly in both edit and preview panes.
+
+- **Reactivity Improvements**:
+
+  - All array/object mutations now create new objects to trigger Svelte reactivity.
+  - Fixed event moving, adding, deleting, and duplicating to update UI immediately.
+  - Fixed event list moving, adding, and deleting to update UI immediately.
+
+- **Date Input Improvements**:
+
+  - Kept HTML5 date picker (`type="date"`) for better UX.
+  - Added helper text explaining ISO 8601 storage format.
+  - Improved date validation with clearer error messages.
+  - Defaults to today's date when creating new event lists.
+
+- **Field Labeling**:
+
+  - All optional fields labeled with "(optional)" for clarity.
+  - Required fields marked with asterisk (\*).
+  - Consistent labeling across all form sections.
+
+- **Timezone Field Fix**:
+  - Fixed issue where empty timezone field disappeared.
+  - Preserves empty strings when loading existing venues.
+  - Only defaults to 'Asia/Jerusalem' for new venues or when value is truly missing.
+
+### Technical Decisions
+
+- **Svelte Reactivity**: Used array/object reassignment instead of mutations to ensure Svelte detects changes and updates UI.
+- **Geocoding Service**: Chose OpenStreetMap Nominatim over Google Maps Geocoding API for free usage without API keys.
+- **Map Library**: Used Leaflet.js (already in use on public page) for consistency and no additional dependencies.
+- **Timezone Storage**: Stored as IANA timezone strings (e.g., "Asia/Jerusalem") for compatibility with JavaScript's Intl API.
+- **Coordinate Precision**: Stored with 6 decimal places (approximately 0.1 meter precision) for accuracy without excessive storage.
+- **Error Handling**: Graceful fallbacks when geocoding fails (user can still click on map or enter coordinates manually).

@@ -1,5 +1,6 @@
 <script>
   import { onMount, afterUpdate, onDestroy } from 'svelte';
+  import { page } from '$app/stores';
   import { venueStore, eventListStore, eventStore, ownersStore } from '$lib/stores';
   import { seedDemoData } from '$lib/demo_data';
   import { formatEventTime } from '$lib/utils/datetime.js';
@@ -65,6 +66,16 @@
     // Note: forcing a re-seed clears localStorage and will wipe newly-registered accounts.
     seedDemoData(false);
 
+    // If there's a private link token, try to find and select the venue
+    if (privateLinkToken) {
+      const privateVenue = venues.find(
+        (v) => v.visibility === 'private' && v.private_link_token === privateLinkToken
+      );
+      if (privateVenue) {
+        selectedVenueId = privateVenue.venue_uuid;
+      }
+    }
+
     // Load Leaflet.js dynamically
     /** @type {any} */
     const win = window;
@@ -122,8 +133,20 @@
     }
   });
 
-  // Sorted venues
-  $: sortedVenues = [...venues].sort((a, b) => a.name.localeCompare(b.name));
+  // Get private link token from URL (only in browser to avoid prerendering errors)
+  $: privateLinkToken = browser && $page.url.searchParams ? $page.url.searchParams.get('token') || null : null;
+
+  // Filter venues: show public venues OR private venues accessed via token
+  $: visibleVenues = venues.filter((venue) => {
+    if (venue.visibility === 'public') return true;
+    if (venue.visibility === 'private' && privateLinkToken && venue.private_link_token === privateLinkToken) {
+      return true;
+    }
+    return false;
+  });
+
+  // Sorted venues (only visible ones)
+  $: sortedVenues = [...visibleVenues].sort((a, b) => a.name.localeCompare(b.name));
 
   /**
    * Check if a venue matches the search query by searching across all searchable fields:
@@ -313,11 +336,12 @@
   // Format event time from RFC3339 string
   /**
    * @param {string} rfc3339
+   * @param {string} [venueTimezone] - Optional venue timezone to use for display
    * @returns {string}
    */
-  function formatEventTimeFromRFC3339(rfc3339) {
+  function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
     const unixTimestamp = rfc3339ToUnixTimestamp(rfc3339);
-    return formatEventTime(unixTimestamp);
+    return formatEventTime(unixTimestamp, venueTimezone ? { timeZone: venueTimezone } : {});
   }
 
   /**
@@ -548,24 +572,17 @@
                 {/if}
               </p>
             {/if}
-            {#if venueOwner}
-              <div class="text-sm text-gray-600 mb-2">
-                <span class="font-medium text-gray-700">Contact:</span>
-                {#if venueOwner.name}
-                  <span class="ml-2">{venueOwner.name}</span>
-                {/if}
-                {#if venueOwner.email}
-                  <a href="mailto:{venueOwner.email}" class="ml-2 text-blue-600 hover:text-blue-800">
-                    {venueOwner.email}
-                  </a>
-                {/if}
-                {#if venueOwner.mobile}
-                  <a href="tel:{venueOwner.mobile}" class="ml-2 text-blue-600 hover:text-blue-800">
-                    {venueOwner.mobile}
-                  </a>
-                {/if}
-              </div>
+            {#if selectedVenue.geolocation}
+              <p class="text-sm text-gray-600 mb-2">
+                <span class="font-medium text-gray-700">Geolocation:</span> {selectedVenue.geolocation}
+              </p>
             {/if}
+            {#if selectedVenue.timezone}
+              <p class="text-sm text-gray-600 mb-2">
+                <span class="font-medium text-gray-700">Timezone:</span> {selectedVenue.timezone}
+              </p>
+            {/if}
+            <!-- Contact information is hidden from public visitor page for security -->
             {#if selectedVenue.comment}
               <p class="text-sm text-gray-600 italic">{selectedVenue.comment}</p>
             {/if}
@@ -574,24 +591,6 @@
             <div class="w-full h-48 rounded-lg overflow-hidden border border-gray-300">
               <div bind:this={mapContainer} class="w-full h-full"></div>
             </div>
-          {/if}
-        </div>
-      {:else if venueOwner}
-        <!-- Contact only (no address or map) -->
-        <div class="mb-3 text-sm text-gray-600">
-          <span class="font-medium text-gray-700">Contact:</span>
-          {#if venueOwner.name}
-            <span class="ml-2">{venueOwner.name}</span>
-          {/if}
-          {#if venueOwner.email}
-            <a href="mailto:{venueOwner.email}" class="ml-2 text-blue-600 hover:text-blue-800">
-              {venueOwner.email}
-            </a>
-          {/if}
-          {#if venueOwner.mobile}
-            <a href="tel:{venueOwner.mobile}" class="ml-2 text-blue-600 hover:text-blue-800">
-              {venueOwner.mobile}
-            </a>
           {/if}
         </div>
       {/if}
@@ -626,7 +625,7 @@
                     </div>
                     <div class="text-right">
                       <p class="text-lg font-semibold text-blue-600">
-                        {formatEventTimeFromRFC3339(event.datetime)}
+                        {formatEventTimeFromRFC3339(event.datetime, selectedVenue?.timezone)}
                       </p>
                       {#if event.duration_minutes}
                         <p class="text-xs text-gray-500">

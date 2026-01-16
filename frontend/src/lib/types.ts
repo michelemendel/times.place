@@ -22,6 +22,8 @@ export interface Venue {
   comment?: string;
   event_list_uuids: string[];
   timezone: string;
+  visibility: 'public' | 'private';
+  private_link_token?: string;
   created_at: string;
   modified_at: string;
 }
@@ -31,6 +33,7 @@ export interface EventList {
   venue_uuid: string;
   event_uuids: string[];
   name: string;
+  date: string; // ISO 8601 date string (e.g., "2024-12-25")
   comment?: string;
   created_at: string;
   modified_at: string;

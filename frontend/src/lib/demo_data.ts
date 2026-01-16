@@ -42,7 +42,7 @@ export function seedDemoData(force: boolean = false) {
     };
     owners.push(owner1);
 
-    // Owner 1 - Venue 1: Beth El Synagogue (has multiple event lists)
+    // Owner 1 - Venue 1: Beth El Synagogue (has multiple event lists) - PUBLIC
     const venue1Id = generateUUID();
     const venue1: Venue = {
         venue_uuid: venue1Id,
@@ -54,6 +54,7 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner1Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
+        visibility: "public",
         created_at: now,
         modified_at: now
     };
@@ -65,6 +66,7 @@ export function seedDemoData(force: boolean = false) {
         event_list_uuid: list1Id,
         venue_uuid: venue1Id,
         name: "Daily Minyan",
+        date: "2025-12-25",
         comment: "Morning and afternoon prayers",
         event_uuids: [],
         created_at: now,
@@ -105,6 +107,7 @@ export function seedDemoData(force: boolean = false) {
         event_list_uuid: list2Id,
         venue_uuid: venue1Id,
         name: "Shabbat Services",
+        date: "2025-12-26",
         comment: "Friday evening and Saturday morning services",
         event_uuids: [],
         created_at: now,
@@ -138,8 +141,9 @@ export function seedDemoData(force: boolean = false) {
     events.push(event4);
     eventList2.event_uuids.push(event3Id, event4Id);
 
-    // Owner 1 - Venue 2: Community Center (has no event lists)
+    // Owner 1 - Venue 2: Community Center (has no event lists) - PRIVATE
     const venue2Id = generateUUID();
+    const venue2PrivateToken = generateUUID();
     const venue2: Venue = {
         venue_uuid: venue2Id,
         name: "Community Center",
@@ -150,6 +154,8 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner1Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
+        visibility: "private",
+        private_link_token: venue2PrivateToken,
         created_at: now,
         modified_at: now
     };
@@ -168,7 +174,7 @@ export function seedDemoData(force: boolean = false) {
     };
     owners.push(owner2);
 
-    // Owner 2 - Venue 1: Beit Midrash (has one event list)
+    // Owner 2 - Venue 1: Beit Midrash (has one event list) - PUBLIC
     const venue3Id = generateUUID();
     const venue3: Venue = {
         venue_uuid: venue3Id,
@@ -180,6 +186,7 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner2Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
+        visibility: "public",
         created_at: now,
         modified_at: now
     };
@@ -190,6 +197,7 @@ export function seedDemoData(force: boolean = false) {
         event_list_uuid: list3Id,
         venue_uuid: venue3Id,
         name: "Weekly Schedule",
+        date: "2025-12-25",
         comment: "Regular weekly learning sessions",
         event_uuids: [],
         created_at: now,
@@ -223,8 +231,9 @@ export function seedDemoData(force: boolean = false) {
     events.push(event6);
     eventList3.event_uuids.push(event5Id, event6Id);
 
-    // Owner 2 - Venue 2: Chabad House (has no event lists)
+    // Owner 2 - Venue 2: Chabad House (has no event lists) - PRIVATE
     const venue4Id = generateUUID();
+    const venue4PrivateToken = generateUUID();
     const venue4: Venue = {
         venue_uuid: venue4Id,
         name: "Chabad House",
@@ -235,6 +244,8 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner2Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
+        visibility: "private",
+        private_link_token: venue4PrivateToken,
         created_at: now,
         modified_at: now
     };

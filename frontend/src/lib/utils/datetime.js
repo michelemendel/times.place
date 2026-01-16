@@ -38,22 +38,23 @@ function getDefaultHour12() {
 
 /**
  * Format an event time (Unix epoch timestamp) to display only the time portion
- * The time is adjusted for the user's timezone automatically
+ * The time is adjusted for the specified timezone (or user's timezone by default)
  * 
  * @param {number} unixTimestamp - Unix epoch timestamp in seconds
  * @param {object} options - Optional formatting options
  * @param {boolean} [options.hour12] - Use 12-hour format (default: from config file)
  * @param {string} [options.locale] - Override locale (default: user's browser locale)
+ * @param {string} [options.timeZone] - Override timezone (default: user's browser timezone)
  * @returns {string} Formatted time string (e.g., "14:30" for 24-hour or "2:30 PM" for 12-hour)
  */
 export function formatEventTime(unixTimestamp, options = {}) {
   const {
     hour12 = getDefaultHour12(),
-    locale = getUserLocale()
+    locale = getUserLocale(),
+    timeZone = getUserTimezone()
   } = options;
 
   const date = new Date(unixTimestamp * 1000); // Convert seconds to milliseconds
-  const timeZone = getUserTimezone();
 
   return new Intl.DateTimeFormat(locale, {
     hour: '2-digit',

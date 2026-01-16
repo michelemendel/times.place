@@ -64,33 +64,37 @@
 
 ## Venue Form
 
-- [ ] Form UI with two panes: editing pane (dynamic fields) and live preview pane
-- [ ] Event list management: functionality to add, delete, and reorder event lists
-- [ ] For each event list: manage name, date (ISO 8601 format), comment, and events
-- [ ] Event management within event lists: functionality to add, delete, duplicate, and move events up and down
-- [ ] Event DateTime input: allow venue owners to input time, combine with event list date to create full datetime, convert to Unix epoch timestamp for storage
-- [ ] Display event times (time portion only) in both edit and preview panes
-- [ ] Event list selector in preview pane to test how different event lists appear to visitors
-- [ ] Input validation: date (ISO 8601 format), time (validate and combine with event list date to create full datetime, convert to Unix epoch), XSS/SQL injection
-- [ ] Validate UUID format for all entity identifiers
-- [ ] Undo functionality
-- [ ] Prototype: Save to local storage for all edits
-- [ ] Add image upload for banners (prototype: local storage as base64/blob)
+- [x] Form UI with two panes: editing pane (dynamic fields) and live preview pane
+- [x] Event list management: functionality to add, delete, and reorder event lists
+- [x] For each event list: manage name, date (ISO 8601 format), comment, and events
+- [x] Event management within event lists: functionality to add, delete, duplicate, and move events up and down
+- [x] Event DateTime input: allow venue owners to input time, combine with event list date to create full datetime, convert to Unix epoch timestamp for storage
+- [x] Display event times (time portion only) in both edit and preview panes
+- [x] Event list selector in preview pane to test how different event lists appear to visitors
+- [x] Input validation: date (ISO 8601 format), time (validate and combine with event list date to create full datetime, convert to Unix epoch), XSS/SQL injection
+- [x] Validate UUID format for all entity identifiers
+- [x] Undo functionality
+- [x] Prototype: Save to local storage for all edits
+- [x] Add image upload for banners (prototype: local storage as base64/blob)
+- [x] Add timezone field with dropdown selector (organized by region)
+- [x] Display timezone on preview pane and public page
+- [x] Implement venue timezone-aware time display (times shown in venue's timezone)
+- [x] Add geolocation picker with interactive map (address geocoding, map click, draggable marker)
 
 ## Security & Safety Features
 
-- [ ] Add `visibility` field to Venue data model (values: "public" or "private")
-- [ ] Default all new venues to "private" visibility
-- [ ] Add visibility toggle/radio buttons in venue form (Public/Private option)
-- [ ] Implement private link generation: generate cryptographically secure token (using crypto.randomUUID() or similar) for private venues
-- [ ] Store `private_link_token` field on venue entity for private venues
-- [ ] Update visitor page to filter venues: only show public venues in dropdown/search
-- [ ] Implement private link access: allow visitors to access private venues via URL with token parameter (e.g., `/venue?token=...`)
-- [ ] Hide venue owner contact information (email, mobile) from public visitor page
-- [ ] Only display contact information to authenticated venue owners on their own venue edit pages
-- [ ] Update demo data to include mix of public and private venues for testing
-- [ ] Test that private venues are not searchable/visible in public dropdown
-- [ ] Test that private venue links work correctly and are unguessable
+- [x] Add `visibility` field to Venue data model (values: "public" or "private")
+- [x] Default all new venues to "private" visibility
+- [x] Add visibility toggle/radio buttons in venue form (Public/Private option)
+- [x] Implement private link generation: generate cryptographically secure token (using crypto.randomUUID() or similar) for private venues
+- [x] Store `private_link_token` field on venue entity for private venues
+- [x] Update visitor page to filter venues: only show public venues in dropdown/search
+- [x] Implement private link access: allow visitors to access private venues via URL with token parameter (e.g., `/?token=...`)
+- [x] Hide venue owner contact information (email, mobile) from public visitor page
+- [x] Only display contact information to authenticated venue owners on their own venue edit pages
+- [x] Update demo data to include mix of public and private venues for testing
+- [x] Test that private venues are not searchable/visible in public dropdown
+- [x] Test that private venue links work correctly and are unguessable
 
 ## Localization
 

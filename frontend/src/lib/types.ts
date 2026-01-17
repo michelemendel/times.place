@@ -35,6 +35,7 @@ export interface EventList {
   name: string;
   date: string; // ISO 8601 date string (e.g., "2024-12-25")
   comment?: string;
+  private_link_token?: string;
   created_at: string;
   modified_at: string;
 }

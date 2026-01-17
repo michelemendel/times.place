@@ -9,3 +9,76 @@ body {
   color: #333;
   background-color: #fff;
 }
+
+/* Print Styles */
+@media print {
+  /* Hide navigation, buttons, and non-essential UI elements */
+  header,
+  footer,
+  button,
+  .no-print,
+  nav,
+  a[href]:after,
+  .no-print-header,
+  .no-print-venue-dropdown,
+  .no-print-map,
+  .no-print-geolocation,
+  .no-print-timezone,
+  .no-print-event-list-selector {
+    display: none !important;
+  }
+
+  /* Remove background colors and shadows for better printing */
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .page-break {
+    page-break-after: always;
+  }
+
+  /* Avoid breaking event information across pages */
+  .event-item {
+    page-break-inside: avoid;
+  }
+
+  /* Optimize layout for print */
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+
+  h1,
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+
+  /* Ensure images print properly */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Remove container padding/margins for full-width printing */
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure venue details are visible */
+  .venue-details {
+    page-break-inside: avoid;
+  }
+
+  /* Style event lists for print */
+  .event-list {
+    page-break-inside: avoid;
+    margin-bottom: 1em;
+  }
+}

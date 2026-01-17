@@ -1,0 +1,480 @@
+<script>
+  import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { get } from 'svelte/store';
+  import { goto } from '$app/navigation';
+  import { browser } from '$app/environment';
+  import { currentOwnerStore, venueStore, eventListStore, eventStore } from '$lib/stores';
+  import { formatEventListDate, formatEventTime } from '$lib/utils/datetime.js';
+  import { generateUUID } from '$lib/utils/uuid.js';
+  import { getCurrentTimestamp, updateModifiedTimestamp } from '$lib/utils/datetime.js';
+
+  /**
+   * Format event time from RFC3339 string
+   * @param {string} rfc3339
+   * @param {string} [venueTimezone] - Optional venue timezone to use for display
+   * @returns {string}
+   */
+  function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
+    const unixTimestamp = Math.floor(new Date(rfc3339).getTime() / 1000);
+    return formatEventTime(unixTimestamp, venueTimezone ? { timeZone: venueTimezone } : {});
+  }
+
+  /** @type {import('$lib/types').VenueOwner | null} */
+  let owner = null;
+  /** @type {import('$lib/types').Venue | null} */
+  let venue = null;
+  /** @type {import('$lib/types').EventList[]} */
+  let venueEventLists = [];
+  /** @type {import('$lib/types').Event[]} */
+  let allEvents = [];
+  /** @type {string | null} */
+  let copiedLinkToken = null;
+  /** @type {import('$lib/types').EventList | null} */
+  let linkModalEventList = null;
+
+  // Get venue UUID from route params
+  $: venueUuid = browser && $page.params ? $page.params.venue_uuid : null;
+
+  // Load data when venue UUID is available
+  $: {
+    if (venueUuid) {
+      const currentOwner = $currentOwnerStore;
+      if (currentOwner) {
+        owner = currentOwner;
+        const allVenues = $venueStore;
+        const foundVenue = allVenues.find(v => v.venue_uuid === venueUuid);
+        
+        // Verify ownership - only set venue if authorized
+        if (foundVenue && foundVenue.owner_uuid === currentOwner.owner_uuid) {
+          venue = foundVenue;
+          const allEventLists = $eventListStore;
+          venueEventLists = allEventLists
+            .filter(el => el.venue_uuid === venue.venue_uuid)
+            .sort((a, b) => {
+              // Sort by date, then by name
+              if (a.date !== b.date) {
+                return a.date.localeCompare(b.date);
+              }
+              return a.name.localeCompare(b.name);
+            });
+        } else if (foundVenue) {
+          // Not authorized - venue will be null, handled in template
+          venue = null;
+        }
+      }
+      allEvents = $eventStore;
+    }
+  }
+
+  onMount(() => {
+    owner = get(currentOwnerStore);
+    if (!owner) {
+      goto('/login');
+      return;
+    }
+    
+    // Check authorization after stores are loaded
+    if (venueUuid && owner) {
+      const allVenues = get(venueStore);
+      const foundVenue = allVenues.find(v => v.venue_uuid === venueUuid);
+      if (foundVenue && foundVenue.owner_uuid !== owner.owner_uuid) {
+        // Not authorized - redirect
+        goto('/venue-owner');
+      }
+    }
+  });
+
+  /**
+   * Ensure event list has a private link token, generate if missing
+   * @param {import('$lib/types').EventList} eventList
+   * @returns {import('$lib/types').EventList}
+   */
+  function ensureEventListToken(eventList) {
+    if (eventList.private_link_token) {
+      return eventList;
+    }
+    
+    // Generate token and update store
+    const token = generateUUID();
+    const updatedList = updateModifiedTimestamp({
+      ...eventList,
+      private_link_token: token
+    });
+    
+    // Update in store
+    const currentEventLists = get(eventListStore);
+    eventListStore.set(
+      currentEventLists.map(el => 
+        el.event_list_uuid === eventList.event_list_uuid ? updatedList : el
+      )
+    );
+    
+    // Update local reactive variable to reflect the change
+    venueEventLists = venueEventLists.map(el =>
+      el.event_list_uuid === eventList.event_list_uuid ? updatedList : el
+    );
+    
+    return updatedList;
+  }
+
+  /**
+   * Get private link for an event list
+   * @param {import('$lib/types').EventList} eventList
+   * @returns {string}
+   */
+  function getPrivateLink(eventList) {
+    const listWithToken = ensureEventListToken(eventList);
+    if (!listWithToken.private_link_token) return '';
+    if (typeof window === 'undefined') return '';
+    return `${window.location.origin}/?token=${listWithToken.private_link_token}`;
+  }
+
+  /**
+   * Copy private link to clipboard
+   * @param {import('$lib/types').EventList} eventList
+   */
+  async function copyPrivateLink(eventList) {
+    const link = getPrivateLink(eventList);
+    if (!link) return;
+    
+    try {
+      await navigator.clipboard.writeText(link);
+      copiedLinkToken = eventList.event_list_uuid;
+      // Reset after 2 seconds
+      setTimeout(() => {
+        copiedLinkToken = null;
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+      // Fallback: show modal with link
+      linkModalEventList = eventList;
+    }
+  }
+
+  /**
+   * Show link modal
+   * @param {import('$lib/types').EventList} eventList
+   */
+  function showLinkModal(eventList) {
+    // Ensure token exists before showing modal
+    const listWithToken = ensureEventListToken(eventList);
+    linkModalEventList = listWithToken;
+  }
+
+  /**
+   * Close link modal
+   */
+  function closeLinkModal() {
+    linkModalEventList = null;
+  }
+
+  /**
+   * Select all text in an input element
+   * @param {Event} event
+   */
+  function selectLinkText(event) {
+    const target = event.currentTarget;
+    if (target instanceof HTMLInputElement) {
+      target.select();
+    }
+  }
+
+  /**
+   * Print event list
+   * @param {import('$lib/types').EventList} eventList
+   */
+  function printEventList(eventList) {
+    // Ensure token exists (will generate if missing)
+    const listWithToken = ensureEventListToken(eventList);
+    const link = getPrivateLink(listWithToken);
+    if (!link) {
+      console.error('Failed to generate private link');
+      return;
+    }
+    
+    // Create a hidden iframe to load the print content
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    
+    // Add iframe to document
+    document.body.appendChild(iframe);
+    
+    // Load the print URL in the iframe
+    iframe.src = link;
+    
+    // Wait for iframe to load, then print
+    iframe.onload = () => {
+      // Small delay to ensure content is fully rendered
+      setTimeout(() => {
+        try {
+          // Focus the iframe window and print
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          // If cross-origin or other error, fallback to opening in new window
+          console.error('Failed to print iframe:', e);
+          const printWindow = window.open(link, '_blank');
+          if (printWindow) {
+            printWindow.onload = () => {
+              setTimeout(() => {
+                printWindow.print();
+              }, 500);
+            };
+          }
+        }
+        
+        // Remove iframe after a delay (in case print dialog is still open)
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      }, 500);
+    };
+    
+    // Fallback: if iframe doesn't load, try opening in new window
+    setTimeout(() => {
+      if (iframe.contentDocument?.readyState !== 'complete') {
+        document.body.removeChild(iframe);
+        const printWindow = window.open(link, '_blank');
+        if (printWindow) {
+          printWindow.onload = () => {
+            setTimeout(() => {
+              printWindow.print();
+            }, 500);
+          };
+        }
+      }
+    }, 5000);
+  }
+
+  /**
+   * Get events for an event list
+   * @param {import('$lib/types').EventList} eventList
+   * @returns {import('$lib/types').Event[]}
+   */
+  function getEventsForList(eventList) {
+    return allEvents.filter(e => eventList.event_uuids.includes(e.event_uuid));
+  }
+</script>
+
+<svelte:head>
+  <title>Event Lists - {venue?.name || 'Venue'} - time.place</title>
+</svelte:head>
+
+<div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+  {#if !owner}
+    <div class="text-center py-8">
+      <p class="text-gray-600">Please log in to view event lists.</p>
+    </div>
+  {:else if !venue}
+    <div class="text-center py-8">
+      <p class="text-gray-600">Venue not found.</p>
+      <button
+        on:click={() => goto('/venue-owner')}
+        class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+      >
+        Back to Venues
+      </button>
+    </div>
+  {:else}
+    <!-- Header -->
+    <div class="mb-8">
+      <button
+        on:click={() => goto('/venue-owner')}
+        class="mb-4 text-blue-600 hover:text-blue-800 flex items-center gap-2 transition-colors duration-200"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        <span>Back to Venues</span>
+      </button>
+      
+      <h1 class="text-4xl font-bold mb-2 text-gray-900">{venue.name}</h1>
+      {#if venue.address}
+        <p class="text-lg text-gray-600 mb-4">{venue.address}</p>
+      {/if}
+    </div>
+
+    <!-- Event Lists -->
+    {#if venueEventLists.length === 0}
+      <div class="bg-white rounded-xl shadow-lg p-8 md:p-12 text-center">
+        <div class="mb-4">
+          <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-900 mb-2">No event lists yet</h2>
+        <p class="text-gray-600 mb-6">This venue doesn't have any event lists. Edit the venue to add event lists.</p>
+        <button
+          on:click={() => goto(`/venue-form?venue_uuid=${venue.venue_uuid}`)}
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors duration-200"
+        >
+          Edit Venue
+        </button>
+      </div>
+    {:else}
+      <div class="space-y-4">
+        {#each venueEventLists as eventList (eventList.event_list_uuid)}
+          {@const listEvents = getEventsForList(eventList)}
+          <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+            <div class="p-4 sm:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                <div class="flex-1">
+                  <h3 class="text-xl font-bold text-gray-900 mb-1">{eventList.name || 'Untitled Event List'}</h3>
+                  {#if eventList.date}
+                    <p class="text-sm text-gray-600 mb-2">
+                      <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {formatEventListDate(eventList.date)}
+                    </p>
+                  {/if}
+                  {#if eventList.comment}
+                    <p class="text-sm text-gray-500 italic">{eventList.comment}</p>
+                  {/if}
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex gap-2 sm:flex-row">
+                  <button
+                    on:click={() => {
+                      // Ensure token exists before copying
+                      const listWithToken = ensureEventListToken(eventList);
+                      copyPrivateLink(listWithToken);
+                    }}
+                    class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm sm:text-base"
+                    title="Copy private link to clipboard"
+                  >
+                    {#if copiedLinkToken === eventList.event_list_uuid}
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Copied!</span>
+                    {:else}
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span>Get Private Link</span>
+                    {/if}
+                  </button>
+                  
+                  <button
+                    on:click={() => printEventList(eventList)}
+                    class="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm sm:text-base"
+                    title="Print this event list"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    <span>Print</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Events Preview -->
+              {#if listEvents.length > 0}
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                  <p class="text-sm font-medium text-gray-700 mb-2">{listEvents.length} event{listEvents.length !== 1 ? 's' : ''}</p>
+                  <div class="space-y-2">
+                    {#each listEvents.slice(0, 3) as event}
+                      <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-900">{event.event_name}</span>
+                        <span class="text-gray-600 font-medium">
+                          {formatEventTimeFromRFC3339(event.datetime, venue?.timezone)}
+                        </span>
+                      </div>
+                    {/each}
+                    {#if listEvents.length > 3}
+                      <p class="text-xs text-gray-500 italic">... and {listEvents.length - 3} more</p>
+                    {/if}
+                  </div>
+                </div>
+              {:else}
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                  <p class="text-sm text-gray-500 italic">No events in this list</p>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  {/if}
+
+  <!-- Link Modal -->
+  {#if linkModalEventList}
+    <div
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="link-modal-title"
+      tabindex="-1"
+      on:click={(e) => e.target === e.currentTarget && closeLinkModal()}
+      on:keydown={(e) => e.key === 'Escape' && closeLinkModal()}
+    >
+      <article class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="link-modal-title" class="text-xl font-bold text-gray-900">Private Link</h3>
+          <button
+            on:click={closeLinkModal}
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <p class="text-gray-700 mb-4">
+          Share this link to allow others to view the event list <strong>{linkModalEventList.name}</strong>:
+        </p>
+        <div class="flex gap-2 mb-4">
+          <input
+            type="text"
+            readonly
+            value={getPrivateLink(linkModalEventList)}
+            on:focus={selectLinkText}
+            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 font-mono text-sm"
+          />
+          <button
+            on:click={() => {
+              const link = getPrivateLink(linkModalEventList);
+              if (link) {
+                navigator.clipboard.writeText(link).then(() => {
+                  copiedLinkToken = linkModalEventList.event_list_uuid;
+                  setTimeout(() => {
+                    copiedLinkToken = null;
+                  }, 2000);
+                }).catch(() => {
+                  // Fallback already handled by input selection
+                });
+              }
+            }}
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+            title="Copy to clipboard"
+          >
+            {#if copiedLinkToken === linkModalEventList.event_list_uuid}
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            {:else}
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            {/if}
+          </button>
+        </div>
+        <p class="text-sm text-gray-500">
+          Click the input field to select the link, or use the copy button.
+        </p>
+      </article>
+    </div>
+  {/if}
+</div>

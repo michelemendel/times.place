@@ -152,7 +152,7 @@
     {:else}
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {#each ownerVenues as venue (venue.venue_uuid)}
-          <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+          <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col h-full">
             {#if venue.banner_image}
               <div class="w-full h-32 sm:h-40 bg-gray-200 overflow-hidden">
                 <img
@@ -162,7 +162,7 @@
                 />
               </div>
             {/if}
-            <div class="p-4 sm:p-6">
+            <div class="p-4 sm:p-6 flex flex-col flex-grow">
               <h3 class="text-xl font-bold text-gray-900 mb-2">{venue.name}</h3>
               {#if venue.address}
                 <p class="text-sm text-gray-600 mb-2 flex items-start gap-2">
@@ -182,7 +182,13 @@
               {#if venue.comment}
                 <p class="text-sm text-gray-500 mb-4 line-clamp-2">{venue.comment}</p>
               {/if}
-              <div class="flex flex-col sm:flex-row gap-2 mt-4">
+              <div class="flex flex-col sm:flex-row gap-2 mt-auto">
+                <button
+                  on:click={() => goto(`/venue-owner/${venue.venue_uuid}/event-lists`)}
+                  class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base"
+                >
+                  View Event Lists
+                </button>
                 <button
                   on:click={() => handleEditVenue(venue)}
                   class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base"

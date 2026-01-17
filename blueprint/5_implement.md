@@ -520,3 +520,90 @@
 - **Timezone Storage**: Stored as IANA timezone strings (e.g., "Asia/Jerusalem") for compatibility with JavaScript's Intl API.
 - **Coordinate Precision**: Stored with 6 decimal places (approximately 0.1 meter precision) for accuracy without excessive storage.
 - **Error Handling**: Graceful fallbacks when geocoding fails (user can still click on map or enter coordinates manually).
+
+## 2025-01-17
+
+### Event List Private Links and Print Functionality
+
+- **Data Model Updates** (`frontend/src/lib/types.ts`):
+
+  - Added `private_link_token?: string` field to `EventList` interface.
+  - Each event list can now have its own private link token, independent of venue visibility.
+
+- **Event Lists View Page** (`frontend/src/routes/venue-owner/[venue_uuid]/event-lists/+page.svelte`):
+
+  - Created new route `/venue-owner/[venue_uuid]/event-lists` to display all event lists for a specific venue.
+  - Shows venue name and basic info at the top.
+  - Lists all event lists sorted by date, then by name.
+  - For each event list, displays:
+    - Event list name and date
+    - "Get Private Link" button (copies link to clipboard with visual feedback)
+    - "Print" button (opens print dialog using hidden iframe)
+    - Preview of events (first 3 events with times)
+  - Includes "Back to Venues" navigation button.
+  - Handles authorization - redirects if venue owner doesn't own the venue.
+  - Created `+page.js` file to mark route as non-prerenderable (requires authentication).
+
+- **Venue Owner Page Updates** (`frontend/src/routes/venue-owner/+page.svelte`):
+
+  - Added "View Event Lists" button to each venue card.
+  - Button positioned alongside "Edit" and "Delete" buttons.
+  - Updated card layout to use flexbox for consistent button alignment at bottom of cards.
+
+- **Private Link Token Generation** (`frontend/src/routes/venue-form/+page.svelte`):
+
+  - Automatically generates `private_link_token` when creating new event lists.
+  - Preserves existing tokens when updating event lists.
+  - Uses `crypto.randomUUID()` or fallback UUID generator (same pattern as venue tokens).
+  - Tokens are generated on-the-fly if missing when accessing event lists page.
+
+- **Visitor Page Updates** (`frontend/src/routes/+page.svelte`):
+
+  - Supports accessing event lists via private link token in URL: `/?token={event_list_token}`.
+  - When token matches an event list's `private_link_token`:
+    - Automatically selects the venue that owns that event list.
+    - Automatically selects that specific event list.
+    - Displays the event list (same view as public access).
+  - Works independently of venue visibility (private event lists can be shared even if venue is public).
+
+- **Print Functionality**:
+
+  - Print button uses hidden iframe to load public view without navigating away from event lists page.
+  - Iframe loads the public view URL with the event list's private link token.
+  - Triggers browser print dialog for iframe content.
+  - User stays on event lists page throughout the process.
+  - Falls back to opening new window if iframe approach fails.
+
+- **Print Styles** (`frontend/src/app.css`):
+
+  - Added comprehensive `@media print` CSS rules.
+  - Hides navigation, buttons, and non-essential UI elements when printing.
+  - Specifically hides:
+    - Header "Find Venues and Events" and venue dropdown
+    - Map display
+    - Geolocation information
+    - Timezone information
+    - Event list dropdown selector (when multiple lists exist)
+  - Optimizes layout for print output:
+    - Removes background colors and shadows
+    - Ensures proper page breaks
+    - Prevents event information from splitting across pages
+    - Uses appropriate font sizes for printed output
+
+- **Demo Data Updates** (`frontend/src/lib/demo_data.ts`):
+
+  - Added `private_link_token` to all event lists in demo data.
+  - Generated tokens for all existing event lists using UUID generation pattern.
+
+- **Build Configuration** (`frontend/svelte.config.js`):
+  - Added `fallback: 'index.html'` to adapter-static configuration.
+  - Enables SPA mode to support dynamic routes that require authentication.
+  - Allows dynamic route `/venue-owner/[venue_uuid]/event-lists` to work in static build.
+
+### Implementation Decisions
+
+- **Event List Private Links**: Each event list gets its own `private_link_token` (stored on EventList), independent of venue-level private links. Link format: `/?token={event_list_token}`.
+- **Print Implementation**: Used hidden iframe approach to print public view content while keeping user on event lists page. This avoids navigation and provides seamless printing experience.
+- **Token Generation**: Tokens are generated automatically when event lists are created, and on-the-fly if missing when accessing the event lists page. This ensures all event lists have tokens available.
+- **Print Styles**: Used CSS classes (`no-print-*`) to selectively hide UI elements during printing, providing clean print output with only essential information.
+- **Route Configuration**: Dynamic route marked as non-prerenderable since it requires authentication and venue ownership verification.

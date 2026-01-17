@@ -46,6 +46,10 @@
 - [x] Display only the time portion from each event (date comes from the event list)
 - [x] Format event times for display (extract time from stored Unix epoch datetime, format for user's timezone)
 - [x] Handle case when venue has no event lists (show appropriate message)
+- [x] Add print button to event list display
+- [x] Implement print-friendly CSS styles using @media print
+- [x] Ensure print output includes venue details, event list name/date, and all events with times
+- [x] Test print functionality across different browsers
 
 ## Venue Owner Page Registration, Authentication, and Authorization
 

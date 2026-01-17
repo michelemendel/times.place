@@ -62,12 +62,14 @@ export function seedDemoData(force: boolean = false) {
 
     // Event List 1 for Venue 1: Daily Minyan
     const list1Id = generateUUID();
+    const eventList1Token = generateUUID();
     const eventList1: EventList = {
         event_list_uuid: list1Id,
         venue_uuid: venue1Id,
         name: "Daily Minyan",
         date: "2025-12-25",
         comment: "Morning and afternoon prayers",
+        private_link_token: eventList1Token,
         event_uuids: [],
         created_at: now,
         modified_at: now
@@ -103,12 +105,14 @@ export function seedDemoData(force: boolean = false) {
 
     // Event List 2 for Venue 1: Shabbat Services
     const list2Id = generateUUID();
+    const eventList2Token = generateUUID();
     const eventList2: EventList = {
         event_list_uuid: list2Id,
         venue_uuid: venue1Id,
         name: "Shabbat Services",
         date: "2025-12-26",
         comment: "Friday evening and Saturday morning services",
+        private_link_token: eventList2Token,
         event_uuids: [],
         created_at: now,
         modified_at: now
@@ -193,12 +197,14 @@ export function seedDemoData(force: boolean = false) {
     venues.push(venue3);
 
     const list3Id = generateUUID();
+    const eventList3Token = generateUUID();
     const eventList3: EventList = {
         event_list_uuid: list3Id,
         venue_uuid: venue3Id,
         name: "Weekly Schedule",
         date: "2025-12-25",
         comment: "Regular weekly learning sessions",
+        private_link_token: eventList3Token,
         event_uuids: [],
         created_at: now,
         modified_at: now

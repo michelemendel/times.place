@@ -66,13 +66,24 @@
     // Note: forcing a re-seed clears localStorage and will wipe newly-registered accounts.
     seedDemoData(false);
 
-    // If there's a private link token, try to find and select the venue
+    // If there's a private link token, try to find and select the venue or event list
     if (privateLinkToken) {
+      // First check if it's a venue token
       const privateVenue = venues.find(
         (v) => v.visibility === 'private' && v.private_link_token === privateLinkToken
       );
       if (privateVenue) {
         selectedVenueId = privateVenue.venue_uuid;
+      } else {
+        // Check if it's an event list token
+        const eventList = eventLists.find((el) => el.private_link_token === privateLinkToken);
+        if (eventList) {
+          const venue = venues.find((v) => v.venue_uuid === eventList.venue_uuid);
+          if (venue) {
+            selectedVenueId = venue.venue_uuid;
+            selectedEventListId = eventList.event_list_uuid;
+          }
+        }
       }
     }
 
@@ -136,10 +147,24 @@
   // Get private link token from URL (only in browser to avoid prerendering errors)
   $: privateLinkToken = browser && $page.url.searchParams ? $page.url.searchParams.get('token') || null : null;
 
-  // Filter venues: show public venues OR private venues accessed via token
+  // Check if token matches an event list
+  $: eventListFromToken = privateLinkToken
+    ? eventLists.find((el) => el.private_link_token === privateLinkToken)
+    : null;
+
+  // If token matches an event list, find its venue
+  $: venueFromEventListToken = eventListFromToken
+    ? venues.find((v) => v.venue_uuid === eventListFromToken.venue_uuid)
+    : null;
+
+  // Filter venues: show public venues OR private venues accessed via token OR venues with event lists accessed via token
   $: visibleVenues = venues.filter((venue) => {
     if (venue.visibility === 'public') return true;
     if (venue.visibility === 'private' && privateLinkToken && venue.private_link_token === privateLinkToken) {
+      return true;
+    }
+    // Show venue if it contains an event list accessed via token
+    if (venueFromEventListToken && venue.venue_uuid === venueFromEventListToken.venue_uuid) {
       return true;
     }
     return false;
@@ -212,10 +237,16 @@
     ? eventLists.filter((el) => selectedVenue.event_list_uuids.includes(el.event_list_uuid))
     : [];
 
-  // Auto-select first event list
+  // Auto-select first event list or event list from token
   $: {
-    if (selectedVenue && venueEventLists.length > 0 && !selectedEventListId) {
-      selectedEventListId = venueEventLists[0].event_list_uuid;
+    if (selectedVenue && venueEventLists.length > 0) {
+      // If we have an event list from token, select it
+      if (eventListFromToken && venueEventLists.find(el => el.event_list_uuid === eventListFromToken.event_list_uuid)) {
+        selectedEventListId = eventListFromToken.event_list_uuid;
+      } else if (!selectedEventListId) {
+        // Otherwise, select first event list
+        selectedEventListId = venueEventLists[0].event_list_uuid;
+      }
     } else if (!selectedVenue || venueEventLists.length === 0) {
       selectedEventListId = null;
     }
@@ -469,7 +500,7 @@
   />
 </svelte:head>
 
-<div class="mb-2 md:mb-2 text-center">
+<div class="mb-2 md:mb-2 text-center no-print-header">
   <h1 class="text-xl md:text-4xl font-bold mb-1 md:mb-2 text-gray-900">Find Venues and Events</h1>
   <p class="text-xs md:text-lg text-gray-600 mb-1 md:mb-0">
     Select a venue to view its event schedules and contact information.
@@ -478,7 +509,7 @@
 
 <div class="bg-white rounded-xl shadow-lg p-2 md:p-12 md:pt-4">
   <!-- Venue Searchable Dropdown -->
-  <div class="mb-2 md:mb-2 relative" bind:this={venueDropdownRef}>
+  <div class="mb-2 md:mb-2 relative no-print-venue-dropdown" bind:this={venueDropdownRef}>
     <div class="relative">
       <input
         type="text"
@@ -573,12 +604,12 @@
               </p>
             {/if}
             {#if selectedVenue.geolocation}
-              <p class="text-sm text-gray-600 mb-2">
+              <p class="text-sm text-gray-600 mb-2 no-print-geolocation">
                 <span class="font-medium text-gray-700">Geolocation:</span> {selectedVenue.geolocation}
               </p>
             {/if}
             {#if selectedVenue.timezone}
-              <p class="text-sm text-gray-600 mb-2">
+              <p class="text-sm text-gray-600 mb-2 no-print-timezone">
                 <span class="font-medium text-gray-700">Timezone:</span> {selectedVenue.timezone}
               </p>
             {/if}
@@ -588,7 +619,7 @@
             {/if}
           </div>
           {#if selectedVenue.geolocation}
-            <div class="w-full h-48 rounded-lg overflow-hidden border border-gray-300">
+            <div class="w-full h-48 rounded-lg overflow-hidden border border-gray-300 no-print-map">
               <div bind:this={mapContainer} class="w-full h-full"></div>
             </div>
           {/if}
@@ -645,7 +676,7 @@
           <select
             id="event-list-select"
             on:change={handleEventListChange}
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 mb-4"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 mb-4 no-print-event-list-selector"
           >
             {#each venueEventLists as eventList}
               <option value={eventList.event_list_uuid} selected={selectedEventListId === eventList.event_list_uuid}>

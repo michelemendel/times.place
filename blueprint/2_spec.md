@@ -14,6 +14,8 @@ To prototype a simple, user-friendly web app (frontend-only) for listing venues 
 
 - As a visitor, I want to select a venue from a dropdown and see its upcoming event times, banner image, and contact details.
 - As a visitor, I want information presented clearly in both English and Hebrew.
+- As a visitor, I want to print an event list for a selected venue and event list, so I can have a physical copy of the schedule.
+- As a visitor, I want to get a shareable link for a specific event list, so I can share it with others or bookmark it for later.
 - As a venue owner, I want to register/log in and see a list of my venues
 - As a venue owner, I want to add a new venue that I manage
 - As a venue owner, I want to delete one of my venues
@@ -110,6 +112,7 @@ When a user performs a search, the system should match the query against all of 
 - If a venue has no event lists, no events are displayed
 - Venue owners can reorder event lists when editing a venue
 - The presentation layer determines how to display event datetimes (e.g., time only, date and time, or grouped by date)
+- Users can print an event list: A print button should be available when viewing an event list, which opens a print-friendly version of the event list with venue details, event list name, date, and all events with their times
 
 ## Security & Safety Considerations
 

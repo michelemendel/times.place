@@ -28,9 +28,10 @@
 - Header with an image and navigation: Times, About, Venue Owner
 - Times:
   - Landing page: Dropdown to select venue, details panel, venue owner button.
-  - Detail panel: Banner image, venue name, contact info, event list selector (if venue has multiple event lists), events display.
+  - Detail panel: Banner image, venue name, contact info, event list selector (if venue has multiple event lists), events display, print button.
   - Event list selector: Dropdown or tabs to switch between event lists when a venue has multiple event lists
   - Events display: Shows events from the selected event list (or the only event list if there's just one)
+  - Print functionality: Print button that triggers browser print dialog with print-optimized CSS styles
 - About: info about the prototype
 - Venue Owner:
   - Button shows login (simple password for demo), then edit page/modal.
@@ -100,6 +101,19 @@
 ## Image Handling
 
 - Use simple file upload for banners, store as base64 or blob URL in localStorage
+
+## Print Functionality
+
+- **Print Button**: Add a print button on the visitor page detail panel when an event list is displayed
+- **Print Styles**: Implement CSS print media queries (`@media print`) to optimize the printed output:
+  - Hide navigation, buttons, and non-essential UI elements
+  - Show venue banner image, name, address, and contact info
+  - Display event list name and date prominently
+  - Format events in a clean, readable list with times
+  - Ensure proper page breaks and avoid splitting event information across pages
+  - Use appropriate font sizes and spacing for printed output
+- **Print Trigger**: Use browser's native `window.print()` API when print button is clicked
+- **Print Content**: Include venue details (name, address, timezone), event list information (name, date), and all events with their times formatted clearly
 
 ## Risks & Uncertainties
 

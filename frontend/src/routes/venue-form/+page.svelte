@@ -293,6 +293,7 @@
       name: 'New Event List',
       date: new Date().toISOString().split('T')[0], // Today's date in ISO format
       comment: '',
+      private_link_token: generateUUID(),
       event_uuids: [],
       events: [],
       created_at: getCurrentTimestamp(),
@@ -677,12 +678,15 @@
     const updatedEventLists = eventListsData.map((listData) => {
       const existingList = currentEventLists.find((el) => el.event_list_uuid === listData.event_list_uuid);
       if (existingList) {
+        // Preserve private_link_token if it exists, otherwise generate one
+        const token = existingList.private_link_token || listData.private_link_token || generateUUID();
         const updated = /** @type {import('$lib/types').EventList} */ (updateModifiedTimestamp({
           ...existingList,
           name: sanitizeInput(listData.name.trim()),
           date: listData.date,
           comment: sanitizeInput(listData.comment || ''),
-          event_uuids: listData.event_uuids
+          event_uuids: listData.event_uuids,
+          private_link_token: token
         }));
         return updated;
       } else {
@@ -693,6 +697,7 @@
           name: sanitizeInput(listData.name.trim()),
           date: listData.date,
           comment: sanitizeInput(listData.comment || ''),
+          private_link_token: listData.private_link_token || generateUUID(),
           event_uuids: listData.event_uuids,
           created_at: listData.created_at || now,
           modified_at: now

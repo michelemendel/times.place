@@ -39,20 +39,20 @@
         owner = currentOwner;
         const allVenues = $venueStore;
         const foundVenue = allVenues.find(v => v.venue_uuid === venueUuid);
-        
+
         // Verify ownership - only set venue if authorized
         if (foundVenue && foundVenue.owner_uuid === currentOwner.owner_uuid) {
           venue = foundVenue;
           const allEventLists = $eventListStore;
-          const foundEventList = allEventLists.find(el => 
-            el.event_list_uuid === eventListUuid && el.venue_uuid === venue.venue_uuid
+          const foundEventList = allEventLists.find(el =>
+            el.event_list_uuid === eventListUuid && el.venue_uuid === foundVenue.venue_uuid
           );
-          
+
           if (foundEventList) {
             eventList = foundEventList;
             const allEvents = $eventStore;
             listEvents = allEvents
-              .filter(e => eventList.event_uuids.includes(e.event_uuid))
+              .filter(e => foundEventList.event_uuids.includes(e.event_uuid))
               .sort((a, b) => {
                 // Sort by datetime
                 return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
@@ -72,7 +72,7 @@
       goto('/login');
       return;
     }
-    
+
     // Check authorization after stores are loaded
     if (venueUuid && owner) {
       const allVenues = get(venueStore);
@@ -100,7 +100,7 @@
 </script>
 
 <svelte:head>
-  <title>{eventList?.name || 'Event List'} - {venue?.name || 'Venue'} - time.place</title>
+  <title>{eventList?.name || 'Event List'} - {venue?.name || 'Venue'} - times.place</title>
 </svelte:head>
 
 <div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
@@ -130,7 +130,7 @@
         </svg>
         <span>Back</span>
       </button>
-      
+
       <button
         on:click={printEventList}
         class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
@@ -144,6 +144,17 @@
 
     <!-- Event List Content -->
     <div class="bg-white rounded-xl shadow-lg p-6 md:p-12">
+      <!-- Banner Image -->
+      {#if venue.banner_image}
+        <div class="mb-6">
+          <img
+            src={venue.banner_image}
+            alt={venue.name}
+            class="w-full h-48 object-cover rounded-lg"
+          />
+        </div>
+      {/if}
+
       <!-- Venue Header -->
       <div class="mb-6 pb-4 border-b border-gray-200">
         <h1 class="text-3xl font-bold mb-2 text-gray-900">{venue.name}</h1>
@@ -164,14 +175,14 @@
           </p>
         {/if}
         {#if eventList.comment}
-          <p class="text-gray-600 italic">{eventList.comment}</p>
+          <p class="text-gray-600 whitespace-pre-line">{eventList.comment}</p>
         {/if}
       </div>
 
       <!-- Events -->
       {#if listEvents.length === 0}
         <div class="py-8 text-center">
-          <p class="text-gray-500 italic">No events scheduled for this list.</p>
+          <p class="text-gray-500">No events scheduled for this list.</p>
         </div>
       {:else}
         <div class="space-y-4">
@@ -180,7 +191,7 @@
               <div class="flex-1">
                 <p class="font-medium text-lg text-gray-900">{event.event_name}</p>
                 {#if event.comment}
-                  <p class="text-sm text-gray-600 italic mt-1">{event.comment}</p>
+                  <p class="text-sm text-gray-600 mt-1 whitespace-pre-line">{event.comment}</p>
                 {/if}
               </div>
               <div class="text-right ml-4">
@@ -206,12 +217,12 @@
     .no-print {
       display: none !important;
     }
-    
+
     .bg-white {
       background: white !important;
       box-shadow: none !important;
     }
-    
+
     .bg-gray-50 {
       background: #f9fafb !important;
     }

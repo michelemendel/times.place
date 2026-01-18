@@ -194,7 +194,7 @@
 </script>
 
 <svelte:head>
-  <title>My Venues - time.place</title>
+  <title>My Venues - times.place</title>
 </svelte:head>
 
 <div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 py-8">

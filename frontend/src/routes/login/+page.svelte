@@ -38,16 +38,12 @@
       return;
     }
 
-    const expectedPassword = owner.password ?? 'demo';
     if (!password) {
       error = 'Please enter your password.';
       return;
     }
-    if (password !== expectedPassword) {
-      error =
-        owner.password == null
-          ? 'Incorrect password. (Legacy demo accounts use password "demo".)'
-          : 'Incorrect password.';
+    if (!owner.password || password !== owner.password) {
+      error = 'Incorrect password.';
       return;
     }
 

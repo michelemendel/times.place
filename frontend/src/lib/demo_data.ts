@@ -29,13 +29,13 @@ export function seedDemoData(force: boolean = false) {
 
     const now = getCurrentTimestamp();
 
-    // Owner 1: Demo Rabbi
+    // Owner 1: Abe
     const owner1Id = generateUUID();
     const owner1: VenueOwner = {
         owner_uuid: owner1Id,
-        name: "Demo Rabbi",
+        name: "Abe",
         mobile: "+1-555-0199",
-        email: "demo@synagogue.org",
+        email: "abe@demo.org",
         password: "demo",
         created_at: now,
         modified_at: now
@@ -54,6 +54,7 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner1Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
+        visibility: "public",
         created_at: now,
         modified_at: now
     };
@@ -154,18 +155,19 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner1Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
+        visibility: "public",
         created_at: now,
         modified_at: now
     };
     venues.push(venue2);
 
-    // Owner 2: Sarah Cohen
+    // Owner 2: Ben
     const owner2Id = generateUUID();
     const owner2: VenueOwner = {
         owner_uuid: owner2Id,
-        name: "Sarah Cohen",
+        name: "Ben",
         mobile: "+1-555-0200",
-        email: "sarah@community.org",
+        email: "ben@demo.org",
         password: "demo",
         created_at: now,
         modified_at: now
@@ -184,6 +186,7 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner2Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
+        visibility: "public",
         created_at: now,
         modified_at: now
     };
@@ -232,18 +235,19 @@ export function seedDemoData(force: boolean = false) {
     events.push(event6);
     eventList3.event_uuids.push(event5Id, event6Id);
 
-    // Owner 2 - Venue 2: Chabad House (has no event lists)
+    // Owner 2 - Venue 2: Chagat House (has no event lists)
     const venue4Id = generateUUID();
     const venue4: Venue = {
         venue_uuid: venue4Id,
-        name: "Chabad House",
-        banner_image: "https://placehold.co/600x200?text=Chabad+House",
+        name: "Chagat House",
+        banner_image: "https://placehold.co/600x200?text=Chagat+House",
         address: "12 Rechov Agron, Jerusalem",
         geolocation: "31.7750,35.2200",
-        comment: "Warm and welcoming Chabad center.",
+        comment: "Warm and welcoming Chagat center.",
         owner_uuid: owner2Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
+        visibility: "public",
         created_at: now,
         modified_at: now
     };

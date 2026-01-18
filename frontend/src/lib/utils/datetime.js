@@ -1,5 +1,5 @@
 /**
- * Date and time utility functions for time.place
+ * Date and time utility functions for times.place
  * 
  * Handles timezone-aware formatting of dates and times based on user's browser settings.
  * All functions automatically use the user's locale and timezone.

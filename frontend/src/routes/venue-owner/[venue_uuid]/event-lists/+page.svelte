@@ -265,7 +265,7 @@
 </script>
 
 <svelte:head>
-  <title>Event Lists - {venue?.name || 'Venue'} - time.place</title>
+  <title>Event Lists - {venue?.name || 'Venue'} - times.place</title>
 </svelte:head>
 
 <div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
@@ -337,7 +337,7 @@
                     </p>
                   {/if}
                   {#if eventList.comment}
-                    <p class="text-sm text-gray-500 italic">{eventList.comment}</p>
+                    <p class="text-sm text-gray-500 whitespace-pre-line">{eventList.comment}</p>
                   {/if}
                 </div>
                 
@@ -392,13 +392,13 @@
                       </div>
                     {/each}
                     {#if listEvents.length > 3}
-                      <p class="text-xs text-gray-500 italic">... and {listEvents.length - 3} more</p>
+                      <p class="text-xs text-gray-500">... and {listEvents.length - 3} more</p>
                     {/if}
                   </div>
                 </div>
               {:else}
                 <div class="mt-4 pt-4 border-t border-gray-200">
-                  <p class="text-sm text-gray-500 italic">No events in this list</p>
+                  <p class="text-sm text-gray-500">No events in this list</p>
                 </div>
               {/if}
             </div>

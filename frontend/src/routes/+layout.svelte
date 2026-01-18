@@ -3,8 +3,7 @@
   import { seedDemoData } from '../lib/demo_data';
   import '../app.css';
   import { dev } from '$app/environment';
-  import { currentOwnerStore, ownersStore } from '$lib/stores';
-  import { get } from 'svelte/store';
+  import { currentOwnerStore } from '$lib/stores';
   import { goto } from '$app/navigation';
 
   let mobileMenuOpen = false;
@@ -29,29 +28,6 @@
     goto('/');
   }
 
-  function handleResetData() {
-    if (confirm('Reset all demo data? This will restore all deleted venues and clear any changes you\'ve made. You may need to log in again.')) {
-      const currentOwner = get(currentOwnerStore);
-      const currentEmail = currentOwner?.email;
-
-      // Reset the data
-      seedDemoData(true);
-
-      // If the user was logged in as a demo owner, restore their login with the new owner object
-      if (currentEmail) {
-        const owners = get(ownersStore);
-        const matchingOwner = owners.find(o => o.email === currentEmail);
-        if (matchingOwner) {
-          currentOwnerStore.set(matchingOwner);
-        } else {
-          // User was logged in as a non-demo owner, log them out
-          currentOwnerStore.set(null);
-          goto('/');
-        }
-      }
-      closeMobileMenu();
-    }
-  }
 </script>
 
 <div class="flex flex-col min-h-screen">
@@ -65,32 +41,41 @@
         >
           <img
             src="/house_clock.png"
-            alt="time.place logo"
+            alt="times.place logo"
             class="h-14 w-auto object-contain"
             style="aspect-ratio: 886/762;"
           />
-          <span class="text-2xl font-bold text-gray-900">time.place</span>
+          <span class="text-2xl font-bold text-gray-900">times.place</span>
         </a>
       </div>
 
       <!-- Desktop Navigation -->
-      <div class="hidden md:flex items-center gap-8">
+      <div class="hidden md:flex items-center gap-2">
+        <a
+          href="/prototype"
+          class="text-red-600 hover:text-red-700 font-medium text-base transition-colors"
+          >Prototype</a
+        >
+        <span class="text-gray-400">|</span>
         <a
           href="/"
           class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
           >Home</a
         >
+        <span class="text-gray-400">|</span>
         <a
           href="/about"
           class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
           >About</a
         >
         {#if $currentOwnerStore}
+          <span class="text-gray-400">|</span>
           <a
             href="/venue-owner"
             class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
             >My Venues</a
           >
+          <span class="text-gray-400">|</span>
           <button
             type="button"
             class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
@@ -98,20 +83,14 @@
           >
             Logout
           </button>
-          <button
-            type="button"
-            class="text-red-700 hover:text-gray-900 font-medium text-base transition-colors"
-            on:click={handleResetData}
-            title="Reset demo data (development only)"
-          >
-            Reset Data
-          </button>
         {:else}
+          <span class="text-gray-400">|</span>
           <a
             href="/login"
             class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
             >Login</a
           >
+          <span class="text-gray-400">|</span>
           <a
             href="/registration"
             class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
@@ -164,7 +143,13 @@
       <!-- Mobile Menu -->
       {#if mobileMenuOpen}
         <div class="absolute top-20 left-0 right-0 bg-gray-100 border-t border-gray-200 shadow-lg md:hidden z-50">
-          <div class="container mx-auto py-4 flex flex-col gap-4">
+          <div class="container mx-auto py-4 flex flex-col gap-2">
+            <a
+              href="/prototype"
+              class="text-red-600 hover:text-red-700 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+              on:click={closeMobileMenu}
+              >Prototype</a
+            >
             <a
               href="/"
               class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
@@ -184,14 +169,6 @@
                 on:click={closeMobileMenu}
                 >My Venues</a
               >
-              <button
-                type="button"
-                class="text-left text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-                on:click={handleResetData}
-                title="Reset demo data (development only)"
-              >
-                Reset Data
-              </button>
               <button
                 type="button"
                 class="text-left text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
@@ -229,15 +206,15 @@
     <div class="container mx-auto h-20 flex items-center">
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
         <p class="text-gray-600 text-sm">
-          &copy; 2024 time.place. All rights reserved.
+          &copy; 2024 times.place. All rights reserved.
         </p>
         <p class="text-gray-600 text-sm">
           Contact: <a
-            href="mailto:timeplaceadmin@atomicmail.io"
+            href="mailto:timesandplaceadmin@atomicmail.io"
             target="_blank"
             rel="noopener noreferrer"
             class="text-blue-600 hover:text-blue-800 font-medium transition-colors"
-            >timeplaceadmin@atomicmail.io</a
+            >timesandplaceadmin@atomicmail.io</a
           >
         </p>
       </div>

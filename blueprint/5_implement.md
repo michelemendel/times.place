@@ -675,3 +675,68 @@
 - **Token Generation**: Tokens are generated on-demand when needed (when copying link) rather than requiring pre-generation, ensuring all event lists can be shared even if token was missing.
 - **Visual Feedback**: Used temporary state (`copiedLinkToken`) to show "Copied!" feedback for 2 seconds, providing clear user confirmation of successful copy operation.
 - **Type Safety**: Used JSDoc type annotations with type casts to ensure TypeScript properly infers types throughout the event list management flow.
+
+
+### UI/UX Refinements and Bug Fixes
+
+- **Event Time Field Fix** (`frontend/src/routes/venue-form/+page.svelte`):
+  - Fixed issue where new events' time field was stuck at 11:07 and couldn't be changed.
+  - Root cause: When creating new events without a date, `datetime` was set to current timestamp, and time was extracted from that datetime, overwriting user input.
+  - Solution: Use today's date as placeholder for `datetime` when event list has no date, and preserve the `time` field separately when loading events.
+  - Time field now properly editable for all events, regardless of whether event list has a date.
+
+- **Event List Date Field Labeling** (`frontend/src/routes/venue-form/+page.svelte`):
+  - Updated event list date label to show "Date (optional)" to clarify that date is optional for event lists.
+
+- **Event List Comment Styling** (`frontend/src/routes/venue-form/+page.svelte`, `frontend/src/routes/+page.svelte`):
+  - Reduced font size to `text-xs` (from default size).
+  - Removed italic styling.
+  - Reduced spacing between event list name and comment from `mb-4` to `mb-1` on heading.
+  - Maintained `mb-4` spacing between comment and events list for proper visual separation.
+  - Applied consistent styling to both preview pane and public page.
+
+- **Preview Pane Styling Alignment** (`frontend/src/routes/venue-form/+page.svelte`):
+  - Made preview pane match public page styling exactly:
+    - Banner image: Added `mb-4` wrapper to match spacing.
+    - Venue info: Added `grid grid-cols-1 md:grid-cols-2 gap-4` structure with `flex flex-col justify-start` inner div.
+    - Contact links: Added `hover:underline` to email and mobile links.
+    - Events: Changed spacing from `space-y-3` to `space-y-1`, padding from `p-3` to `py-2 px-3`.
+    - Event name: Added `text-sm` class.
+    - Event time: Changed from `text-lg` to `text-base`.
+    - Event comment: Changed to `text-sm md:text-xs` with `mt-0.5`.
+    - Event duration: Added `mt-0.5` spacing.
+  - Preview now provides accurate representation of how venue will appear on public page.
+
+- **Typography Improvements** (`frontend/src/routes/+page.svelte`):
+  - Updated "Select a venue to view its event schedules and contact information." text:
+    - Desktop: 16px (`text-base`).
+    - Mobile: 14px (`text-sm`).
+    - Uses responsive Tailwind classes: `text-sm md:text-base`.
+  - Updated search description text to 14px using inline style.
+
+- **Navigation Menu Improvements** (`frontend/src/routes/+layout.svelte`):
+  - Reduced spacing between menu items:
+    - Desktop: Changed from `gap-8` to `gap-2`.
+    - Mobile: Changed from `gap-4` to `gap-2`.
+  - Added `|` separators between menu items on desktop navigation.
+  - Separators styled with `text-gray-400` for subtle appearance.
+  - Mobile menu remains vertical without separators (vertical separators not needed).
+
+- **Removed All Italic Styling**:
+  - Removed `italic` class from all text elements across the application:
+    - Venue comments, event comments, event list comments.
+    - Empty state messages.
+    - Preview messages.
+  - Applied to: `venue-form/+page.svelte`, `+page.svelte`, `venue-owner` pages.
+  - Consistent non-italic styling throughout the application.
+
+- **Event Padding Refinement**:
+  - User adjusted event padding from `py-2` to `py-1` for tighter vertical spacing between events.
+  - Applied to both public page and preview pane for consistency.
+
+### Implementation Decisions
+
+- **Time Field Handling**: When event list has no date, use today's date as placeholder for `datetime` (required field) while preserving separate `time` field for editing. This ensures datetime is always valid while allowing flexible time editing.
+- **Preview Accuracy**: Preview pane now exactly matches public page styling to provide accurate preview of how content will appear to visitors.
+- **Menu Spacing**: Reduced menu spacing and added separators for more compact, professional appearance while maintaining readability.
+- **Typography Consistency**: Removed all italic styling for cleaner, more modern appearance. Used responsive font sizing for better mobile experience.

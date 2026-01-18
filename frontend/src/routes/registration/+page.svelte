@@ -89,7 +89,7 @@
 </script>
 
 <svelte:head>
-  <title>Registration - time.place</title>
+  <title>Registration - times.place</title>
 </svelte:head>
 
 <div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12">

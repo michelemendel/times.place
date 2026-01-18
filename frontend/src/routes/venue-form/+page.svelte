@@ -212,11 +212,18 @@
           uniqueEvents.push(e);
         }
       }
-      const eventsWithTime = uniqueEvents.map((e) => ({
-        ...e,
-        // Extract time from datetime for editing
-        time: extractTimeFromRFC3339(e.datetime)
-      }));
+      const eventsWithTime = uniqueEvents.map((/** @type {any} */ e) => {
+        // Preserve existing time field if it exists (for new events being edited)
+        // Otherwise extract time from datetime
+        const existingTime = e.time;
+        return {
+          ...e,
+          // Extract time from datetime for editing (only if time field doesn't already exist)
+          time: existingTime || extractTimeFromRFC3339(e.datetime),
+          // Convert 0 duration to empty string for display (0 means no duration)
+          duration_minutes: e.duration_minutes && e.duration_minutes > 0 ? e.duration_minutes : ''
+        };
+      });
       return {
         ...el,
         date: eventListDate,
@@ -350,6 +357,64 @@
   }
 
   /**
+   * Clear date for an event list
+   * @param {string} listUuid
+   */
+  function clearEventListDate(listUuid) {
+    saveUndoState();
+    const listIndex = eventListsData.findIndex((el) => el.event_list_uuid === listUuid);
+    if (listIndex === -1) return;
+    const list = eventListsData[listIndex];
+
+    // Clear the date
+    const updatedList = {
+      ...list,
+      date: ''
+    };
+
+    // Create new eventListsData array with updated list
+    eventListsData = [
+      ...eventListsData.slice(0, listIndex),
+      updatedList,
+      ...eventListsData.slice(listIndex + 1)
+    ];
+  }
+
+  /**
+   * Clear duration for an event
+   * @param {string} listUuid
+   * @param {string} eventUuid
+   */
+  function clearEventDuration(listUuid, eventUuid) {
+    saveUndoState();
+    const listIndex = eventListsData.findIndex((el) => el.event_list_uuid === listUuid);
+    if (listIndex === -1) return;
+    const list = eventListsData[listIndex];
+    const eventIndex = list.events.findIndex((/** @type {any} */ e) => e.event_uuid === eventUuid);
+    if (eventIndex === -1) return;
+
+    // Create new events array with cleared duration
+    const newEvents = [...list.events];
+    newEvents[eventIndex] = {
+      ...newEvents[eventIndex],
+      duration_minutes: ''
+    };
+
+    // Create new list object with updated events
+    const updatedList = {
+      ...list,
+      events: newEvents
+    };
+
+    // Create new eventListsData array with updated list
+    eventListsData = [
+      ...eventListsData.slice(0, listIndex),
+      updatedList,
+      ...eventListsData.slice(listIndex + 1)
+    ];
+  }
+
+  /**
    * Add event to event list
    * @param {string} listUuid
    */
@@ -359,14 +424,20 @@
     if (listIndex === -1) return;
     const list = eventListsData[listIndex];
 
+    // For new events without a date, use today's date as placeholder for datetime
+    // The time field will be preserved separately
+    const placeholderDate = list.date && list.date.trim()
+      ? list.date
+      : new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
+
     const newEvent = {
       event_uuid: generateUUID(),
       event_list_uuid: listUuid,
       event_name: 'New Event',
-      datetime: list.date && list.date.trim() ? combineTimeAndDate('12:00', list.date) : getCurrentTimestamp(),
+      datetime: combineTimeAndDate('12:00', placeholderDate),
       time: '12:00',
       comment: '',
-      duration_minutes: 0,
+      duration_minutes: '', // Empty string means no duration
       created_at: getCurrentTimestamp(),
       modified_at: getCurrentTimestamp()
     };
@@ -635,10 +706,12 @@
           alert(`Invalid time format for event "${event.event_name}". Please use HH:MM format.`);
           return;
         }
-        // Only update datetime if date is provided
-        if (list.date && list.date.trim()) {
-          event.datetime = combineTimeAndDate(event.time, list.date);
-        }
+        // Update datetime with the time
+        // If no date is provided, use today's date as placeholder
+        const dateToUse = list.date && list.date.trim()
+          ? list.date
+          : new Date().toISOString().split('T')[0];
+        event.datetime = combineTimeAndDate(event.time, dateToUse);
       }
     }
 
@@ -749,7 +822,7 @@
             event_name: sanitizeInput(eventData.event_name.trim()),
             datetime: eventData.datetime,
             comment: sanitizeInput(eventData.comment || ''),
-            duration_minutes: eventData.duration_minutes || 0
+            duration_minutes: eventData.duration_minutes && eventData.duration_minutes !== '' && Number(eventData.duration_minutes) > 0 ? Number(eventData.duration_minutes) : undefined
           });
         } else {
           return {
@@ -758,7 +831,7 @@
             event_name: sanitizeInput(eventData.event_name.trim()),
             datetime: eventData.datetime,
             comment: sanitizeInput(eventData.comment || ''),
-            duration_minutes: eventData.duration_minutes || 0,
+            duration_minutes: eventData.duration_minutes && eventData.duration_minutes !== '' && Number(eventData.duration_minutes) > 0 ? Number(eventData.duration_minutes) : undefined,
             created_at: eventData.created_at || now,
             modified_at: now
           };
@@ -832,7 +905,7 @@
         `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodedAddress}&limit=5&addressdetails=1&dedupe=1`,
         {
           headers: {
-            'User-Agent': 'time.place/1.0'
+            'User-Agent': 'times.place/1.0'
           }
         }
       );
@@ -865,7 +938,7 @@
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
         {
           headers: {
-            'User-Agent': 'time.place/1.0'
+            'User-Agent': 'times.place/1.0'
           }
         }
       );
@@ -1143,10 +1216,10 @@
 </script>
 
 <svelte:head>
-  <title>{isNewVenue ? 'Create' : 'Edit'} Venue - time.place</title>
+  <title>{isNewVenue ? 'Create' : 'Edit'} Venue - times.place</title>
 </svelte:head>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full overflow-x-hidden">
   <div class="mb-6 flex items-center justify-between">
     <div>
       <h1 class="text-3xl font-bold text-gray-900">{isNewVenue ? 'Create' : 'Edit'} Venue</h1>
@@ -1177,9 +1250,9 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full overflow-x-hidden max-w-full">
     <!-- Editing Pane -->
-    <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-200px)]">
+    <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)] w-full">
       <h2 class="text-xl font-semibold text-gray-900 border-b pb-2">Edit Venue</h2>
 
       <!-- Basic Venue Information -->
@@ -1204,7 +1277,7 @@
               type="text"
               id="venue-address"
               bind:value={venueAddress}
-              class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter address"
               on:keydown={(/** @type {KeyboardEvent} */ e) => e.key === 'Enter' && handleFindOnMap()}
             />
@@ -1212,10 +1285,11 @@
               type="button"
               on:click={handleFindOnMap}
               disabled={isGeocoding}
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              class="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               title="Find this address on the map below"
             >
-              {isGeocoding ? 'Searching...' : 'Find on Map'}
+              <span class="hidden sm:inline">{isGeocoding ? 'Searching...' : 'Find on Map'}</span>
+              <span class="sm:hidden">{isGeocoding ? 'Searching...' : 'Find'}</span>
             </button>
           </div>
           {#if showGeocodingResults && geocodingResults.length > 0}
@@ -1325,11 +1399,11 @@
         </div>
 
         {#if eventListsData.length === 0}
-          <p class="text-sm text-gray-500 italic py-4 text-center">No event lists yet. Click "+ Add Event List" to create one.</p>
+          <p class="text-sm text-gray-500 py-4 text-center">No event lists yet. Click "+ Add Event List" to create one.</p>
         {/if}
 
         {#each eventListsData as listData, listIndex (listData.event_list_uuid)}
-          <div class="border-2 border-gray-300 rounded-lg p-4 space-y-3">
+          <div class="border-2 border-gray-300 rounded-lg p-4 space-y-3 w-full min-w-0 overflow-x-hidden">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <button
@@ -1369,21 +1443,35 @@
             </div>
 
             <div>
-              <label for="event-list-date-{listData.event_list_uuid}" class="block text-sm font-medium text-gray-700 mb-1">Date (optional, ISO 8601: YYYY-MM-DD)</label>
-              <input
-                type="date"
-                id="event-list-date-{listData.event_list_uuid}"
-                bind:value={listData.date}
-                on:input={() => {
-                  // Update datetime for all events in this list when date changes (only if date is provided)
-                  if (listData.date && listData.date.trim()) {
+              <label for="event-list-date-{listData.event_list_uuid}" class="block text-sm font-medium text-gray-700 mb-1">Date (optional)</label>
+              <div class="flex gap-2">
+                <input
+                  type="date"
+                  id="event-list-date-{listData.event_list_uuid}"
+                  bind:value={listData.date}
+                  on:input={() => {
+                    // Update datetime for all events in this list when date changes
+                    // If no date is provided, use today's date as placeholder
+                    const dateToUse = listData.date && listData.date.trim()
+                      ? listData.date
+                      : new Date().toISOString().split('T')[0];
                     listData.events.forEach((/** @type {any} */ event) => {
-                      event.datetime = combineTimeAndDate(event.time, listData.date);
+                      event.datetime = combineTimeAndDate(event.time, dateToUse);
                     });
-                  }
-                }}
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+                  }}
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                {#if listData.date && listData.date.trim()}
+                  <button
+                    type="button"
+                    on:click={() => clearEventListDate(listData.event_list_uuid)}
+                    class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200"
+                    title="Clear date"
+                  >
+                    Clear
+                  </button>
+                {/if}
+              </div>
               <p class="mt-1 text-xs text-gray-500">Date is stored in ISO 8601 format (YYYY-MM-DD)</p>
             </div>
 
@@ -1444,10 +1532,10 @@
               </div>
 
               {#if !listData.events || listData.events.length === 0}
-                <p class="text-sm text-gray-500 italic py-2">No events yet. Click "+ Add Event" to add one.</p>
+                <p class="text-sm text-gray-500 py-2">No events yet. Click "+ Add Event" to add one.</p>
               {/if}
               {#each (listData.events || []) as event, eventIndex (event.event_uuid)}
-                <div class="border border-gray-200 rounded p-3 mb-2 space-y-2">
+                <div class="border border-gray-200 rounded p-3 mb-2 space-y-2 w-full overflow-x-hidden">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-1">
                       <button
@@ -1494,31 +1582,49 @@
                     />
                   </div>
 
-                  <div>
+                  <div class="w-full min-w-0" style="max-width: 100%; overflow: hidden; box-sizing: border-box;">
                     <label for="event-time-{event.event_uuid}" class="block text-xs font-medium text-gray-700 mb-1">Time (HH:MM)</label>
                     <input
                       type="time"
                       id="event-time-{event.event_uuid}"
                       bind:value={event.time}
                       on:input={() => {
-                        // Update datetime immediately when time changes (only if date is provided)
-                        if (listData.date && listData.date.trim()) {
-                          event.datetime = combineTimeAndDate(event.time, listData.date);
-                        }
+                        // Update datetime immediately when time changes
+                        // If no date is provided, use today's date as placeholder
+                        const dateToUse = listData.date && listData.date.trim()
+                          ? listData.date
+                          : new Date().toISOString().split('T')[0];
+                        event.datetime = combineTimeAndDate(event.time, dateToUse);
                       }}
                       class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      style="box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; -webkit-appearance: none; appearance: none;"
                     />
                   </div>
 
                   <div>
                     <label for="event-duration-{event.event_uuid}" class="block text-xs font-medium text-gray-700 mb-1">Duration (minutes) (optional)</label>
-                    <input
-                      type="number"
-                      id="event-duration-{event.event_uuid}"
-                      bind:value={event.duration_minutes}
-                      min="0"
-                      class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
+                    <div class="flex gap-2">
+                      <input
+                        type="number"
+                        id="event-duration-{event.event_uuid}"
+                        bind:value={event.duration_minutes}
+                        min="1"
+                        class="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="No duration"
+                      />
+                      {#if event.duration_minutes && event.duration_minutes !== '' && event.duration_minutes > 0}
+                        <button
+                          type="button"
+                          on:click={() => clearEventDuration(listData.event_list_uuid, event.event_uuid)}
+                          class="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded transition-colors duration-200 shrink-0"
+                          title="Clear duration"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      {/if}
+                    </div>
                   </div>
 
                   <div>
@@ -1540,7 +1646,7 @@
     </div>
 
     <!-- Preview Pane -->
-    <div class="bg-white rounded-xl shadow-lg p-6 space-y-4 overflow-y-auto max-h-[calc(100vh-200px)]">
+    <div class="hidden lg:block bg-white rounded-xl shadow-lg p-6 space-y-4 overflow-y-auto max-h-[calc(100vh-200px)]">
       <h2 class="text-xl font-semibold text-gray-900 border-b pb-2">Live Preview</h2>
 
       {#if previewEventList && eventListsData.length > 1}
@@ -1559,87 +1665,95 @@
       {/if}
 
       {#if venueName || previewEventList}
-        <div class="space-y-4">
+        <div>
           {#if venueBannerImage}
-            <div>
+            <div class="mb-4">
               <img src={venueBannerImage} alt={venueName || 'Venue'} class="w-full h-48 object-cover rounded-lg" />
             </div>
           {/if}
 
-          <h2 class="text-3xl font-bold text-gray-900">{venueName || 'Venue Name'}</h2>
+          <h2 class="text-3xl font-bold mb-3 text-gray-900">{venueName || 'Venue Name'}</h2>
 
-          {#if venueAddress}
-            <p class="text-sm text-gray-600">
-              <span class="font-medium">Address:</span> {venueAddress}
-            </p>
-          {/if}
+          {#if venueAddress || venueGeolocation || venueTimezone || previewVenueOwner || venueComment}
+            <div class="mb-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="flex flex-col justify-start">
+                {#if venueAddress}
+                  <p class="text-sm text-gray-600 mb-2">
+                    <span class="font-medium text-gray-700">Address:</span> {venueAddress}
+                  </p>
+                {/if}
 
-          {#if venueGeolocation}
-            <p class="text-sm text-gray-600">
-              <span class="font-medium">Geolocation:</span> {venueGeolocation}
-            </p>
-          {/if}
+                {#if venueGeolocation}
+                  <p class="text-sm text-gray-600 mb-2">
+                    <span class="font-medium text-gray-700">Geolocation:</span> {venueGeolocation}
+                  </p>
+                {/if}
 
-          {#if venueTimezone}
-            <p class="text-sm text-gray-600">
-              <span class="font-medium">Timezone:</span> {venueTimezone}
-            </p>
-          {/if}
+                {#if venueTimezone}
+                  <p class="text-sm text-gray-600 mb-2">
+                    <span class="font-medium text-gray-700">Timezone:</span> {venueTimezone}
+                  </p>
+                {/if}
 
-          {#if previewVenueOwner}
-            <div class="text-sm text-gray-600">
-              <span class="font-medium">Contact:</span>
-              {#if previewVenueOwner.name}
-                <span class="ml-2">{previewVenueOwner.name}</span>
-              {/if}
-              {#if previewVenueOwner.email}
-                <a href="mailto:{previewVenueOwner.email}" class="ml-2 text-blue-600 hover:text-blue-800">
-                  {previewVenueOwner.email}
-                </a>
-              {/if}
-              {#if previewVenueOwner.mobile}
-                <a href="tel:{previewVenueOwner.mobile}" class="ml-2 text-blue-600 hover:text-blue-800">
-                  {previewVenueOwner.mobile}
-                </a>
-              {/if}
+                {#if previewVenueOwner}
+                  <p class="text-sm text-gray-600 mb-2">
+                    <span class="font-medium text-gray-700">Contact:</span>
+                    {#if previewVenueOwner.name}
+                      <span class="ml-2">{previewVenueOwner.name}</span>
+                    {/if}
+                    {#if previewVenueOwner.email}
+                      <a href="mailto:{previewVenueOwner.email}" class="ml-2 text-blue-600 hover:text-blue-800 hover:underline">
+                        {previewVenueOwner.email}
+                      </a>
+                    {/if}
+                    {#if previewVenueOwner.mobile}
+                      <a href="tel:{previewVenueOwner.mobile}" class="ml-2 text-blue-600 hover:text-blue-800 hover:underline">
+                        {previewVenueOwner.mobile}
+                      </a>
+                    {/if}
+                  </p>
+                {/if}
+
+                {#if venueComment}
+                  <p class="text-sm text-gray-600 whitespace-pre-line">{venueComment}</p>
+                {/if}
+              </div>
             </div>
-          {/if}
-
-          {#if venueComment}
-            <p class="text-sm text-gray-600 italic">{venueComment}</p>
           {/if}
 
           {#if previewEventList}
             <div class="mt-6">
-              <h3 class="text-2xl font-semibold mb-4 text-gray-900">{previewEventList.name}</h3>
+              <h3 class="text-2xl font-semibold mb-1 text-gray-900">{previewEventList.name}</h3>
               {#if previewEventList.comment}
-                <p class="text-gray-600 mb-4 italic">{previewEventList.comment}</p>
+                <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">{previewEventList.comment}</p>
               {/if}
 
               {#if previewEvents.length === 0}
-                <p class="text-gray-500 italic">No events scheduled for this list.</p>
+                <p class="text-gray-500">No events scheduled for this list.</p>
               {:else}
-                <div class="space-y-3">
+                <div class="space-y-1">
                   {#each previewEvents as event}
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between py-1 px-3 bg-gray-50 rounded-lg">
                       <div>
-                        <p class="font-medium text-gray-900">{event.event_name}</p>
+                        <p class="font-medium text-gray-900 text-sm">{event.event_name}</p>
                         {#if event.comment}
-                          <p class="text-sm text-gray-600 italic">{event.comment}</p>
+                          <p class="text-sm md:text-xs text-gray-600 whitespace-pre-line mt-0.5">{event.comment}</p>
                         {/if}
                       </div>
                       <div class="text-right">
                         {#if previewEventList.date && previewEventList.date.trim()}
-                          <p class="text-lg font-semibold text-blue-600">
+                          <p class="text-base font-semibold text-blue-600">
                             {formatEventTime(Math.floor(new Date(combineTimeAndDate(event.time, previewEventList.date)).getTime() / 1000), venueTimezone ? { timeZone: venueTimezone } : {})}
                           </p>
                         {:else}
-                          <p class="text-lg font-semibold text-gray-400">
+                          <p class="text-base font-semibold text-gray-400">
                             {event.time}
                           </p>
                         {/if}
                         {#if event.duration_minutes}
-                          <p class="text-xs text-gray-500">{event.duration_minutes} min</p>
+                          <p class="text-xs text-gray-500 mt-0.5">
+                            {event.duration_minutes} min
+                          </p>
                         {/if}
                       </div>
                     </div>
@@ -1649,13 +1763,71 @@
             </div>
           {:else}
             <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p class="text-gray-500 text-center italic">Add an event list to see the preview.</p>
+              <p class="text-gray-500 text-center">Add an event list to see the preview.</p>
             </div>
           {/if}
         </div>
       {:else}
-        <p class="text-gray-500 italic text-center">Start editing to see the preview.</p>
+        <p class="text-gray-500 text-center">Start editing to see the preview.</p>
       {/if}
     </div>
   </div>
 </div>
+
+<style>
+  /* Prevent horizontal scrolling on mobile for this page */
+  :global(body) {
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Ensure all inputs and form elements don't overflow */
+  :global(input),
+  :global(textarea),
+  :global(select) {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Fix time input width on mobile devices - use more specific selector */
+  :global(input[type="time"]) {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+  }
+
+  /* Ensure event containers don't overflow */
+  :global(.border.border-gray-200.rounded.p-3) {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Force all inputs in event containers to respect width */
+  :global(.border.border-gray-200.rounded.p-3 input) {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+
+  /* Additional constraint for editing pane */
+  :global(.bg-white.rounded-xl.shadow-lg.p-6) {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Mobile-specific fix for time inputs */
+  @media (max-width: 768px) {
+    :global(input[type="time"]) {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+      padding-left: 0.5rem !important;
+      padding-right: 0.5rem !important;
+    }
+  }
+</style>

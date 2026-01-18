@@ -520,14 +520,15 @@
   />
 </svelte:head>
 
-<div class="mb-2 md:mb-2 text-center no-print-header">
-  <h1 class="text-xl md:text-4xl font-bold mb-1 md:mb-2 text-gray-900">Find Venues and Events</h1>
-  <p class="text-xs md:text-lg text-gray-600 mb-1 md:mb-0">
-    Select a venue to view its event schedules and contact information.
-  </p>
-</div>
+<div class="w-full lg:max-w-[60%] lg:mx-auto">
+  <div class="mb-2 md:mb-2 text-center no-print-header">
+    <h1 class="text-xl md:text-4xl font-bold mb-1 md:mb-2 text-gray-900">Find Venues and Events</h1>
+    <p class="text-sm md:text-base text-gray-600 mb-1 md:mb-0">
+      Select a venue to view its event schedules and contact information.
+    </p>
+  </div>
 
-<div class="bg-white rounded-xl shadow-lg p-2 md:p-12 md:pt-4">
+  <div class="bg-white rounded-xl shadow-lg p-2 md:p-12 md:pt-4">
   <!-- Venue Searchable Dropdown -->
   <div class="mb-2 md:mb-2 relative no-print-venue-dropdown" bind:this={venueDropdownRef}>
     <div class="relative">
@@ -635,11 +636,11 @@
             {/if}
             <!-- Contact information is hidden from public visitor page for security -->
             {#if selectedVenue.comment}
-              <p class="text-sm text-gray-600 italic">{selectedVenue.comment}</p>
+              <p class="text-sm text-gray-600 whitespace-pre-line">{selectedVenue.comment}</p>
             {/if}
           </div>
           {#if selectedVenue.geolocation}
-            <div class="w-full h-48 rounded-lg overflow-hidden border border-gray-300 no-print-map">
+            <div class="hidden md:block w-full h-48 rounded-lg overflow-hidden border border-gray-300 no-print-map">
               <div bind:this={mapContainer} class="w-full h-full"></div>
             </div>
           {/if}
@@ -649,7 +650,7 @@
       <!-- Event Lists Section -->
       {#if venueEventLists.length === 0}
         <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-          <p class="text-gray-500 text-center italic">
+          <p class="text-gray-500 text-center">
             This venue currently has no event schedules available.
           </p>
         </div>
@@ -657,29 +658,29 @@
         <!-- Single event list - no selector needed -->
         {#if selectedEventList}
           <div class="mt-6">
-            <h3 class="text-2xl font-semibold mb-4 text-gray-900">{selectedEventList.name}</h3>
+            <h3 class="text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
             {#if selectedEventList.comment}
-              <p class="text-gray-600 mb-4 italic">{selectedEventList.comment}</p>
+              <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">{selectedEventList.comment}</p>
             {/if}
 
             {#if listEvents.length === 0}
-              <p class="text-gray-500 italic">No events scheduled for this list.</p>
+              <p class="text-gray-500">No events scheduled for this list.</p>
             {:else}
-              <div class="space-y-3">
+              <div class="space-y-1">
                 {#each listEvents as event}
-                  <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div class="flex items-center justify-between py-1 px-3 bg-gray-50 rounded-lg">
                     <div>
-                      <p class="font-medium text-gray-900">{event.event_name}</p>
+                      <p class="font-medium text-gray-900 text-sm">{event.event_name}</p>
                       {#if event.comment}
-                        <p class="text-sm text-gray-600 italic">{event.comment}</p>
+                        <p class="text-sm md:text-xs text-gray-600 whitespace-pre-line mt-0.5">{event.comment}</p>
                       {/if}
                     </div>
                     <div class="text-right">
-                      <p class="text-lg font-semibold text-blue-600">
+                      <p class="text-base font-semibold text-blue-600">
                         {formatEventTimeFromRFC3339(event.datetime, selectedVenue?.timezone)}
                       </p>
                       {#if event.duration_minutes}
-                        <p class="text-xs text-gray-500">
+                        <p class="text-xs text-gray-500 mt-0.5">
                           {event.duration_minutes} min
                         </p>
                       {/if}
@@ -707,29 +708,29 @@
 
           {#if selectedEventList}
             <div>
-              <h3 class="text-2xl font-semibold mb-4 text-gray-900">{selectedEventList.name}</h3>
+              <h3 class="text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
               {#if selectedEventList.comment}
-                <p class="text-gray-600 mb-4 italic">{selectedEventList.comment}</p>
+                <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">{selectedEventList.comment}</p>
               {/if}
 
               {#if listEvents.length === 0}
-                <p class="text-gray-500 italic">No events scheduled for this list.</p>
+                <p class="text-gray-500">No events scheduled for this list.</p>
               {:else}
-                <div class="space-y-3">
+                <div class="space-y-1">
                   {#each listEvents as event}
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between py-1 px-3 bg-gray-50 rounded-lg">
                       <div>
-                        <p class="font-medium text-gray-900">{event.event_name}</p>
+                        <p class="font-medium text-gray-900 text-sm">{event.event_name}</p>
                         {#if event.comment}
-                          <p class="text-sm text-gray-600 italic">{event.comment}</p>
+                          <p class="text-sm md:text-xs text-gray-600 whitespace-pre-line mt-0.5">{event.comment}</p>
                         {/if}
                       </div>
                       <div class="text-right">
-                        <p class="text-lg font-semibold text-blue-600">
+                        <p class="text-base font-semibold text-blue-600">
                           {formatEventTimeFromRFC3339(event.datetime)}
                         </p>
                         {#if event.duration_minutes}
-                          <p class="text-xs text-gray-500">
+                          <p class="text-xs text-gray-500 mt-0.5">
                             {event.duration_minutes} min
                           </p>
                         {/if}
@@ -744,8 +745,9 @@
       {/if}
     </div>
   {:else}
-    <p class="text-gray-500 italic text-center">
-      Please select a venue from the dropdown above to view its details and event schedules.
+    <p class="text-gray-500 text-center" style="font-size: 14px;">
+      The search works across venue names, addresses, comments, owner information, event list names, and event names.
     </p>
   {/if}
+  </div>
 </div>

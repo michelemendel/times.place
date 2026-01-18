@@ -95,8 +95,7 @@
 
 ## Localization
 
-- Support for both English and Hebrew via label toggles or i18n helper
-- Consider direction swap for Hebrew (RTL support)
+- Support for both English and Hebrew
 
 ## Image Handling
 

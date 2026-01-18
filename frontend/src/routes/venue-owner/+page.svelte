@@ -2,7 +2,10 @@
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
+  import { browser } from '$app/environment';
   import { currentOwnerStore, venueStore, eventListStore, eventStore } from '$lib/stores';
+  import { generateUUID } from '$lib/utils/uuid.js';
+  import { updateModifiedTimestamp } from '$lib/utils/datetime.js';
 
   /** @type {import('$lib/types').VenueOwner | null} */
   let owner = null;
@@ -12,6 +15,8 @@
   let allEventLists = [];
   /** @type {import('$lib/types').Venue | null} */
   let deleteConfirmVenue = null;
+  /** @type {string | null} */
+  let copiedLinkToken = null;
 
   // Use reactive store syntax ($store) to automatically update when stores change
   $: {
@@ -101,6 +106,91 @@
       handleDeleteCancel();
     }
   }
+
+  /**
+   * Get event lists for a venue
+   * @param {import('$lib/types').Venue} venue
+   * @returns {import('$lib/types').EventList[]}
+   */
+  function getVenueEventLists(venue) {
+    return allEventLists
+      .filter(el => el.venue_uuid === venue.venue_uuid)
+      .sort((a, b) => {
+        // Sort by date, then by name
+        if (a.date !== b.date) {
+          return a.date.localeCompare(b.date);
+        }
+        return a.name.localeCompare(b.name);
+      });
+  }
+
+  /**
+   * Ensure event list has a private link token, generate if missing
+   * @param {import('$lib/types').EventList} eventList
+   * @returns {import('$lib/types').EventList}
+   */
+  function ensureEventListToken(eventList) {
+    if (eventList.private_link_token) {
+      return eventList;
+    }
+
+    // Generate token and update store
+    const token = generateUUID();
+    const updatedList = /** @type {import('$lib/types').EventList} */ (updateModifiedTimestamp({
+      ...eventList,
+      private_link_token: token
+    }));
+
+    // Update in store
+    const currentEventLists = get(eventListStore);
+    const updatedEventLists = currentEventLists.map(el =>
+      el.event_list_uuid === eventList.event_list_uuid ? updatedList : el
+    );
+    eventListStore.set(updatedEventLists);
+
+    return updatedList;
+  }
+
+  /**
+   * Get private link for an event list
+   * @param {import('$lib/types').EventList} eventList
+   * @returns {string}
+   */
+  function getPrivateLink(eventList) {
+    const listWithToken = ensureEventListToken(eventList);
+    if (!listWithToken.private_link_token) return '';
+    if (!browser) return '';
+    return `${window.location.origin}/?token=${listWithToken.private_link_token}`;
+  }
+
+  /**
+   * Copy private link to clipboard
+   * @param {import('$lib/types').EventList} eventList
+   */
+  async function copyPrivateLink(eventList) {
+    const link = getPrivateLink(eventList);
+    if (!link) return;
+
+    try {
+      await navigator.clipboard.writeText(link);
+      copiedLinkToken = eventList.event_list_uuid;
+      // Reset after 2 seconds
+      setTimeout(() => {
+        copiedLinkToken = null;
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  }
+
+  /**
+   * Navigate to view/print page for an event list
+   * @param {string} venueUuid
+   * @param {string} eventListUuid
+   */
+  function viewPrintEventList(venueUuid, eventListUuid) {
+    goto(`/venue-owner/${venueUuid}/event-lists/${eventListUuid}`);
+  }
 </script>
 
 <svelte:head>
@@ -152,6 +242,7 @@
     {:else}
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {#each ownerVenues as venue (venue.venue_uuid)}
+          {@const venueEventLists = getVenueEventLists(venue)}
           <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col h-full">
             {#if venue.banner_image}
               <div class="w-full h-32 sm:h-40 bg-gray-200 overflow-hidden">
@@ -182,13 +273,62 @@
               {#if venue.comment}
                 <p class="text-sm text-gray-500 mb-4 line-clamp-2">{venue.comment}</p>
               {/if}
+
+              <!-- Event Lists -->
+              {#if venueEventLists.length > 0}
+                <div class="mb-4 pt-4 border-t border-gray-200">
+                  <p class="text-sm font-medium text-gray-700 mb-3">Event Lists:</p>
+                  <div class="space-y-2">
+                    {#each venueEventLists as eventList (eventList.event_list_uuid)}
+                      <div class="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                          {#if eventList.visibility === 'private'}
+                            <div title="Private" class="shrink-0">
+                              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            </div>
+                          {:else}
+                            <div title="Public" class="shrink-0">
+                              <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                          {/if}
+                          <span class="text-sm text-gray-900 truncate">{eventList.name}</span>
+                        </div>
+                        <div class="flex gap-2 shrink-0">
+                          <button
+                            on:click={() => viewPrintEventList(venue.venue_uuid, eventList.event_list_uuid)}
+                            class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors duration-200"
+                            title="View/Print"
+                          >
+                            View/Print
+                          </button>
+                          <button
+                            on:click={() => copyPrivateLink(eventList)}
+                            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors duration-200"
+                            title="Get Private Link"
+                          >
+                            {#if copiedLinkToken === eventList.event_list_uuid}
+                              <span class="flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Copied
+                              </span>
+                            {:else}
+                              Get Link
+                            {/if}
+                          </button>
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+
               <div class="flex flex-col sm:flex-row gap-2 mt-auto">
-                <button
-                  on:click={() => goto(`/venue-owner/${venue.venue_uuid}/event-lists`)}
-                  class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base"
-                >
-                  View Event Lists
-                </button>
                 <button
                   on:click={() => handleEditVenue(venue)}
                   class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base"

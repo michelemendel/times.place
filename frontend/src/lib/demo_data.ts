@@ -42,7 +42,7 @@ export function seedDemoData(force: boolean = false) {
     };
     owners.push(owner1);
 
-    // Owner 1 - Venue 1: Beth El Synagogue (has multiple event lists) - PUBLIC
+    // Owner 1 - Venue 1: Beth El Synagogue (has multiple event lists)
     const venue1Id = generateUUID();
     const venue1: Venue = {
         venue_uuid: venue1Id,
@@ -54,22 +54,20 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner1Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
-        visibility: "public",
         created_at: now,
         modified_at: now
     };
     venues.push(venue1);
 
-    // Event List 1 for Venue 1: Daily Minyan
+    // Event List 1 for Venue 1: Daily Minyan - PUBLIC
     const list1Id = generateUUID();
-    const eventList1Token = generateUUID();
     const eventList1: EventList = {
         event_list_uuid: list1Id,
         venue_uuid: venue1Id,
         name: "Daily Minyan",
         date: "2025-12-25",
         comment: "Morning and afternoon prayers",
-        private_link_token: eventList1Token,
+        visibility: "public",
         event_uuids: [],
         created_at: now,
         modified_at: now
@@ -103,16 +101,15 @@ export function seedDemoData(force: boolean = false) {
     events.push(event2);
     eventList1.event_uuids.push(event1Id, event2Id);
 
-    // Event List 2 for Venue 1: Shabbat Services
+    // Event List 2 for Venue 1: Shabbat Services - PUBLIC
     const list2Id = generateUUID();
-    const eventList2Token = generateUUID();
     const eventList2: EventList = {
         event_list_uuid: list2Id,
         venue_uuid: venue1Id,
         name: "Shabbat Services",
         date: "2025-12-26",
         comment: "Friday evening and Saturday morning services",
-        private_link_token: eventList2Token,
+        visibility: "public",
         event_uuids: [],
         created_at: now,
         modified_at: now
@@ -145,9 +142,8 @@ export function seedDemoData(force: boolean = false) {
     events.push(event4);
     eventList2.event_uuids.push(event3Id, event4Id);
 
-    // Owner 1 - Venue 2: Community Center (has no event lists) - PRIVATE
+    // Owner 1 - Venue 2: Community Center (has no event lists)
     const venue2Id = generateUUID();
-    const venue2PrivateToken = generateUUID();
     const venue2: Venue = {
         venue_uuid: venue2Id,
         name: "Community Center",
@@ -158,8 +154,6 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner1Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
-        visibility: "private",
-        private_link_token: venue2PrivateToken,
         created_at: now,
         modified_at: now
     };
@@ -178,7 +172,7 @@ export function seedDemoData(force: boolean = false) {
     };
     owners.push(owner2);
 
-    // Owner 2 - Venue 1: Beit Midrash (has one event list) - PUBLIC
+    // Owner 2 - Venue 1: Beit Midrash (has one event list)
     const venue3Id = generateUUID();
     const venue3: Venue = {
         venue_uuid: venue3Id,
@@ -190,12 +184,12 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner2Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
-        visibility: "public",
         created_at: now,
         modified_at: now
     };
     venues.push(venue3);
 
+    // Event List 3 for Venue 3: Weekly Schedule - PRIVATE (to demonstrate private event lists)
     const list3Id = generateUUID();
     const eventList3Token = generateUUID();
     const eventList3: EventList = {
@@ -204,6 +198,7 @@ export function seedDemoData(force: boolean = false) {
         name: "Weekly Schedule",
         date: "2025-12-25",
         comment: "Regular weekly learning sessions",
+        visibility: "private",
         private_link_token: eventList3Token,
         event_uuids: [],
         created_at: now,
@@ -237,9 +232,8 @@ export function seedDemoData(force: boolean = false) {
     events.push(event6);
     eventList3.event_uuids.push(event5Id, event6Id);
 
-    // Owner 2 - Venue 2: Chabad House (has no event lists) - PRIVATE
+    // Owner 2 - Venue 2: Chabad House (has no event lists)
     const venue4Id = generateUUID();
-    const venue4PrivateToken = generateUUID();
     const venue4: Venue = {
         venue_uuid: venue4Id,
         name: "Chabad House",
@@ -250,8 +244,6 @@ export function seedDemoData(force: boolean = false) {
         owner_uuid: owner2Id,
         event_list_uuids: [],
         timezone: "Asia/Jerusalem",
-        visibility: "private",
-        private_link_token: venue4PrivateToken,
         created_at: now,
         modified_at: now
     };

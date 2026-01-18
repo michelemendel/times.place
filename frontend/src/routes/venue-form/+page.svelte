@@ -83,9 +83,7 @@
   let venueGeolocation = '';
   let venueComment = '';
   let venueBannerImage = '';
-  let venueTimezone = 'Asia/Jerusalem';
-  let venueVisibility = 'private';
-  let privateLinkToken = '';
+  let venueTimezone = '';
 
   // Event lists state (array of event list objects being edited)
   /** @type {any[]} */
@@ -191,9 +189,7 @@
     venueComment = venue.comment || '';
     venueBannerImage = venue.banner_image || '';
     // Preserve empty timezone if it exists, only default for new venues
-    venueTimezone = venue.timezone !== undefined && venue.timezone !== null ? venue.timezone : 'Asia/Jerusalem';
-    venueVisibility = venue.visibility || 'private';
-    privateLinkToken = venue.private_link_token || '';
+    venueTimezone = venue.timezone !== undefined && venue.timezone !== null ? venue.timezone : '';
 
     // Get current values from stores (in case stores haven't updated yet)
     const currentEventLists = get(eventListStore);
@@ -205,8 +201,8 @@
     // Deduplicate events by event_uuid within each event list to prevent duplicates when loadVenueData() is called multiple times
     eventListsData = venueEventLists.map((el) => {
       const listEvents = currentEvents.filter((e) => el.event_uuids.includes(e.event_uuid));
-      // Ensure date is set - use existing date or default to today
-      const eventListDate = el.date || new Date().toISOString().split('T')[0];
+      // Preserve existing date, including empty string for no date
+      const eventListDate = el.date !== undefined && el.date !== null ? el.date : '';
       // Deduplicate events by event_uuid within this event list
       const seenEventUuids = new Set();
       const uniqueEvents = [];
@@ -224,6 +220,7 @@
       return {
         ...el,
         date: eventListDate,
+        visibility: el.visibility || 'private', // Default to private if not set
         events: eventsWithTime || []
       };
     });
@@ -291,8 +288,9 @@
       event_list_uuid: generateUUID(),
       venue_uuid: venueUuid,
       name: 'New Event List',
-      date: new Date().toISOString().split('T')[0], // Today's date in ISO format
+      date: '', // No date by default
       comment: '',
+      visibility: 'private', // Default to private
       private_link_token: generateUUID(),
       event_uuids: [],
       events: [],
@@ -365,7 +363,7 @@
       event_uuid: generateUUID(),
       event_list_uuid: listUuid,
       event_name: 'New Event',
-      datetime: combineTimeAndDate('12:00', list.date),
+      datetime: list.date && list.date.trim() ? combineTimeAndDate('12:00', list.date) : getCurrentTimestamp(),
       time: '12:00',
       comment: '',
       duration_minutes: 0,
@@ -567,17 +565,31 @@
   }
 
   /**
-   * Handle visibility change
+   * Handle event list visibility change
+   * @param {string} listUuid
    * @param {string} newVisibility
    */
-  function handleVisibilityChange(newVisibility) {
+  function handleEventListVisibilityChange(listUuid, newVisibility) {
     saveUndoState();
-    venueVisibility = newVisibility;
-    if (newVisibility === 'private' && !privateLinkToken) {
-      privateLinkToken = generateUUID();
-    } else if (newVisibility === 'public') {
-      privateLinkToken = '';
-    }
+    const listIndex = eventListsData.findIndex((el) => el.event_list_uuid === listUuid);
+    if (listIndex === -1) return;
+    const list = eventListsData[listIndex];
+
+    // Preserve existing token - only generate if switching to private and token doesn't exist
+    // Don't set to undefined when switching to public - keep the token for future use
+    const updatedList = {
+      ...list,
+      visibility: newVisibility,
+      private_link_token: newVisibility === 'private'
+        ? (list.private_link_token || generateUUID())
+        : list.private_link_token // Preserve token even when public
+    };
+
+    eventListsData = [
+      ...eventListsData.slice(0, listIndex),
+      updatedList,
+      ...eventListsData.slice(listIndex + 1)
+    ];
   }
 
   /**
@@ -595,24 +607,23 @@
       return;
     }
 
-    // Validate event list dates
+    // Validate event list dates (optional, but if provided must be valid)
     for (const list of eventListsData) {
       const dateValue = list.date ? String(list.date).trim() : '';
-      if (!dateValue) {
-        alert(`Date is required for event list "${list.name}".`);
-        return;
-      }
-      // type="date" inputs should return YYYY-MM-DD format
-      // Validate the format
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-        alert(`Invalid date format for event list "${list.name}". Please use ISO 8601 format (YYYY-MM-DD). Got: "${dateValue}"`);
-        return;
-      }
-      // Validate that it's a valid date
-      const parsedDate = parseISODate(dateValue);
-      if (!parsedDate) {
-        alert(`Invalid date for event list "${list.name}". Please use a valid date in ISO 8601 format (YYYY-MM-DD). Got: "${dateValue}"`);
-        return;
+      // Only validate format if a date is provided
+      if (dateValue) {
+        // type="date" inputs should return YYYY-MM-DD format
+        // Validate the format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+          alert(`Invalid date format for event list "${list.name}". Please use ISO 8601 format (YYYY-MM-DD). Got: "${dateValue}"`);
+          return;
+        }
+        // Validate that it's a valid date
+        const parsedDate = parseISODate(dateValue);
+        if (!parsedDate) {
+          alert(`Invalid date for event list "${list.name}". Please use a valid date in ISO 8601 format (YYYY-MM-DD). Got: "${dateValue}"`);
+          return;
+        }
       }
     }
 
@@ -624,7 +635,10 @@
           alert(`Invalid time format for event "${event.event_name}". Please use HH:MM format.`);
           return;
         }
-        event.datetime = combineTimeAndDate(event.time, list.date);
+        // Only update datetime if date is provided
+        if (list.date && list.date.trim()) {
+          event.datetime = combineTimeAndDate(event.time, list.date);
+        }
       }
     }
 
@@ -642,8 +656,6 @@
         comment: sanitizeInput(venueComment.trim()),
         event_list_uuids: eventListsData.map((el) => el.event_list_uuid),
         timezone: venueTimezone,
-        visibility: venueVisibility,
-        private_link_token: venueVisibility === 'private' ? privateLinkToken : undefined,
         created_at: now,
         modified_at: now
       };
@@ -656,9 +668,7 @@
         geolocation: sanitizeInput(venueGeolocation.trim()),
         comment: sanitizeInput(venueComment.trim()),
         event_list_uuids: eventListsData.map((el) => el.event_list_uuid),
-        timezone: venueTimezone,
-        visibility: venueVisibility,
-        private_link_token: venueVisibility === 'private' ? privateLinkToken : undefined
+        timezone: venueTimezone
       });
     }
 
@@ -678,18 +688,28 @@
     const updatedEventLists = eventListsData.map((listData) => {
       const existingList = currentEventLists.find((el) => el.event_list_uuid === listData.event_list_uuid);
       if (existingList) {
-        // Preserve private_link_token if it exists, otherwise generate one
-        const token = existingList.private_link_token || listData.private_link_token || generateUUID();
+        // Preserve private_link_token: prefer existing token, then current data token, only generate if private and none exists
+        // The token should persist even when visibility is public, so we preserve it
+        const preservedToken = existingList.private_link_token || listData.private_link_token;
+        const finalToken = listData.visibility === 'private'
+          ? (preservedToken || generateUUID())  // If private, use preserved token or generate if missing
+          : preservedToken;  // If public, preserve token for future use (don't set to undefined)
         const updated = /** @type {import('$lib/types').EventList} */ (updateModifiedTimestamp({
           ...existingList,
           name: sanitizeInput(listData.name.trim()),
           date: listData.date,
           comment: sanitizeInput(listData.comment || ''),
+          visibility: listData.visibility || 'private',
           event_uuids: listData.event_uuids,
-          private_link_token: token
+          private_link_token: finalToken
         }));
         return updated;
       } else {
+        // For new lists, preserve token from listData (which should have been set at creation)
+        // Only generate if private and token doesn't exist
+        const finalToken = listData.visibility === 'private'
+          ? (listData.private_link_token || generateUUID())
+          : listData.private_link_token;  // Preserve token even if public
         /** @type {import('$lib/types').EventList} */
         const newList = {
           event_list_uuid: listData.event_list_uuid,
@@ -697,7 +717,8 @@
           name: sanitizeInput(listData.name.trim()),
           date: listData.date,
           comment: sanitizeInput(listData.comment || ''),
-          private_link_token: listData.private_link_token || generateUUID(),
+          visibility: listData.visibility || 'private',
+          private_link_token: finalToken,
           event_uuids: listData.event_uuids,
           created_at: listData.created_at || now,
           modified_at: now
@@ -1074,9 +1095,6 @@
       venue = null;
       eventListsData = [];
       previewEventListId = null;
-      // Default to private visibility
-      venueVisibility = 'private';
-      privateLinkToken = generateUUID();
     }
   });
 
@@ -1276,39 +1294,6 @@
           </select>
         </div>
 
-        <div>
-          <div class="block text-sm font-medium text-gray-700 mb-2">Visibility</div>
-          <div class="flex gap-4">
-            <label class="flex items-center">
-              <input
-                type="radio"
-                value="public"
-                bind:group={venueVisibility}
-                on:change={() => handleVisibilityChange('public')}
-                class="mr-2"
-              />
-              <span>Public</span>
-            </label>
-            <label class="flex items-center">
-              <input
-                type="radio"
-                value="private"
-                bind:group={venueVisibility}
-                on:change={() => handleVisibilityChange('private')}
-                class="mr-2"
-              />
-              <span>Private</span>
-            </label>
-          </div>
-          {#if venueVisibility === 'private' && privateLinkToken}
-            <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
-              <p class="text-gray-600 mb-1">Private Link:</p>
-              <code class="text-blue-600 break-all">
-                {typeof window !== 'undefined' ? `${window.location.origin}/?token=${privateLinkToken}` : ''}
-              </code>
-            </div>
-          {/if}
-        </div>
 
         <div>
           <label for="venue-banner" class="block text-sm font-medium text-gray-700 mb-1">Banner Image (optional)</label>
@@ -1344,7 +1329,7 @@
         {/if}
 
         {#each eventListsData as listData, listIndex (listData.event_list_uuid)}
-          <div class="border border-gray-200 rounded-lg p-4 space-y-3">
+          <div class="border-2 border-gray-300 rounded-lg p-4 space-y-3">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <button
@@ -1384,16 +1369,18 @@
             </div>
 
             <div>
-              <label for="event-list-date-{listData.event_list_uuid}" class="block text-sm font-medium text-gray-700 mb-1">Date (ISO 8601: YYYY-MM-DD)</label>
+              <label for="event-list-date-{listData.event_list_uuid}" class="block text-sm font-medium text-gray-700 mb-1">Date (optional, ISO 8601: YYYY-MM-DD)</label>
               <input
                 type="date"
                 id="event-list-date-{listData.event_list_uuid}"
                 bind:value={listData.date}
                 on:input={() => {
-                  // Update datetime for all events in this list when date changes
-                  listData.events.forEach((/** @type {any} */ event) => {
-                    event.datetime = combineTimeAndDate(event.time, listData.date);
-                  });
+                  // Update datetime for all events in this list when date changes (only if date is provided)
+                  if (listData.date && listData.date.trim()) {
+                    listData.events.forEach((/** @type {any} */ event) => {
+                      event.datetime = combineTimeAndDate(event.time, listData.date);
+                    });
+                  }
                 }}
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
@@ -1409,6 +1396,40 @@
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Optional comment"
               ></textarea>
+            </div>
+
+            <div>
+              <div class="block text-sm font-medium text-gray-700 mb-2">Visibility</div>
+              <div class="flex gap-4">
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    value="public"
+                    checked={listData.visibility === 'public'}
+                    on:change={() => handleEventListVisibilityChange(listData.event_list_uuid, 'public')}
+                    class="mr-2"
+                  />
+                  <span>Public</span>
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="radio"
+                    value="private"
+                    checked={listData.visibility === 'private'}
+                    on:change={() => handleEventListVisibilityChange(listData.event_list_uuid, 'private')}
+                    class="mr-2"
+                  />
+                  <span>Private</span>
+                </label>
+              </div>
+              {#if listData.visibility === 'private' && listData.private_link_token}
+                <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
+                  <p class="text-gray-600 mb-1">Private Link:</p>
+                  <code class="text-blue-600 break-all">
+                    {typeof window !== 'undefined' ? `${window.location.origin}/?token=${listData.private_link_token}` : ''}
+                  </code>
+                </div>
+              {/if}
             </div>
 
             <div>
@@ -1480,8 +1501,10 @@
                       id="event-time-{event.event_uuid}"
                       bind:value={event.time}
                       on:input={() => {
-                        // Update datetime immediately when time changes
-                        event.datetime = combineTimeAndDate(event.time, listData.date);
+                        // Update datetime immediately when time changes (only if date is provided)
+                        if (listData.date && listData.date.trim()) {
+                          event.datetime = combineTimeAndDate(event.time, listData.date);
+                        }
                       }}
                       class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
@@ -1606,9 +1629,15 @@
                         {/if}
                       </div>
                       <div class="text-right">
-                        <p class="text-lg font-semibold text-blue-600">
-                          {formatEventTime(Math.floor(new Date(combineTimeAndDate(event.time, previewEventList.date)).getTime() / 1000), venueTimezone ? { timeZone: venueTimezone } : {})}
-                        </p>
+                        {#if previewEventList.date && previewEventList.date.trim()}
+                          <p class="text-lg font-semibold text-blue-600">
+                            {formatEventTime(Math.floor(new Date(combineTimeAndDate(event.time, previewEventList.date)).getTime() / 1000), venueTimezone ? { timeZone: venueTimezone } : {})}
+                          </p>
+                        {:else}
+                          <p class="text-lg font-semibold text-gray-400">
+                            {event.time}
+                          </p>
+                        {/if}
                         {#if event.duration_minutes}
                           <p class="text-xs text-gray-500">{event.duration_minutes} min</p>
                         {/if}

@@ -607,3 +607,71 @@
 - **Token Generation**: Tokens are generated automatically when event lists are created, and on-the-fly if missing when accessing the event lists page. This ensures all event lists have tokens available.
 - **Print Styles**: Used CSS classes (`no-print-*`) to selectively hide UI elements during printing, providing clean print output with only essential information.
 - **Route Configuration**: Dynamic route marked as non-prerenderable since it requires authentication and venue ownership verification.
+
+## 2026-01-18
+
+### My Venues Page Event List Management Redesign
+
+- **Removed "View Event Lists" Button** (`frontend/src/routes/venue-owner/+page.svelte`):
+  - Removed the separate "View Event Lists" button from each venue card.
+  - Event lists are now displayed inline within each venue card for better accessibility and workflow.
+
+- **Inline Event Lists Display** (`frontend/src/routes/venue-owner/+page.svelte`):
+  - Event lists are now shown directly in each venue card below the venue comment.
+  - Each event list displays:
+    - Visibility icon (lock icon for private, globe icon for public) with tooltip
+    - Event list name (truncated if too long)
+    - "View/Print" button (green) - navigates to dedicated view/print page
+    - "Get Private Link" button (blue) - copies link to clipboard with visual feedback
+  - Event lists are sorted by date, then by name.
+  - Only displays event lists section if venue has at least one event list.
+  - Styled with gray background and proper spacing for clear visual separation.
+
+- **View/Print Page for Single Event List** (`frontend/src/routes/venue-owner/[venue_uuid]/event-lists/[event_list_uuid]/+page.svelte`):
+  - Created new route `/venue-owner/[venue_uuid]/event-lists/[event_list_uuid]` for viewing and printing individual event lists.
+  - Displays full event list with all events sorted by datetime.
+  - Shows venue name, address, event list name, date, and comment.
+  - Includes "Back" button to return to My Venues page.
+  - Includes "Print" button that triggers browser print dialog.
+  - Print styles hide action buttons when printing (using `no-print` class).
+  - Handles authorization - redirects if venue owner doesn't own the venue.
+  - Created `+page.js` file to mark route as non-prerenderable (requires authentication).
+
+- **Get Private Link Functionality** (`frontend/src/routes/venue-owner/+page.svelte`):
+  - "Get Private Link" button copies the private link to clipboard without navigating.
+  - Shows "Copied!" feedback with checkmark icon for 2 seconds after copying.
+  - Automatically generates `private_link_token` if missing when copying link.
+  - Uses `ensureEventListToken()` helper function to guarantee token exists.
+  - Link format: `{origin}/?token={event_list_token}`.
+
+- **Helper Functions** (`frontend/src/routes/venue-owner/+page.svelte`):
+  - `getVenueEventLists(venue)`: Gets and sorts event lists for a specific venue.
+  - `ensureEventListToken(eventList)`: Ensures event list has a private link token, generates if missing.
+  - `getPrivateLink(eventList)`: Generates the full private link URL for an event list.
+  - `copyPrivateLink(eventList)`: Copies private link to clipboard with visual feedback.
+  - `viewPrintEventList(venueUuid, eventListUuid)`: Navigates to the view/print page for an event list.
+
+- **Visibility Icons** (`frontend/src/routes/venue-owner/+page.svelte`):
+  - Added lock icon (🔒) for private event lists with "Private" tooltip.
+  - Added globe icon (🌐) for public event lists with "Public" tooltip.
+  - Icons displayed next to event list name for quick visibility status identification.
+  - Icons are properly sized (w-4 h-4) and colored (text-gray-600) for consistency.
+
+- **TypeScript Type Fixes**:
+  - Fixed type errors related to `updateModifiedTimestamp()` returning generic `object` type.
+  - Added type cast using JSDoc syntax: `/** @type {import('$lib/types').EventList} */` to ensure TypeScript recognizes the result as `EventList`.
+  - Fixed `map()` operation type inference by ensuring `updatedList` is properly typed before use in array operations.
+  - Used `{@const}` directive at `{#each}` block level to compute event lists once per venue iteration.
+
+- **Build Configuration**:
+  - All routes properly configured with `prerender = false` for dynamic authentication-based routes.
+  - Build completes successfully with no type errors or warnings.
+
+### Implementation Decisions
+
+- **Inline Display**: Chose to display event lists inline in venue cards instead of separate page for better workflow - users can quickly access event list actions without navigation.
+- **Dedicated View/Print Page**: Created separate route for viewing/printing single event lists to provide focused, print-optimized view with back navigation.
+- **Copy vs Navigate**: "Get Private Link" copies to clipboard without navigation for quick sharing, while "View/Print" navigates to dedicated page for focused viewing and printing.
+- **Token Generation**: Tokens are generated on-demand when needed (when copying link) rather than requiring pre-generation, ensuring all event lists can be shared even if token was missing.
+- **Visual Feedback**: Used temporary state (`copiedLinkToken`) to show "Copied!" feedback for 2 seconds, providing clear user confirmation of successful copy operation.
+- **Type Safety**: Used JSDoc type annotations with type casts to ensure TypeScript properly infers types throughout the event list management flow.

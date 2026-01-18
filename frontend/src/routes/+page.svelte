@@ -157,16 +157,25 @@
     ? venues.find((v) => v.venue_uuid === eventListFromToken.venue_uuid)
     : null;
 
-  // Filter venues: show public venues OR private venues accessed via token OR venues with event lists accessed via token
+  // Filter venues: show venues that have at least one public event list OR venues with event lists accessed via token
+  // If all event lists are private (and not accessed via token), the venue should not appear
   $: visibleVenues = venues.filter((venue) => {
-    if (venue.visibility === 'public') return true;
-    if (venue.visibility === 'private' && privateLinkToken && venue.private_link_token === privateLinkToken) {
-      return true;
-    }
+    const venueEventLists = eventLists.filter((el) =>
+      venue.event_list_uuids.includes(el.event_list_uuid)
+    );
+
+    // If venue has no event lists, don't show it
+    if (venueEventLists.length === 0) return false;
+
     // Show venue if it contains an event list accessed via token
     if (venueFromEventListToken && venue.venue_uuid === venueFromEventListToken.venue_uuid) {
       return true;
     }
+
+    // Show venue if it has at least one public event list
+    const hasPublicEventList = venueEventLists.some((el) => el.visibility === 'public');
+    if (hasPublicEventList) return true;
+
     return false;
   });
 
@@ -232,9 +241,20 @@
     ? venues.find((v) => v.venue_uuid === selectedVenueId)
     : null;
 
-  // Get event lists for selected venue
+  // Get event lists for selected venue, filtered by visibility
+  // Show public event lists OR private event lists accessed via token
   $: venueEventLists = selectedVenue
-    ? eventLists.filter((el) => selectedVenue.event_list_uuids.includes(el.event_list_uuid))
+    ? eventLists
+        .filter((el) => selectedVenue.event_list_uuids.includes(el.event_list_uuid))
+        .filter((el) => {
+          // Show public event lists
+          if (el.visibility === 'public') return true;
+          // Show private event lists if accessed via token
+          if (el.visibility === 'private' && privateLinkToken && el.private_link_token === privateLinkToken) {
+            return true;
+          }
+          return false;
+        })
     : [];
 
   // Auto-select first event list or event list from token

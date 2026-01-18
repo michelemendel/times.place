@@ -102,13 +102,8 @@
 
 ## Localization
 
-- [ ] Implement English/Hebrew content support (spec requires both languages)
 - [ ] Evaluate and implement RTL support for Hebrew content if needed
-- [ ] Test bilingual content display
-
-## Decision/Exploration Tasks
-
-- [ ] Evaluate multilingual switching UX: Do we need an English/Hebrew switch in the application, or will it work using the computer's keyboard input source?
+- [ ] Test support for Hebrew
 
 ## Deployment
 

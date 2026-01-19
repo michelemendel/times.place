@@ -392,7 +392,13 @@
    */
   function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
     const unixTimestamp = rfc3339ToUnixTimestamp(rfc3339);
-    return formatEventTime(unixTimestamp, venueTimezone ? { timeZone: venueTimezone } : {});
+    // Explicitly check for non-empty timezone string (trim whitespace)
+    // If venue timezone is set, use it; otherwise fall back to visitor's browser timezone
+    const timezoneToUse = venueTimezone && typeof venueTimezone === 'string' && venueTimezone.trim()
+      ? venueTimezone.trim()
+      : undefined;
+
+    return formatEventTime(unixTimestamp, timezoneToUse ? { timeZone: timezoneToUse } : {});
   }
 
   /**
@@ -727,7 +733,7 @@
                       </div>
                       <div class="text-right">
                         <p class="text-base font-semibold text-blue-600">
-                          {formatEventTimeFromRFC3339(event.datetime)}
+                          {formatEventTimeFromRFC3339(event.datetime, selectedVenue?.timezone)}
                         </p>
                         {#if event.duration_minutes}
                           <p class="text-xs text-gray-500 mt-0.5">

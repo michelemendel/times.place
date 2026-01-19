@@ -107,6 +107,33 @@
     </p>
 
     <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-900">
+      Timezone Settings
+    </h2>
+    <p>
+      When creating events for your venue, you can optionally set a timezone. This affects how event times are displayed to visitors:
+    </p>
+    <div class="mt-4 space-y-4">
+      <div class="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+        <p class="font-semibold text-blue-900 mb-2">Timezone Set:</p>
+        <p class="text-blue-800">
+          If you set a timezone for your venue (e.g., "Israel Time (Jerusalem)"), all visitors will see event times displayed in that timezone, regardless of where they are located. For example, if you set an event for 14:00 in Jerusalem time, a visitor in New York will also see 14:00 (Jerusalem time), not the converted time in their local timezone.
+        </p>
+      </div>
+      <div class="p-4 bg-green-50 border-l-4 border-green-500 rounded">
+        <p class="font-semibold text-green-900 mb-2">No Timezone Set:</p>
+        <p class="text-green-800">
+          If you leave the timezone empty, each visitor will see event times converted to their own browser's timezone. For example, if you set an event for 14:00 and a visitor is in New York, they might see 09:00 (their local time), while a visitor in London might see 14:00 (their local time).
+        </p>
+      </div>
+    </div>
+    <p class="mt-4">
+      <strong>When to set a timezone:</strong> Set a timezone when you want all visitors to see the same local time for your venue, regardless of where they are. This is especially useful for venues that serve a local community and want to display times in the venue's local time.
+    </p>
+    <p>
+      <strong>When to leave it empty:</strong> Leave the timezone empty if you want each visitor to see times automatically converted to their own location. This is useful for events that need to be understood in the visitor's local context.
+    </p>
+
+    <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-900">
       Visibility & Security
     </h2>
     <p>

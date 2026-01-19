@@ -740,3 +740,54 @@
 - **Preview Accuracy**: Preview pane now exactly matches public page styling to provide accurate preview of how content will appear to visitors.
 - **Menu Spacing**: Reduced menu spacing and added separators for more compact, professional appearance while maintaining readability.
 - **Typography Consistency**: Removed all italic styling for cleaner, more modern appearance. Used responsive font sizing for better mobile experience.
+
+## 2026-01-19
+
+### Timezone Functionality Fix
+
+- **Root Cause Identified** (`frontend/src/routes/venue-form/+page.svelte`):
+  - Fixed critical bug where event datetimes were being created in the venue owner's browser timezone instead of the venue's specified timezone.
+  - When creating `new Date('2024-01-15T14:00:00')` without a timezone, JavaScript interprets it as local time (owner's browser timezone), not the venue's timezone.
+  - This caused visitors to see times converted to their own timezone even when a venue timezone was set.
+
+- **Solution Implemented**:
+  - Updated `combineTimeAndDate()` function to accept optional `venueTimezone` parameter.
+  - When venue timezone is set, uses iterative adjustment algorithm to create a UTC timestamp that, when displayed in the venue timezone, shows the desired wall-clock time.
+  - When no venue timezone is set, continues to interpret times as the owner's local timezone (existing behavior).
+  - Updated all calls to `combineTimeAndDate()` throughout the venue form to pass the venue timezone.
+
+- **Timezone Display Logic** (`frontend/src/routes/+page.svelte`, `frontend/src/lib/utils/datetime.js`):
+  - Enhanced `formatEventTimeFromRFC3339()` with explicit validation for non-empty timezone strings (trims whitespace).
+  - Added validation in `formatEventTime()` to ensure timezone values are valid strings before use.
+  - Both single and multiple event list display paths now correctly pass venue timezone to formatting functions.
+
+- **Behavior After Fix**:
+  - **Timezone Set**: All visitors see event times in the venue's timezone (e.g., everyone sees "14:00" in Jerusalem time, regardless of their location).
+  - **No Timezone**: Each visitor sees event times converted to their own browser timezone (e.g., 14:00 might show as 09:00 in New York or 14:00 in London).
+
+### Timezone Documentation and User Education
+
+- **About Page Updates** (`frontend/src/routes/about/+page.svelte`):
+  - Added comprehensive "Timezone Settings" section explaining how timezone functionality works.
+  - Included color-coded examples:
+    - Blue box: Explains behavior when timezone is set (fixed display for all visitors).
+    - Green box: Explains behavior when no timezone is set (relative to each visitor's location).
+  - Added guidance on when to set a timezone vs. leaving it empty.
+
+- **Venue Form Help Popup** (`frontend/src/routes/venue-form/+page.svelte`):
+  - Added question mark icon (circle with "?") next to timezone label for inline help.
+  - Implemented click-to-toggle popup with same explanation as About page (condensed format).
+  - Popup features:
+    - Responsive positioning: Fixed and centered in viewport on mobile, absolute positioned relative to button on desktop.
+    - Click-outside-to-close functionality.
+    - Accessible with proper ARIA attributes (`aria-label`, `aria-expanded`, `aria-haspopup`, `role="tooltip"`).
+    - Color-coded content matching About page format for consistency.
+  - Mobile-optimized: Uses `fixed` positioning with viewport centering to prevent overflow on small screens.
+
+### Implementation Decisions
+
+- **Timezone Storage**: Timezone is stored as IANA timezone string (e.g., "Asia/Jerusalem"). Actual time offsets are calculated dynamically by JavaScript's `Intl.DateTimeFormat` API based on the timezone, date, and DST rules. This is the correct approach as offsets change with DST and historical rules.
+
+- **Datetime Creation**: When venue timezone is set, event datetimes are created using an iterative adjustment algorithm that ensures the stored UTC timestamp, when displayed in the venue timezone, shows the exact wall-clock time entered by the owner. This ensures consistency across all visitors.
+
+- **User Education**: Added documentation in two places (About page and inline help) to help users understand the timezone functionality, as it was identified as confusing for regular users. The help popup provides quick access without navigating away from the form.

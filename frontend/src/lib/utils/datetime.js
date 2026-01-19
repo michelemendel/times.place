@@ -1,9 +1,9 @@
 /**
  * Date and time utility functions for times.place
- * 
+ *
  * Handles timezone-aware formatting of dates and times based on user's browser settings.
  * All functions automatically use the user's locale and timezone.
- * 
+ *
  * Note: Locale and timezone are different:
  * - Locale (e.g., "en-US", "he-IL"): Controls language/cultural formatting (month names, day names, number formats)
  * - Timezone (e.g., "America/New_York", "Asia/Jerusalem"): Controls what time it actually is (geographic location)
@@ -39,7 +39,7 @@ function getDefaultHour12() {
 /**
  * Format an event time (Unix epoch timestamp) to display only the time portion
  * The time is adjusted for the specified timezone (or user's timezone by default)
- * 
+ *
  * @param {number} unixTimestamp - Unix epoch timestamp in seconds
  * @param {object} options - Optional formatting options
  * @param {boolean} [options.hour12] - Use 12-hour format (default: from config file)
@@ -56,17 +56,23 @@ export function formatEventTime(unixTimestamp, options = {}) {
 
   const date = new Date(unixTimestamp * 1000); // Convert seconds to milliseconds
 
+  // Validate timezone - if provided, ensure it's a non-empty string
+  // Intl.DateTimeFormat will throw if timezone is invalid, but we want to be explicit
+  const timeZoneToUse = timeZone && typeof timeZone === 'string' && timeZone.trim()
+    ? timeZone.trim()
+    : getUserTimezone();
+
   return new Intl.DateTimeFormat(locale, {
     hour: '2-digit',
     minute: '2-digit',
     hour12: hour12,
-    timeZone: timeZone
+    timeZone: timeZoneToUse
   }).format(date);
 }
 
 /**
  * Format an event list date (ISO 8601 date string) for display
- * 
+ *
  * @param {string} isoDateString - ISO 8601 date string (e.g., "2024-12-25")
  * @param {object} options - Optional formatting options
  * @param {string} [options.locale] - Override locale (default: user's browser locale)
@@ -89,7 +95,7 @@ export function formatEventListDate(isoDateString, options = {}) {
 /**
  * Format a full date and time from Unix epoch timestamp
  * Useful for internal operations, debugging, or admin views
- * 
+ *
  * @param {number} unixTimestamp - Unix epoch timestamp in seconds
  * @param {object} options - Optional formatting options
  * @param {string} [options.locale] - Override locale (default: user's browser locale)
@@ -115,7 +121,7 @@ export function formatFullDateTime(unixTimestamp, options = {}) {
 
 /**
  * Validate and parse an ISO 8601 date string
- * 
+ *
  * @param {string} isoDateString - ISO 8601 date string (e.g., "2024-12-25")
  * @returns {Date|null} Parsed Date object or null if invalid
  */
@@ -129,7 +135,7 @@ export function parseISODate(isoDateString) {
 
 /**
  * Convert a time input (hours, minutes) combined with an event list date to Unix epoch timestamp
- * 
+ *
  * @param {string} eventListDate - ISO 8601 date string from event list (e.g., "2024-12-25")
  * @param {number} hours - Hours (0-23)
  * @param {number} minutes - Minutes (0-59)

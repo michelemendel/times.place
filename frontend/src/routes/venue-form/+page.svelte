@@ -114,6 +114,13 @@
   let geocodingResults = [];
   let showGeocodingResults = false;
 
+  // Timezone help popup state
+  let showTimezoneHelp = false;
+  /** @type {HTMLElement | null} */
+  let timezoneHelpButton = null;
+  /** @type {HTMLElement | null} */
+  let timezoneHelpPopup = null;
+
   // Subscribe to stores
   currentOwnerStore.subscribe((val) => {
     currentOwner = val;
@@ -259,14 +266,71 @@
 
   /**
    * Convert time string (HH:MM) and event list date to RFC3339 datetime
+   * If venueTimezone is provided, interprets the time as being in that timezone
+   * Otherwise, interprets the time as being in the browser's local timezone
    * @param {string} timeStr
    * @param {string} dateStr
+   * @param {string} [venueTimezone] - Optional venue timezone (IANA timezone string)
    */
-  function combineTimeAndDate(timeStr, dateStr) {
+  function combineTimeAndDate(timeStr, dateStr, venueTimezone) {
     try {
       const [hours, minutes] = timeStr.split(':').map(Number);
-      const date = new Date(`${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
-      return date.toISOString();
+      const dateTimeStr = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+
+      if (venueTimezone && venueTimezone.trim()) {
+        // If venue timezone is set, we need to create a UTC timestamp that,
+        // when displayed in the venue timezone, shows the desired wall-clock time
+        // We do this by iteratively adjusting until we get the right display time
+
+        // Start with a guess: create date as if it's in UTC
+        let testDate = new Date(dateTimeStr + 'Z');
+        const maxIterations = 10;
+        let iterations = 0;
+
+        while (iterations < maxIterations) {
+          // Format this UTC time in the venue timezone
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: venueTimezone.trim(),
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          });
+
+          const parts = formatter.formatToParts(testDate);
+          const hourPart = parts.find(p => p.type === 'hour');
+          const minutePart = parts.find(p => p.type === 'minute');
+          if (!hourPart || !minutePart) {
+            // If we can't parse the parts, break the loop
+            break;
+          }
+          const venueHour = parseInt(hourPart?.value || '0');
+          const venueMinute = parseInt(minutePart?.value || '0');
+
+          // Check if we have the right time
+          if (venueHour === hours && venueMinute === minutes) {
+            return testDate.toISOString();
+          }
+
+          // Calculate the difference in minutes
+          const desiredMinutes = hours * 60 + minutes;
+          const currentMinutes = venueHour * 60 + venueMinute;
+          const diffMinutes = desiredMinutes - currentMinutes;
+
+          // Adjust the UTC time
+          testDate = new Date(testDate.getTime() + diffMinutes * 60 * 1000);
+          iterations++;
+        }
+
+        // If we couldn't converge, return the best guess
+        return testDate.toISOString();
+      } else {
+        // No venue timezone - interpret as local time (browser timezone)
+        const date = new Date(dateTimeStr);
+        return date.toISOString();
+      }
     } catch (e) {
       return new Date().toISOString();
     }
@@ -434,7 +498,7 @@
       event_uuid: generateUUID(),
       event_list_uuid: listUuid,
       event_name: 'New Event',
-      datetime: combineTimeAndDate('12:00', placeholderDate),
+      datetime: combineTimeAndDate('12:00', placeholderDate, venueTimezone),
       time: '12:00',
       comment: '',
       duration_minutes: '', // Empty string means no duration
@@ -711,7 +775,7 @@
         const dateToUse = list.date && list.date.trim()
           ? list.date
           : new Date().toISOString().split('T')[0];
-        event.datetime = combineTimeAndDate(event.time, dateToUse);
+        event.datetime = combineTimeAndDate(event.time, dateToUse, venueTimezone);
       }
     }
 
@@ -1103,11 +1167,32 @@
     geocodingResults = [];
   }
 
+  /**
+   * Handle click outside timezone help popup
+   * @param {Event} event
+   */
+  function handleTimezoneHelpClickOutside(event) {
+    if (
+      showTimezoneHelp &&
+      timezoneHelpButton &&
+      timezoneHelpPopup &&
+      !timezoneHelpButton.contains(/** @type {Node} */ (event.target)) &&
+      !timezoneHelpPopup.contains(/** @type {Node} */ (event.target))
+    ) {
+      showTimezoneHelp = false;
+    }
+  }
+
   onMount(() => {
     currentOwner = get(currentOwnerStore);
     if (!currentOwner) {
       goto('/login');
       return;
+    }
+
+    // Add click outside handler for timezone help popup
+    if (browser) {
+      document.addEventListener('click', handleTimezoneHelpClickOutside);
     }
 
     // Load Leaflet.js dynamically
@@ -1200,6 +1285,9 @@
       geolocationMap.remove();
       geolocationMap = null;
       geolocationMarker = null;
+    }
+    if (browser) {
+      document.removeEventListener('click', handleTimezoneHelpClickOutside);
     }
   });
 
@@ -1348,7 +1436,76 @@
         </div>
 
         <div>
-          <label for="venue-timezone" class="block text-sm font-medium text-gray-700 mb-1">Timezone (optional, leave empty for your current timezone)</label>
+          <div class="flex items-center gap-2 mb-1">
+            <label for="venue-timezone" class="block text-sm font-medium text-gray-700">Timezone (optional, leave empty for your current timezone)</label>
+            <div class="relative">
+              <button
+                type="button"
+                bind:this={timezoneHelpButton}
+                on:click={() => showTimezoneHelp = !showTimezoneHelp}
+                on:blur={() => {
+                  // Close on blur, but delay to allow click on popup
+                  setTimeout(() => {
+                    if (!timezoneHelpPopup?.contains(document.activeElement)) {
+                      showTimezoneHelp = false;
+                    }
+                  }, 200);
+                }}
+                class="text-gray-400 hover:text-gray-600 focus:text-gray-600 focus:outline-none transition-colors"
+                aria-label="Timezone help"
+                aria-expanded={showTimezoneHelp}
+                aria-haspopup="true"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                  <path
+                    d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
+              {#if showTimezoneHelp}
+                <!-- Mobile: fixed positioning centered in viewport, Desktop: absolute positioning relative to button -->
+                <div
+                  bind:this={timezoneHelpPopup}
+                  class="fixed md:absolute z-50 w-[calc(100vw-2rem)] md:w-80 max-w-sm p-4 bg-white border border-gray-300 rounded-lg shadow-lg text-sm text-gray-700 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 md:left-auto md:translate-x-0 md:right-0 md:mt-2"
+                  role="tooltip"
+                >
+                  <div class="space-y-3">
+                    <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                      <p class="font-semibold text-blue-900 mb-1">Timezone Set:</p>
+                      <p class="text-blue-800 text-xs">
+                        All visitors see event times in the venue's timezone, regardless of their location. For example, if you set 14:00 in Jerusalem time, everyone sees 14:00 (Jerusalem time).
+                      </p>
+                    </div>
+                    <div class="p-3 bg-green-50 border-l-4 border-green-500 rounded">
+                      <p class="font-semibold text-green-900 mb-1">No Timezone:</p>
+                      <p class="text-green-800 text-xs">
+                        Each visitor sees event times converted to their own browser timezone. For example, 14:00 might show as 09:00 in New York or 14:00 in London, depending on the visitor's location.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    on:click={() => showTimezoneHelp = false}
+                    class="mt-3 text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Close
+                  </button>
+                </div>
+              {/if}
+            </div>
+          </div>
           <select
             id="venue-timezone"
             bind:value={venueTimezone}
@@ -1456,7 +1613,7 @@
                       ? listData.date
                       : new Date().toISOString().split('T')[0];
                     listData.events.forEach((/** @type {any} */ event) => {
-                      event.datetime = combineTimeAndDate(event.time, dateToUse);
+                      event.datetime = combineTimeAndDate(event.time, dateToUse, venueTimezone);
                     });
                   }}
                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1594,7 +1751,7 @@
                         const dateToUse = listData.date && listData.date.trim()
                           ? listData.date
                           : new Date().toISOString().split('T')[0];
-                        event.datetime = combineTimeAndDate(event.time, dateToUse);
+                        event.datetime = combineTimeAndDate(event.time, dateToUse, venueTimezone);
                       }}
                       class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       style="box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; -webkit-appearance: none; appearance: none;"
@@ -1743,7 +1900,7 @@
                       <div class="text-right">
                         {#if previewEventList.date && previewEventList.date.trim()}
                           <p class="text-base font-semibold text-blue-600">
-                            {formatEventTime(Math.floor(new Date(combineTimeAndDate(event.time, previewEventList.date)).getTime() / 1000), venueTimezone ? { timeZone: venueTimezone } : {})}
+                            {formatEventTime(Math.floor(new Date(combineTimeAndDate(event.time, previewEventList.date, venueTimezone)).getTime() / 1000), venueTimezone ? { timeZone: venueTimezone } : {})}
                           </p>
                         {:else}
                           <p class="text-base font-semibold text-gray-400">

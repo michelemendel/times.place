@@ -4,47 +4,35 @@ help:
 	@echo "Available commands:"
 	@echo ""
 	@echo "Frontend:"
-	@echo "  make f-dev      - Start frontend development server"
-	@echo "  make f-build    - Build frontend for production"
-	@echo "  make f-preview  - Preview frontend production build"
-	@echo "  make f-install  - Install frontend dependencies"
+	@echo "  make fbuild    - Build frontend for production"
+	@echo "  make fdev      - Start frontend development server"
+	@echo "  make fpreview  - Preview frontend production build"
+	@echo "  make finstall  - Install frontend dependencies"
 	@echo ""
 	@echo "Backend:"
-	@echo "  make b-build    - Build backend"
-	@echo "  make b-run       - Run backend server"
-	@echo "  make b-install   - Install backend dependencies"
-	@echo ""
-	@echo "Convenience shortcuts (default to frontend):"
-	@echo "  make dev              - Alias for f-dev"
-	@echo "  make build            - Alias for f-build"
-	@echo "  make preview          - Alias for f-preview"
-	@echo "  make install-frontend - Alias for f-install"
+	@echo "  make bbuild    - Build backend"
+	@echo "  make brun      - Run backend server"
+	@echo "  make binstall  - Install backend dependencies"
 
 # Frontend targets
-f-dev:
-	cd frontend && npm run dev
-
-f-build:
+fbuild:
 	cd frontend && npm run build
 
-f-preview:
+fdev:
+	cd frontend && npm run dev
+
+fpreview:
 	cd frontend && npm run preview
 
-f-install:
+finstall:
 	cd frontend && npm install
 
 # Backend targets (placeholder for future implementation)
-b-build:
+bbuild:
 	cd backend && go build ./...
 
-b-run:
+brun:
 	cd backend && go run ./cmd/...
 
-b-install:
+binstall:
 	cd backend && go mod download
-
-# Convenience shortcuts (default to frontend for now)
-dev: f-dev
-build: f-build
-preview: f-preview
-install-frontend: f-install

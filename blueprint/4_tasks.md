@@ -102,7 +102,6 @@
 
 ## Localization
 
-- [ ] Evaluate and implement RTL support for Hebrew content if needed
 - [ ] Test support for Hebrew
 
 ## Deployment

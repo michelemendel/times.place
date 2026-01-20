@@ -204,7 +204,6 @@
   - Documented that password storage is prototype-only and not secure.
 
 - **Demo Data Updates** (`frontend/src/lib/demo_data.ts`):
-
   - Added `password: "demo"` to both demo venue owner accounts for testing.
 
 - **UUID Utility Refactoring** (`frontend/src/lib/utils/uuid.js`):
@@ -248,7 +247,6 @@
   - "Edit" button on each venue card navigates to `/venue-form?venue_uuid={venue_uuid}` (venue form implementation pending).
 
 - **Delete Venue Functionality**:
-
   - "Delete" button opens a confirmation modal with accessibility features:
     - Proper ARIA roles (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`)
     - Keyboard support (Escape key to cancel)
@@ -266,7 +264,6 @@
   - All reactive statements properly subscribe to store changes for real-time UI updates.
 
 - **Reset Demo Data Functionality** (`frontend/src/routes/+layout.svelte`):
-
   - Added "Reset Data" button to navigation menu (desktop and mobile) for development use.
   - Button appears between "My Venues" and "Logout" when user is logged in.
   - **Smart owner preservation**: When resetting demo data:
@@ -469,6 +466,7 @@
   - Format: `{lat.toFixed(6)},{lng.toFixed(6)}` for precision.
 
 - **User Experience**:
+
   - Helper text explains how to use the picker.
   - Loading state on "Find on Map" button during geocoding.
   - Results dropdown styled with hover effects.
@@ -504,7 +502,7 @@
 - **Field Labeling**:
 
   - All optional fields labeled with "(optional)" for clarity.
-  - Required fields marked with asterisk (\*).
+  - Required fields marked with asterisk (*).
   - Consistent labeling across all form sections.
 
 - **Timezone Field Fix**:

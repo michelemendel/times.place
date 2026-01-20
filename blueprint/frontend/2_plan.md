@@ -9,7 +9,7 @@
 
 ## Data Model Structure
 
-**Reference**: See the complete data model specification in `2_spec.md` → Structure → Data Model section.
+**Reference**: See the complete data model specification in `1_spec.md` → Structure → Data Model section.
 
 ### Implementation Details
 
@@ -125,3 +125,4 @@
 - No custom domain to start; app will be accessed via Render’s default subdomain
 - When (or if) the project continues past the demo phase, revisit domain registration and production hosting
 - Initial rollout: only the frontend (Svelte/SvelteKit) will be deployed; backend integration planned for future (Golang/PostgreSQL)
+

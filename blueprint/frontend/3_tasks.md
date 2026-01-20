@@ -113,5 +113,6 @@
 
 ## Documentation Tasks
 
-- [ ] Document demo data and editing process
-- [ ] Record agentic coding decisions and workflow notes in implement.md
+- [x] Document demo data and editing process
+- [x] Record agentic coding decisions and workflow notes in implement.md
+

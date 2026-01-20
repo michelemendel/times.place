@@ -47,7 +47,7 @@ The application manages four main entities with the following relationships:
   - `comment` (STRING, optional comment)
   - `owner_uuid` (UUID, foreign key linking venue to venue owner for multi-owner support)
   - `timezone` (STRING, timezone identifier, e.g., "Asia/Jerusalem")
-  - `event_list_uuids` (ARRAY[UUID], array of event list UUIDs belonging to this venue; cardinality: 0..\*)
+  - `event_list_uuids` (ARRAY[UUID], array of event list UUIDs belonging to this venue; cardinality: 0..*)
   - `created_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
   - `modified_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
 
@@ -57,7 +57,7 @@ The application manages four main entities with the following relationships:
   - `venue_uuid` (UUID, foreign key linking event list to venue)
   - `name` (STRING, event list name/title)
   - `comment` (STRING, optional comment)
-  - `event_uuids` (ARRAY[UUID], array of event UUIDs belonging to this event list; cardinality: 0..\*)
+  - `event_uuids` (ARRAY[UUID], array of event UUIDs belonging to this event list; cardinality: 0..*)
   - `created_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
   - `modified_at` (STRING, RFC3339 datetime with timezone offset, e.g., "2024-12-25T10:00:00-05:00")
 

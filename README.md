@@ -65,11 +65,39 @@ The `blueprint/` folder contains the core SDD documentation that guides all deve
 - **Backend**: Go (planned)
 - **Hosting**: Render.com
 
+## Development prerequisites
+
+### Required
+
+- **Git**
+- **Go** (for backend development)
+- **Node.js + npm** (for frontend development)
+- **Container runtime**: Rancher Desktop (recommended on macOS) or Docker Desktop
+- **Cursor** + Dev Containers support if you want to use the Dev Container workflow
+
+### CLI tools (backend)
+
+`goose` and `sqlc` are **command-line tools** (binaries), not Go libraries that you import.
+
+- **goose**: database migrations runner
+  - Install (host):
+
+```bash
+go install github.com/pressly/goose/v3/cmd/goose@latest
+```
+
+- **sqlc**: generates type-safe Go code from SQL queries
+  - Install (host):
+
+```bash
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+```
+
+Notes:
+
+- If you develop inside a Dev Container, these tools can be installed/provided inside the container instead of on your host.
+- You will also need access to a **PostgreSQL** instance for backend work (locally via container during development, and Render Postgres in production).
+
 ## My Notes
 
 - [Perplexity Space: times.place](https://www.perplexity.ai/spaces/times-place-0QMkL8qGR16UjuPLu0HfIw)
-- [Svelte Notes](docs/svelte.md) - My notes while learning Svelte
-
-## Getting Started
-
-(Development setup instructions will be added as the project progresses)

@@ -6,10 +6,11 @@
 - [x] Define backend spec: API + schema + migrations + Go model
 - [x] Define backend technical plan: Echo + JWT + goose + sqlc + dev container
 
-## Dev container & local environment
+## Tooling & local development environment
 
 - [ ] Add `.devcontainer/` config for backend development
 - [ ] Add Postgres service for local dev (devcontainer compose or equivalent)
+- [ ] Add Makefile targets for backend dev (devcontainer up/down, goose up/down/status, sqlc generate, run server)
 - [ ] Document local workflow: start containers, run migrations, run API
 
 ## Database schema & migrations (goose)
@@ -66,3 +67,17 @@
 - [ ] Add minimal integration tests for auth + one CRUD path
 - [ ] Add tests for token-based access control
 
+## Deployment & production (Render.com + GitHub Actions)
+
+- [ ] Create Render Postgres instance and store connection details securely
+- [ ] Create Render Web Service for Go backend (Option B: serves `/` + `/api`)
+- [ ] Configure production environment variables in Render (DB URL, JWT secret, cookie settings)
+- [ ] Add GitHub Actions workflow:
+  - [ ] Run backend build + tests on PRs
+  - [ ] On merge to `main`, trigger Render Deploy Hook
+- [ ] Ensure database migrations run on deploy:
+  - [ ] Choose deployment migration strategy (Render deploy command vs GitHub Actions step)
+  - [ ] Run `goose up` against production DB as part of deploy
+- [ ] Verify production routing:
+  - [ ] `/` serves frontend `index.html` (SPA fallback)
+  - [ ] `/api/...` serves API

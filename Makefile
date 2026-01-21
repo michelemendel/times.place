@@ -14,7 +14,9 @@ help:
 	@echo "  make brun      - Run backend server"
 	@echo "  make binstall  - Install backend dependencies"
 
+
 # Frontend targets
+
 fbuild:
 	cd frontend && npm run build
 
@@ -27,7 +29,9 @@ fpreview:
 finstall:
 	cd frontend && npm install
 
-# Backend targets (placeholder for future implementation)
+
+# Backend targets
+
 bbuild:
 	cd backend && go build ./...
 

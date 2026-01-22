@@ -789,3 +789,32 @@
 - **Datetime Creation**: When venue timezone is set, event datetimes are created using an iterative adjustment algorithm that ensures the stored UTC timestamp, when displayed in the venue timezone, shows the exact wall-clock time entered by the owner. This ensures consistency across all visitors.
 
 - **User Education**: Added documentation in two places (About page and inline help) to help users understand the timezone functionality, as it was identified as confusing for regular users. The help popup provides quick access without navigating away from the form.
+
+## 2026-01-22
+
+### Summary
+
+- Documented migration strategy from localStorage to backend API integration.
+- Decided to **remove all localStorage code** once API is stable (cutover approach, no dual-mode support).
+
+### Notes
+
+- **Migration approach**:
+  - Remove localStorage code entirely once backend API is implemented and stable.
+  - Rationale: simpler codebase, single source of truth, no divergence risk, forces proper API testing.
+  - Strategy: cutover approach (implement API integration, then remove localStorage in one step).
+- **What will be removed**:
+  - localStorage persistence in `stores.ts` (subscribe handlers that save to localStorage).
+  - `demo_data.ts` seeding function (or replace with API-based seeding if needed for dev).
+  - Client-side UUID generation (backend generates UUIDs).
+  - Any localStorage-specific utilities.
+- **What stays**:
+  - All UI components and routing (no changes needed).
+  - Date/time formatting utilities.
+  - Form validation logic.
+  - All business logic and UI behavior.
+- **API integration plan**:
+  - Use relative URLs (`/api/...`) so same code works in dev (proxied) and production (served by Go).
+  - Handle JWT access tokens and refresh token cookies (HttpOnly, set by backend).
+  - Implement proper error handling and loading states.
+- **Tasks added**: Created comprehensive task list for API client implementation, store migration, and localStorage removal.

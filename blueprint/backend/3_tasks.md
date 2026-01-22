@@ -6,12 +6,22 @@
 - [x] Define backend spec: API + schema + migrations + Go model
 - [x] Define backend technical plan: Echo + JWT + goose + sqlc + dev container
 
-## Tooling & local development environment
+## Tooling: local development & deployed/production environments
 
 - [ ] Add `.devcontainer/` config for backend development
 - [ ] Add Postgres service for local dev (devcontainer compose or equivalent)
 - [ ] Add Makefile targets for backend dev (devcontainer up/down, goose up/down/status, sqlc generate, run server)
 - [ ] Document local workflow: start containers, run migrations, run API
+- [ ] Set up local environment variables:
+  - [ ] Create `backend/.env.example` with all required variables (secrets and non-secrets) and placeholder values
+  - [ ] Add `backend/.env` to `.gitignore`
+  - [ ] Document how to load `.env` in Go (e.g. using `godotenv` or similar)
+  - [ ] Configure devcontainer to use local `.env` or set non-secret vars in `devcontainer.json`
+- [ ] Set up production environment variables on Render.com:
+  - [ ] Configure non-secret variables in Render Web Service dashboard (SERVE_FRONTEND, LOG_LEVEL, cookie settings)
+  - [ ] Configure secret variables in Render with "Secret" toggle enabled (DATABASE_URL, JWT_SECRET, REFRESH_TOKEN_SECRET)
+  - [ ] Link Render Postgres instance to Web Service (auto-provides DATABASE_URL) or set manually
+  - [ ] Document all required production environment variables and their purposes
 
 ## Database schema & migrations (goose)
 

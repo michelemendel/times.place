@@ -162,6 +162,14 @@ Benefits:
 - Configure the SvelteKit/Vite dev server to proxy `/api` to the backend.
 - In the frontend code, always call the API using **relative URLs** (e.g. `fetch('/api/auth/me')`) so the same code works in dev (proxied) and in production (served by Go).
 
+**Technical implementation (runtime flag)**:
+
+- The Go binary embeds the frontend build assets using Go's `embed` directive (always included at build time).
+- A runtime environment variable `SERVE_FRONTEND` controls whether Go serves the frontend:
+  - **Local dev**: `SERVE_FRONTEND=false` (or unset) → Go serves only `/api/*` routes.
+  - **Production**: `SERVE_FRONTEND=true` (or default) → Go serves both `/` (frontend) and `/api/*`.
+- This allows the same binary to work in both environments without code duplication or separate build targets.
+
 ### Contents (proposed)
 
 - Go toolchain
@@ -172,6 +180,28 @@ Benefits:
 ### Rancher Desktop notes
 
 - Use standard Docker-compatible configuration; Dev Containers should work with Rancher Desktop as the container runtime.
+
+### Environment variables (local development)
+
+**Non-secret variables** (can be committed or set in devcontainer):
+
+- `SERVE_FRONTEND=false` (or unset) - controls whether Go serves frontend assets
+- `PORT=8080` (or similar) - backend API port
+- `LOG_LEVEL=debug` (or `info`) - logging verbosity
+
+**Secret variables** (must not be committed):
+
+- `DATABASE_URL` - PostgreSQL connection string (e.g. `postgres://user:pass@localhost:5432/timesplace?sslmode=disable`)
+- `JWT_SECRET` - secret key for signing JWT access tokens
+- `REFRESH_TOKEN_SECRET` - secret key for generating refresh tokens (if different from JWT secret)
+
+**Local setup approaches**:
+
+- **`.env` file** (recommended): create `backend/.env` (gitignored), load via a library like `godotenv` or shell `source`.
+- **Dev Container environment**: set in `.devcontainer/devcontainer.json` `containerEnv` (for non-secrets) or use secrets mounting (for secrets).
+- **Shell environment**: export variables before running the server.
+
+**Best practice**: provide a `.env.example` file (committed) that lists all required variables with placeholder values, so developers know what to configure.
 
 ## Production on Render.com
 
@@ -194,6 +224,24 @@ We deploy a single Go web service that serves:
 - Run database migrations (goose) during deploy (CI step or Render deploy command).
 - Start the Go service on Render (serving both `/` and `/api`).
 
+### Technical implementation (build + runtime)
+
+**Build process**:
+
+- **Frontend**: Single build target (static export from SvelteKit) → outputs to `frontend/build/` (or similar).
+- **Backend**: Single Go binary that embeds frontend assets at build time using Go's `embed` directive:
+  ```go
+  //go:embed frontend/build/*
+  var frontendAssets embed.FS
+  ```
+
+**Runtime behavior**:
+
+- Go Echo router conditionally serves frontend based on `SERVE_FRONTEND` env var:
+  - If `SERVE_FRONTEND=true` (production default): serve static files from `embed.FS` and SPA fallback (serve `index.html` for non-API routes).
+  - If `SERVE_FRONTEND=false` (local dev): serve only `/api/*` routes.
+- Same binary works in both environments; no separate build targets needed.
+
 ### Relationship to local development
 
 - **Production** serves frontend from Go.
@@ -201,6 +249,33 @@ We deploy a single Go web service that serves:
 - Because frontend code uses **relative `/api` URLs**, the same frontend code works in both environments:
   - dev: `/api` is proxied
   - prod: `/api` is handled directly by Go
+
+### Environment variables (production on Render.com)
+
+**Non-secret variables** (set in Render dashboard, can be visible):
+
+- `SERVE_FRONTEND=true` (or default to true) - enables Go to serve frontend assets
+- `LOG_LEVEL=info` (or `warn` for production) - logging verbosity
+- `PORT` - Render sets this automatically (usually `10000`), but can be overridden
+
+**Secret variables** (set in Render dashboard with "Secret" toggle enabled):
+
+- `DATABASE_URL` - Render Postgres connection string (Render provides this automatically if you link the Postgres instance, but you can also set it manually)
+- `JWT_SECRET` - secret key for signing JWT access tokens (generate a strong random string)
+- `REFRESH_TOKEN_SECRET` - secret key for generating refresh tokens (if different from JWT secret)
+
+**Cookie-related variables** (usually non-secret, but may contain domain info):
+
+- `COOKIE_DOMAIN` - domain for refresh token cookies (e.g. `.times.place` for subdomain support, or leave empty for same-origin)
+- `COOKIE_SECURE=true` - require HTTPS for cookies (production should be `true`)
+- `COOKIE_SAME_SITE=lax` (or `strict`, `none`) - SameSite cookie attribute
+
+**Render.com setup**:
+
+- Set environment variables in the Render Web Service dashboard under "Environment".
+- Mark secrets with the "Secret" toggle to hide values in the UI and logs.
+- Render automatically provides `DATABASE_URL` if you link a Postgres instance to the Web Service.
+- Variables can be set per-environment (if using multiple environments like staging/production).
 
 ## Coding standards (Go)
 

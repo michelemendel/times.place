@@ -111,6 +111,31 @@
 - [ ] Deploy to Render.com
 - [ ] Verify deployment and test on Render's default subdomain
 
+## Backend API Integration (migration from localStorage)
+
+- [ ] Implement API client layer:
+  - [ ] Create API client utility (fetch wrapper with error handling, auth token management)
+  - [ ] Configure base URL to use relative `/api/...` paths (works with dev proxy and production)
+  - [ ] Implement JWT access token storage/retrieval (memory-based or from response)
+  - [ ] Handle refresh token cookies (HttpOnly, automatic via browser)
+- [ ] Replace localStorage stores with API calls:
+  - [ ] Update `stores.ts` to use API client instead of localStorage persistence
+  - [ ] Implement API-based auth (login, register, refresh, logout)
+  - [ ] Implement API-based CRUD for venues, event lists, events
+  - [ ] Implement API-based public read endpoints (browse venues, token-based access)
+- [ ] Remove localStorage code (cutover):
+  - [ ] Remove localStorage persistence from `stores.ts` (subscribe handlers)
+  - [ ] Remove or replace `demo_data.ts` seeding (use API-based seeding if needed for dev)
+  - [ ] Remove client-side UUID generation (backend generates UUIDs)
+  - [ ] Remove any localStorage-specific utilities
+  - [ ] Update all components to work with API-based stores (test thoroughly)
+- [ ] Update authentication flow:
+  - [ ] Replace localStorage-based login/registration with API calls
+  - [ ] Handle JWT access tokens from API responses
+  - [ ] Handle refresh token cookies (set by backend)
+  - [ ] Implement automatic token refresh on 401 responses
+  - [ ] Update logout to call API endpoint (revokes refresh token)
+
 ## Documentation Tasks
 
 - [x] Document demo data and editing process

@@ -93,6 +93,8 @@
 - Default/demo data pre-loaded on first use
 - On change, serialize data and save to localStorage
 
+**Note**: The current localStorage-based storage is a prototype. Once the backend API is implemented and stable, we will migrate to API-only data storage and remove all localStorage code (see "Backend API Integration" section below).
+
 ## Localization
 
 - Support for both English and Hebrew
@@ -118,6 +120,51 @@
 
 - Security is minimal for demo
 - Local storage limitations for images
+
+## Backend API Integration
+
+### Migration strategy: remove localStorage code (cutover approach)
+
+Once the backend API is implemented and stable, we will **remove all localStorage-based data storage code** and switch to API-only data access.
+
+**Rationale**:
+
+- Simpler codebase: single source of truth (the API)
+- No code duplication or divergence risk between localStorage and API implementations
+- Forces proper API integration testing
+- The local dev setup (SvelteKit dev server + Go API) already supports frontend development with a real backend
+
+**Migration approach (cutover)**:
+
+1. **Phase 1**: Implement API integration alongside existing localStorage code (temporary parallel implementation for testing).
+2. **Phase 2**: Once API is stable and tested, remove all localStorage code in a single cutover:
+   - Remove localStorage-based stores (`stores.ts` localStorage persistence)
+   - Replace with API client calls (fetch/axios or similar)
+   - Remove demo data seeding from localStorage
+   - Update all components to use API-based stores
+   - Remove localStorage-related utilities if no longer needed
+
+**What gets removed**:
+
+- localStorage persistence in `stores.ts` (the `subscribe` handlers that save to localStorage)
+- `demo_data.ts` seeding function (or replace with API-based seeding if needed for development)
+- Any localStorage-specific data loading/saving logic
+- Client-side UUID generation (backend will generate UUIDs)
+
+**What stays**:
+
+- UI components and routing (no changes needed)
+- Date/time formatting utilities (still needed for display)
+- Form validation logic
+- All business logic and UI behavior
+
+**API client implementation**:
+
+- Use relative URLs (`/api/...`) so the same code works in dev (proxied) and production (served by Go)
+- Handle JWT access tokens (store in memory or httpOnly cookie if provided)
+- Handle refresh token cookies (HttpOnly, set by backend)
+- Implement proper error handling and loading states
+- Handle authentication state (logged-in owner)
 
 ## Deployment & Hosting
 

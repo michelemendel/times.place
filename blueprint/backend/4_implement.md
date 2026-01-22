@@ -57,3 +57,23 @@ This file will track backend implementation work sessions, decisions made during
   - Documented the Render resources (Web Service + Postgres), and migration timing (`goose up` as part of deploy).
   - Added tasks for Render configuration, environment variables, and verification of `/` + `/api` routing.
 
+## 2026-01-22
+
+### Summary
+
+- Added technical implementation details for how Go serves frontend assets (embed directive, runtime flag).
+- Documented environment variable management for both local development and production on Render.com.
+- Clarified build order requirement (frontend must be built before backend due to Go embed directive).
+
+### Notes
+
+- **Frontend serving (technical)**:
+  - Documented using Go's `embed` directive to embed frontend build assets at compile time.
+  - Documented `SERVE_FRONTEND` runtime flag to control whether Go serves frontend (false in dev, true in prod).
+  - Clarified build order: frontend must be built before backend (Go embed reads files during compilation).
+  - Same binary works in both environments; no separate build targets needed.
+- **Environment variables**:
+  - Documented local dev setup: `.env` file (gitignored), `.env.example` template, devcontainer support.
+  - Documented production setup: Render dashboard configuration, secret vs non-secret variables, cookie settings.
+  - Listed required variables: `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET` (secrets), `SERVE_FRONTEND`, `LOG_LEVEL`, cookie settings (non-secrets).
+

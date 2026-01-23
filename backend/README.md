@@ -197,20 +197,27 @@ The frontend dev server (on `http://localhost:5173`) will proxy `/api/*` request
 
 **From host machine:**
 
-- Use `DATABASE_URL=postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable`
-- Port `5432` is forwarded from the container to your host
-- Connect with psql: `make bdb-psql` or `psql -h localhost -p 5432 -U timesplace -d timesplace`
-- Get connection URL: `make bdb-psql-url`
+- Use `make dbhost` to connect directly via docker exec (works from Warp/external terminals)
+- Or use the proxy port: `make dbproxy` to test, then connect via `localhost:5433`
+- Get connection URL: `make dburl`
 
-**Using GUI Tools:**
+**Using GUI Tools (pgAdmin, DBeaver, TablePlus, etc.):**
 
-You can connect using any PostgreSQL client (pgAdmin, DBeaver, TablePlus, etc.) with:
-
+**Recommended: Use proxy port (works reliably):**
 - Host: `localhost`
-- Port: `5432`
+- Port: `5433` (proxy port through backend container)
 - Database: `timesplace`
 - Username: `timesplace`
 - Password: `timesplace`
+- Test connection: `make dbproxy`
+
+**Alternative: Direct port (may not work due to Cursor port forwarding limitations):**
+- Host: `localhost`
+- Port: `5432` (direct postgres port)
+- Database: `timesplace`
+- Username: `timesplace`
+- Password: `timesplace`
+- Note: This may not work if Cursor's port forwarding isn't functioning correctly
 
 ### Loading Environment Variables in Go
 
@@ -274,8 +281,12 @@ All backend-related Makefile targets:
 - `make bgoosestatus` - Show migration status
 - `make bgoosecreate NAME=name` - Create new migration
 - `make bsqlcgenerate` - Generate sqlc code
-- `make bdb` - Connect to database with psql
-- `make bdburl` - Show database connection URL
+- `make bshell` - Open shell in devcontainer (for Warp/external terminals)
+- `make dbconnect` - Connect to database with psql (inside container)
+- `make dbhost` - Connect to database from host (Warp/external terminals)
+- `make dburl` - Show database connection URL
+- `make dbports` - Show port mapping for pgAdmin/external tools
+- `make dbproxy` - Test connection via proxy port (for pgAdmin)
 
 ## Troubleshooting
 
@@ -352,7 +363,7 @@ Check:
    - Configure Rancher Desktop: Preferences → Container Engine → Select "dockerd (moby)"
    - Restart Rancher Desktop after changing the mode
    - **Why dockerd?**: VS Code/Cursor's Dev Containers extension requires the Docker API socket, which is only available in dockerd mode. Containerd mode uses `nerdctl` which doesn't expose the Docker API socket that Dev Containers expects.
-   - **Important distinction**: 
+   - **Important distinction**:
      - `make bdevcontainerup` works with both containerd and dockerd modes
      - Only "Reopen in Container" requires dockerd mode
      - If you need containerd for k8s, you can use `make bdevcontainerup` but won't be able to use "Reopen in Container"

@@ -1,7 +1,7 @@
 .PHONY: help dev build preview install-frontend install-backend f-dev f-build f-preview f-install b-build b-run b-install
 .PHONY: bdevcontainerup bdevcontainerdown bdevcontainerrebuild
 .PHONY: bgooseup bgoosedown bgoosestatus bgoosecreate
-.PHONY: bsqlcgenerate brun bdb bdburl bshell bdbhost bdbports bdbtest bdbproxy
+.PHONY: bsqlcgenerate brun dbconnect dburl bshell dbhost dbports dbtest dbproxy
 
 help:
 	@echo "Available commands:"
@@ -32,13 +32,13 @@ help:
 	@echo "  make bsqlcgenerate - Generate sqlc code from queries"
 	@echo ""
 	@echo "Backend Database Access:"
-	@echo "  make bdb       - Connect to database with psql (inside container)"
-	@echo "  make bdbhost   - Connect to database from host (for Warp/external terminals)"
-	@echo "  make bdburl    - Show database connection URL"
-	@echo "  make bdbports  - Show port mapping for pgAdmin/external tools"
-	@echo "  make bdbtest   - Test database connection from host"
-	@echo "  make bdbproxy  - Test connection via proxy port (for pgAdmin)"
-	@echo "  make bshell    - Open shell in devcontainer (for Warp/external terminals)"
+	@echo "  make dbconnect   - Connect to database with psql (inside container)"
+	@echo "  make dbhost      - Connect to database from host (for Warp/external terminals)"
+	@echo "  make dburl       - Show database connection URL"
+	@echo "  make dbports     - Show port mapping for pgAdmin/external tools"
+	@echo "  make dbtest      - Test database connection from host"
+	@echo "  make dbproxy     - Test connection via proxy port (for pgAdmin)"
+	@echo "  make bshell      - Open shell in devcontainer (for Warp/external terminals)"
 
 
 # Frontend targets
@@ -114,12 +114,25 @@ bgoosecreate:
 bsqlcgenerate:
 	@cd backend && sqlc generate
 
+# Backend Dev Container shell targets
+# Useful for external terminals like Warp
+
+dbshell:
+	@echo "Opening shell in devcontainer backend service..."
+	@CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER_NAME" ]; then \
+		echo "Error: Backend container not found. Is the devcontainer running?"; \
+		echo "Try: make bdevcontainerup or use Cursor's 'Reopen in Container'"; \
+		exit 1; \
+	fi; \
+	echo "Connecting to container: $$CONTAINER_NAME"; \
+	docker exec -it $$CONTAINER_NAME /bin/bash
 
 # Backend Database access targets
 # Note: When running inside devcontainer, uses 'postgres' hostname (service name)
 # When running outside, uses 'localhost' (port-forwarded)
 
-bdb:
+dbconnect:
 	@echo "Connecting to Postgres database..."
 	@if [ -n "$$DATABASE_URL" ]; then \
 		psql "$$DATABASE_URL"; \
@@ -128,14 +141,14 @@ bdb:
 		PGPASSWORD=timesplace psql -h localhost -p 5432 -U timesplace -d timesplace; \
 	fi
 
-bdburl:
+dburl:
 	@if [ -n "$$DATABASE_URL" ]; then \
 		echo "$$DATABASE_URL"; \
 	else \
 		echo "postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable"; \
 	fi
 
-bdbports:
+dbports:
 	@echo "Checking Postgres port mapping for external tools (pgAdmin, etc.)..."
 	@POSTGRES_CONTAINER=$$(docker ps --filter "name=postgres" --filter "status=running" --format "{{.Names}}" | head -1); \
 	if [ -z "$$POSTGRES_CONTAINER" ]; then \
@@ -168,7 +181,7 @@ bdbports:
 	echo "  Username: timesplace"; \
 	echo "  Password: timesplace"; \
 	echo "  Note: This forwards through the backend container to postgres"; \
-	echo "  Test with: make bdbproxy"; \
+	echo "  Test with: make dbproxy"; \
 	echo ""; \
 	echo "Option 4: Connect via container IP (usually doesn't work from host)"; \
 	CONTAINER_IP=$$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $$POSTGRES_CONTAINER); \
@@ -182,7 +195,7 @@ bdbports:
 		echo "  Could not determine container IP"; \
 	fi
 
-bdbtest:
+dbtest:
 	@echo "Testing database connection from host..."
 	@echo ""
 	@POSTGRES_CONTAINER=$$(docker ps --filter "name=postgres" --filter "status=running" --format "{{.Names}}" | head -1); \
@@ -210,10 +223,10 @@ bdbtest:
 	echo "If both tests fail, the issue might be:"; \
 	echo "  1. Cursor's port forwarding not working correctly"; \
 	echo "  2. PostgreSQL not configured to accept external connections"; \
-	echo "  3. Try using 'make bdbhost' which connects directly to the container"
-	echo "  4. Try using 'make bdbproxy' to test the proxy port (5433)"
+	echo "  3. Try using 'make dbhost' which connects directly to the container"
+	echo "  4. Try using 'make dbproxy' to test the proxy port (5433)"
 
-bdbproxy:
+dbproxy:
 	@echo "Testing database connection via proxy port (localhost:5433)..."
 	@echo "This port forwards through the backend container to postgres"
 	@echo ""
@@ -222,18 +235,7 @@ bdbproxy:
 # Backend Dev Container shell and host access targets
 # Useful for external terminals like Warp
 
-bshell:
-	@echo "Opening shell in devcontainer backend service..."
-	@CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
-	if [ -z "$$CONTAINER_NAME" ]; then \
-		echo "Error: Backend container not found. Is the devcontainer running?"; \
-		echo "Try: make bdevcontainerup or use Cursor's 'Reopen in Container'"; \
-		exit 1; \
-	fi; \
-	echo "Connecting to container: $$CONTAINER_NAME"; \
-	docker exec -it $$CONTAINER_NAME /bin/bash
-
-bdbhost:
+dbhost:
 	@echo "Connecting to Postgres from host..."
 	@echo "Use this from Warp or other external terminals"
 	@echo "Checking if postgres container is running..."

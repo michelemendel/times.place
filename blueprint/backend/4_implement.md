@@ -77,3 +77,20 @@ This file will track backend implementation work sessions, decisions made during
   - Documented production setup: Render dashboard configuration, secret vs non-secret variables, cookie settings.
   - Listed required variables: `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET` (secrets), `SERVE_FRONTEND`, `LOG_LEVEL`, cookie settings (non-secrets).
 
+### Connection issues
+
+#### Summary
+
+- Fixed external database connection issues (pgAdmin, Warp terminal) by adding a proxy port through the backend container.
+- Cursor's port forwarding for docker-compose dependent services (postgres) doesn't work reliably, so we use Docker's native port mapping instead.
+
+#### Notes
+
+- **Dev container**:
+  - Added `socat` to backend container to proxy connections from backend:5432 to postgres:5432.
+  - Added port mapping `5433:5432` on backend service (host port 5433 → container port 5432).
+  - Created `start-with-proxy.sh` script that runs socat in background, then sleeps.
+  - External tools (pgAdmin) connect via `localhost:5433`, which routes through backend container to postgres.
+  - Direct postgres port (5432) may not work due to Cursor port forwarding limitations.
+  - Added `make bdbproxy` target to test proxy connection.
+

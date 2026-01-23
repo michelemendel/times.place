@@ -1,0 +1,54 @@
+{
+	"name": "times.place Backend",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "backend",
+	"workspaceFolder": "/workspace",
+	
+	"features": {
+		"ghcr.io/devcontainers/features/go:1": {
+			"version": "1.25.5"
+		}
+	},
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.go",
+				"ms-azuretools.vscode-docker"
+			],
+			"settings": {
+				"go.toolsManagement.checkForUpdates": "local",
+				"go.useLanguageServer": true
+			}
+		}
+	},
+
+	"postCreateCommand": "go install github.com/pressly/goose/v3/cmd/goose@latest && go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest && go mod download",
+
+	"remoteEnv": {
+		"DATABASE_URL": "postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable"
+	},
+
+	"containerEnv": {
+		"SERVE_FRONTEND": "false",
+		"PORT": "8080",
+		"LOG_LEVEL": "debug"
+	},
+
+	"forwardPorts": [8080, 5432],
+	"portsAttributes": {
+		"5432": {
+			"label": "PostgreSQL",
+			"onAutoForward": "openBrowser",
+			"protocol": "tcp"
+		},
+		"8080": {
+			"label": "Backend API",
+			"onAutoForward": "ignore"
+		}
+	},
+
+	"mounts": [
+		"source=${localWorkspaceFolder}/backend/.env,target=/workspace/backend/.env,type=bind,consistency=cached"
+	]
+}

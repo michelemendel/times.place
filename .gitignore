@@ -47,3 +47,4 @@ backend/bin/
 backend/*.exe
 backend/*.test
 backend/coverage.out
+backend/.env

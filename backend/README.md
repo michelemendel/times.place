@@ -43,14 +43,16 @@ The project uses a Dev Container for consistent development environments.
 
 #### Starting the Dev Container
 
-**Option A: Using VS Code/Cursor**
+**Recommended: Using VS Code/Cursor**
 
 1. **Ensure Rancher Desktop is in dockerd mode**: Preferences → Container Engine → Select "dockerd (moby)"
 2. Open the project in VS Code/Cursor
 3. When prompted, click "Reopen in Container" (or use Command Palette: "Dev Containers: Reopen in Container")
 4. The devcontainer will start automatically, including the Postgres service
 
-**Option B: Using Makefile**
+**Note**: If you're using Cursor, you don't need to run `make bdevcontainerup` - the devcontainer starts automatically when you "Reopen in Container".
+
+**Alternative: Using Makefile (for external terminals/scripts)**
 
 ```bash
 make bdevcontainerup
@@ -61,7 +63,7 @@ This starts:
 - Backend dev container (Go + tools)
 - Postgres service container
 
-**Note**: This works with both containerd and dockerd modes. However, if you want to use "Reopen in Container" (Option A), you need dockerd mode.
+**Note**: This works with both containerd and dockerd modes. However, if you want to use "Reopen in Container" (Option A), you need dockerd mode. Use this option if you're working from an external terminal or need to start containers via scripts.
 
 #### Stopping the Dev Container
 
@@ -79,7 +81,9 @@ make bdevcontainerrebuild
 
 ### 3. Database Migrations
 
-Once the devcontainer and Postgres are running, apply database migrations:
+**Important**: All database commands run inside the devcontainer (via `docker exec`). You can run these Makefile targets directly from your host terminal - they automatically execute inside the container.
+
+Apply database migrations:
 
 ```bash
 make bgooseup
@@ -89,6 +93,12 @@ Check migration status:
 
 ```bash
 make bgoosestatus
+```
+
+Verify schema (shows migration status, tables, and indexes):
+
+```bash
+make bverify
 ```
 
 Rollback last migration (if needed):
@@ -104,6 +114,22 @@ make bgoosecreate NAME=your_migration_name
 ```
 
 This creates a new migration file in `backend/db/migrations/`.
+
+Connect to database with psql:
+
+```bash
+make dbconnect
+```
+
+**Optional: Interactive shell**
+
+If you want to run multiple commands interactively or explore the container:
+
+```bash
+make dbshell
+```
+
+Once inside the shell, you can run commands directly (e.g., `goose status`, `psql`, etc.) without the Makefile wrappers.
 
 ### 4. Code Generation (sqlc)
 
@@ -126,7 +152,7 @@ make brun
 Or manually:
 
 ```bash
-cd backend && go run ./cmd/server/main.go
+cd backend && go run ./cmd/api/main.go
 ```
 
 The server will:
@@ -141,11 +167,8 @@ The server will:
 
 1. **Start devcontainer** (if not already running)
 
-   ```bash
-   make bdevcontainerup
-   ```
-
-   Or use VS Code/Cursor "Reopen in Container"
+   - **If using Cursor**: Click "Reopen in Container" when prompted (no need to run `make bdevcontainerup`)
+   - **If using external terminal/scripts**: Run `make bdevcontainerup`
 
 2. **Set up environment variables**
 
@@ -160,19 +183,29 @@ The server will:
    make bgooseup
    ```
 
-4. **Generate sqlc code** (after writing queries)
+4. **Seed test data** (optional, for development)
+
+   ```bash
+   make dbseed
+   ```
+
+   This seeds test data matching the frontend demo data. Test credentials:
+   - Owner 1: `abe@demo.org` / `demo`
+   - Owner 2: `ben@demo.org` / `demo`
+
+5. **Generate sqlc code** (after writing queries)
 
    ```bash
    make bsqlcgenerate
    ```
 
-5. **Run the server**
+6. **Run the server**
 
    ```bash
    make brun
    ```
 
-6. **Run frontend separately** (in another terminal, from project root)
+7. **Run frontend separately** (in another terminal, from project root)
    ```bash
    make fdev
    ```
@@ -251,7 +284,8 @@ jwtSecret := os.Getenv("JWT_SECRET")
 ```
 backend/
 ├── cmd/
-│   └── server/          # Main application entry point
+│   ├── api/             # API server entry point
+│   └── cli/             # CLI commands (e.g., seed)
 ├── db/
 │   ├── migrations/      # Goose migration files
 │   ├── queries/         # SQL query files for sqlc
@@ -281,6 +315,8 @@ All backend-related Makefile targets:
 - `make bgoosestatus` - Show migration status
 - `make bgoosecreate NAME=name` - Create new migration
 - `make bsqlcgenerate` - Generate sqlc code
+- `make dbseed` - Seed test data into database
+- `make dbseedclear` - Clear existing data and seed test data
 - `make bshell` - Open shell in devcontainer (for Warp/external terminals)
 - `make dbconnect` - Connect to database with psql (inside container)
 - `make dbhost` - Connect to database from host (Warp/external terminals)
@@ -424,6 +460,26 @@ Set these in the Render dashboard with the **"Secret" toggle enabled** (values h
 | `COOKIE_SECURE`        | Non-secret | No       | `true`  | Require HTTPS for cookies                        |
 | `COOKIE_SAME_SITE`     | Non-secret | No       | `lax`   | SameSite attribute (`lax`, `strict`, `none`)     |
 
+## Testing
+
+For detailed information about testing, test data management, and database testing strategies, see [TESTING.md](./TESTING.md).
+
+**Quick Start:**
+
+```bash
+# Run all tests
+cd backend && go test ./...
+
+# Run tests with coverage
+go test ./... -cover
+```
+
+**Key Points:**
+- Tests run against a live database (not mocks)
+- Test isolation via database transactions (automatic rollback)
+- Test data seeding utilities in `backend/internal/testdata/`
+- See `TESTING.md` for full documentation
+
 ## Next Steps
 
 After setting up the development environment:
@@ -431,5 +487,6 @@ After setting up the development environment:
 1. Create database schema migrations (see `blueprint/backend/3_tasks.md`)
 2. Write SQL queries for sqlc (see `blueprint/backend/3_tasks.md`)
 3. Implement API endpoints (see `blueprint/backend/3_tasks.md`)
+4. Write tests using the test helpers (see `TESTING.md`)
 
 Refer to `blueprint/backend/` for detailed specifications and implementation plans.

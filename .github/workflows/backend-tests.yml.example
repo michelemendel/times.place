@@ -1,0 +1,70 @@
+# Example GitHub Actions workflow for backend tests
+# Copy this to .github/workflows/backend-tests.yml and customize as needed
+
+name: Backend Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: timesplace
+          POSTGRES_PASSWORD: timesplace
+          POSTGRES_DB: timesplace
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25.5'
+      
+      - name: Install dependencies
+        run: go mod download
+      
+      - name: Install goose
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+      
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable
+        run: |
+          cd backend
+          goose -dir db/migrations postgres "$DATABASE_URL" up
+      
+      - name: Run tests
+        env:
+          DATABASE_URL: postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable
+        run: |
+          cd backend
+          go test ./... -v
+      
+      - name: Run tests with coverage
+        env:
+          DATABASE_URL: postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable
+        run: |
+          cd backend
+          go test ./... -coverprofile=coverage.out
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/coverage.out
+          flags: backend
+          name: backend-coverage

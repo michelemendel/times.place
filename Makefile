@@ -1,7 +1,7 @@
 .PHONY: help dev build preview install-frontend install-backend f-dev f-build f-preview f-install b-build b-run b-install
-.PHONY: bdevcontainerup bdevcontainerdown bdevcontainerrebuild
-.PHONY: bgooseup bgoosedown bgoosestatus bgoosecreate
-.PHONY: bsqlcgenerate brun dbconnect dburl bshell dbhost dbports dbtest dbproxy
+.PHONY: devcontainerup devcontainerdown devcontainerrebuild
+.PHONY: dbgooseup dbgoosedown dbgoosestatus dbgoosecreate dbverify
+.PHONY: sqlcgenerate brun dbconnect devshell
 
 help:
 	@echo "Available commands:"
@@ -17,28 +17,41 @@ help:
 	@echo "  make brun      - Run backend server"
 	@echo "  make binstall  - Install backend dependencies"
 	@echo ""
-	@echo "Backend Dev Container:"
-	@echo "  make bdevcontainerup      - Start devcontainer (Postgres + backend)"
-	@echo "  make bdevcontainerdown    - Stop devcontainer"
-	@echo "  make bdevcontainerrebuild  - Rebuild devcontainer"
+	@echo "Backend Dev Container Shell:"
+	@echo "  make devshell            - Open shell in devcontainer (run all commands from here)"
 	@echo ""
-	@echo "Backend Database (goose):"
-	@echo "  make bgooseup      - Run all pending migrations"
-	@echo "  make bgoosedown    - Rollback last migration"
-	@echo "  make bgoosestatus  - Show migration status"
-	@echo "  make bgoosecreate  - Create new migration (usage: make bgoosecreate NAME=migration_name)"
+	@echo "Backend Database (goose) - works from host or inside devcontainer:"
+	@echo "  make dbgooseup      - Run all pending migrations"
+	@echo "  make dbgoosedown    - Rollback last migration (one at a time)"
+	@echo "  make dbgoosereset   - Rollback ALL migrations (drops all tables)"
+	@echo "  make dbgoosestatus  - Show migration status"
+	@echo "  make dbgoosecreate  - Create new migration (usage: make dbgoosecreate NAME=migration_name)"
+	@echo "  make dbverify       - Verify schema: show migration status and list tables"
 	@echo ""
 	@echo "Backend Code Generation (sqlc):"
-	@echo "  make bsqlcgenerate - Generate sqlc code from queries"
+	@echo "  make sqlcgenerate - Generate sqlc code from queries"
 	@echo ""
-	@echo "Backend Database Access:"
-	@echo "  make dbconnect   - Connect to database with psql (inside container)"
-	@echo "  make dbhost      - Connect to database from host (for Warp/external terminals)"
-	@echo "  make dburl       - Show database connection URL"
-	@echo "  make dbports     - Show port mapping for pgAdmin/external tools"
-	@echo "  make dbtest      - Test database connection from host"
-	@echo "  make dbproxy     - Test connection via proxy port (for pgAdmin)"
-	@echo "  make bshell      - Open shell in devcontainer (for Warp/external terminals)"
+	@echo "Backend Test Data:"
+	@echo "  make dbseed       - Seed test data into database"
+	@echo "  make dbseedclear  - Clear existing data and seed test data"
+	@echo ""
+	@echo "Backend Testing:"
+	@echo "  make btest        - Run backend tests"
+	@echo "  make btestcover   - Run backend tests with coverage"
+	@echo ""
+	@echo "Backend Database Access (works from host or inside devcontainer):"
+	@echo "  make dbconnect     - Connect to database with psql"
+	@echo ""
+	@echo "Devcontainer Management (optional - Cursor manages this automatically):"
+	@echo "  make devcontainerup      - Start devcontainer (Postgres + backend)"
+	@echo "  make devcontainerdown    - Stop devcontainer"
+	@echo "  make devcontainerrebuild - Rebuild devcontainer"
+	@echo ""
+	@echo "  Note: These targets are useful when:"
+	@echo "    - Using Warp terminal outside the devcontainer"
+	@echo "    - Need to rebuild container without restarting Cursor"
+	@echo "    - Running CI/CD scripts"
+	@echo "    - Prefer command-line control over Cursor's automatic management"
 
 
 # Frontend targets
@@ -62,189 +75,250 @@ bbuild:
 	cd backend && go build ./...
 
 brun:
-	cd backend && go run ./cmd/server/main.go
+	cd backend && go run ./cmd/api/main.go
 
 binstall:
 	cd backend && go mod download
 
 
-# Backend Dev Container targets
+# Backend Dev Container shell
+# All database commands should be run from inside the devcontainer
+
+devshell:
+	@CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER_NAME" ]; then \
+		echo "Error: Backend container not found. Is the devcontainer running?"; \
+		echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+		exit 1; \
+	fi; \
+	echo "Opening shell in devcontainer backend service..."; \
+	echo "From here you can run: make dbgooseup, make dbgoosestatus, make dbconnect, etc."; \
+	docker exec -it $$CONTAINER_NAME /bin/bash
+
+
+# Backend Database (goose) targets
+# These work both from host (via docker exec) and inside the devcontainer (direct execution)
+
+dbgooseup:
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Running migrations (inside devcontainer)..."; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" up; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Running migrations (from host via docker exec)..."; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" up"; \
+	fi
+
+dbgoosedown:
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Rolling back last migration (inside devcontainer)..."; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" down; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Rolling back last migration (from host via docker exec)..."; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" down"; \
+	fi
+
+dbgoosereset:
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Rolling back ALL migrations (inside devcontainer)..."; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" reset; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Rolling back ALL migrations (from host via docker exec)..."; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" reset"; \
+	fi
+
+dbgoosestatus:
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Migration status (inside devcontainer):"; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" status; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Migration status (from host via docker exec):"; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" status"; \
+	fi
+
+dbgoosecreate:
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: NAME is required. Usage: make dbgoosecreate NAME=migration_name"; \
+		exit 1; \
+	fi
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Creating new migration: $(NAME) (inside devcontainer)"; \
+		cd /workspace/backend && goose -dir db/migrations create $(NAME) sql; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Creating new migration: $(NAME) (from host via docker exec)"; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations create $(NAME) sql"; \
+	fi
+
+dbverify:
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Verifying database schema (inside devcontainer)..."; \
+		echo ""; \
+		echo "=== Migration Status ==="; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" status; \
+		echo ""; \
+		echo "=== Tables ==="; \
+		psql "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" -c '\dt'; \
+		echo ""; \
+		echo "=== Indexes ==="; \
+		psql "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" -c 'SELECT schemaname, tablename, indexname FROM pg_indexes WHERE schemaname = '\''public'\'' ORDER BY tablename, indexname;'; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Verifying database schema (from host via docker exec)..."; \
+		echo ""; \
+		echo "=== Migration Status ==="; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" status"; \
+		echo ""; \
+		echo "=== Tables ==="; \
+		docker exec $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" -c '\dt'"; \
+		echo ""; \
+		echo "=== Indexes ==="; \
+		docker exec $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" -c 'SELECT schemaname, tablename, indexname FROM pg_indexes WHERE schemaname = '\''public'\'' ORDER BY tablename, indexname;'"; \
+	fi
+
+
+# Backend Code Generation (sqlc) targets
+
+sqlcgenerate:
+	@CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER_NAME" ]; then \
+		echo "Error: Backend container not found. Is the devcontainer running?"; \
+		echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+		echo "Then run: make devshell"; \
+		exit 1; \
+	fi; \
+	echo "Generating sqlc code..."; \
+	docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && sqlc generate"
+
+
+# Backend Test Data targets
+
+dbseed:
+	@CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER_NAME" ]; then \
+		echo "Error: Backend container not found. Is the devcontainer running?"; \
+		echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+		exit 1; \
+	fi; \
+	echo "Seeding test data..."; \
+	docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/seed/main.go"
+
+dbseedclear:
+	@CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER_NAME" ]; then \
+		echo "Error: Backend container not found. Is the devcontainer running?"; \
+		echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+		exit 1; \
+	fi; \
+	echo "Clearing and seeding test data..."; \
+	docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear"
+
+# Backend Testing targets
+
+btest:
+	@CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER_NAME" ]; then \
+		echo "Error: Backend container not found. Is the devcontainer running?"; \
+		echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+		exit 1; \
+	fi; \
+	echo "Running backend tests..."; \
+	docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go test ./... -v"
+
+btestcover:
+	@CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+	if [ -z "$$CONTAINER_NAME" ]; then \
+		echo "Error: Backend container not found. Is the devcontainer running?"; \
+		echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+		exit 1; \
+	fi; \
+	echo "Running backend tests with coverage..."; \
+	docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go test ./... -cover"
+
+# Backend Database access targets
+# These work both from host (via docker exec) and inside the devcontainer (direct execution)
+
+dbconnect:
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Connecting to Postgres database (inside devcontainer)..."; \
+		psql "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}"; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Connecting to Postgres database (from host via docker exec)..."; \
+		docker exec -it $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\""; \
+	fi
+
+
+# Devcontainer Management targets
+# These targets are OPTIONAL if you're using Cursor's devcontainer feature.
+# Cursor automatically manages the devcontainer lifecycle when you use "Reopen in Container".
+#
+# These targets are useful when:
+#   - Using Warp terminal outside the devcontainer and want manual control
+#   - Need to rebuild the container without restarting Cursor
+#   - Running CI/CD or scripts that need to start/stop containers
+#   - Prefer command-line control over Cursor's automatic management
+#
 # Uses docker compose (requires dockerd mode in Rancher Desktop or Docker Desktop)
 
-bdevcontainerup:
+devcontainerup:
 	@echo "Starting devcontainer..."
 	@docker compose -f .devcontainer/docker-compose.yml up -d
 	@echo "Waiting for Postgres to be ready..."
 	@sleep 3
 
-bdevcontainerdown:
+devcontainerdown:
 	@echo "Stopping devcontainer..."
 	@docker compose -f .devcontainer/docker-compose.yml down
 
-bdevcontainerrebuild:
+devcontainerrebuild:
 	@echo "Rebuilding devcontainer..."
 	@docker compose -f .devcontainer/docker-compose.yml build --no-cache
 	@docker compose -f .devcontainer/docker-compose.yml up -d
 	@echo "Waiting for Postgres to be ready..."
 	@sleep 3
-
-
-# Backend Database (goose) targets
-# Note: These assume you're running inside the devcontainer or have DATABASE_URL set
-
-bgooseup:
-	@cd backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable}" up
-
-bgoosedown:
-	@cd backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable}" down
-
-bgoosestatus:
-	@cd backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable}" status
-
-bgoosecreate:
-	@if [ -z "$(NAME)" ]; then \
-		echo "Error: NAME is required. Usage: make bgoosecreate NAME=migration_name"; \
-		exit 1; \
-	fi
-	@cd backend && goose -dir db/migrations create $(NAME) sql
-
-
-# Backend Code Generation (sqlc) targets
-
-bsqlcgenerate:
-	@cd backend && sqlc generate
-
-# Backend Dev Container shell targets
-# Useful for external terminals like Warp
-
-dbshell:
-	@echo "Opening shell in devcontainer backend service..."
-	@CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
-	if [ -z "$$CONTAINER_NAME" ]; then \
-		echo "Error: Backend container not found. Is the devcontainer running?"; \
-		echo "Try: make bdevcontainerup or use Cursor's 'Reopen in Container'"; \
-		exit 1; \
-	fi; \
-	echo "Connecting to container: $$CONTAINER_NAME"; \
-	docker exec -it $$CONTAINER_NAME /bin/bash
-
-# Backend Database access targets
-# Note: When running inside devcontainer, uses 'postgres' hostname (service name)
-# When running outside, uses 'localhost' (port-forwarded)
-
-dbconnect:
-	@echo "Connecting to Postgres database..."
-	@if [ -n "$$DATABASE_URL" ]; then \
-		psql "$$DATABASE_URL"; \
-	else \
-		echo "Error: DATABASE_URL not set. Using default connection..."; \
-		PGPASSWORD=timesplace psql -h localhost -p 5432 -U timesplace -d timesplace; \
-	fi
-
-dburl:
-	@if [ -n "$$DATABASE_URL" ]; then \
-		echo "$$DATABASE_URL"; \
-	else \
-		echo "postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable"; \
-	fi
-
-dbports:
-	@echo "Checking Postgres port mapping for external tools (pgAdmin, etc.)..."
-	@POSTGRES_CONTAINER=$$(docker ps --filter "name=postgres" --filter "status=running" --format "{{.Names}}" | head -1); \
-	if [ -z "$$POSTGRES_CONTAINER" ]; then \
-		echo "Error: Postgres container not found or not running."; \
-		exit 1; \
-	fi; \
-	echo ""; \
-	echo "Postgres container: $$POSTGRES_CONTAINER"; \
-	echo ""; \
-	echo "Port mappings:"; \
-	docker port $$POSTGRES_CONTAINER 5432 || echo "  No port mapping found (port forwarding may not be configured)"; \
-	echo ""; \
-	echo "Connection options for pgAdmin:"; \
-	echo ""; \
-	echo "Option 1: Use port mapping above (if available)"; \
-	echo "  Host: localhost (or 127.0.0.1)"; \
-	echo "  Port: [use the mapped port from above]"; \
-	echo "  Database: timesplace"; \
-	echo "  Username: timesplace"; \
-	echo "  Password: timesplace"; \
-	echo ""; \
-	echo "Option 2: Set up port forwarding manually"; \
-	echo "  Run: docker port $$POSTGRES_CONTAINER 5432"; \
-	echo "  Or forward manually: docker port $$POSTGRES_CONTAINER 5432/tcp"; \
-	echo ""; \
-	echo "Option 3: Connect via proxy port (RECOMMENDED for pgAdmin)"; \
-	echo "  Host: localhost"; \
-	echo "  Port: 5433"; \
-	echo "  Database: timesplace"; \
-	echo "  Username: timesplace"; \
-	echo "  Password: timesplace"; \
-	echo "  Note: This forwards through the backend container to postgres"; \
-	echo "  Test with: make dbproxy"; \
-	echo ""; \
-	echo "Option 4: Connect via container IP (usually doesn't work from host)"; \
-	CONTAINER_IP=$$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $$POSTGRES_CONTAINER); \
-	if [ -n "$$CONTAINER_IP" ]; then \
-		echo "  Host: $$CONTAINER_IP"; \
-		echo "  Port: 5432"; \
-		echo "  Database: timesplace"; \
-		echo "  Username: timesplace"; \
-		echo "  Password: timesplace"; \
-	else \
-		echo "  Could not determine container IP"; \
-	fi
-
-dbtest:
-	@echo "Testing database connection from host..."
-	@echo ""
-	@POSTGRES_CONTAINER=$$(docker ps --filter "name=postgres" --filter "status=running" --format "{{.Names}}" | head -1); \
-	if [ -z "$$POSTGRES_CONTAINER" ]; then \
-		echo "Error: Postgres container not found or not running."; \
-		exit 1; \
-	fi; \
-	echo "Postgres container: $$POSTGRES_CONTAINER"; \
-	echo ""; \
-	echo "Checking if postgres is listening inside container..."; \
-	docker exec $$POSTGRES_CONTAINER netstat -tlnp 2>/dev/null | grep 5432 || docker exec $$POSTGRES_CONTAINER ss -tlnp 2>/dev/null | grep 5432 || echo "  Could not check listening ports"; \
-	echo ""; \
-	echo "Checking postgres configuration..."; \
-	docker exec $$POSTGRES_CONTAINER psql -U timesplace -d timesplace -c "SHOW listen_addresses;" 2>&1 || echo "  Could not check config"; \
-	echo ""; \
-	echo "Test 1: Connection via localhost:5432"; \
-	PGPASSWORD=timesplace psql -h localhost -p 5432 -U timesplace -d timesplace -c "SELECT version();" 2>&1 && echo "✓ localhost:5432 works!" || echo "✗ localhost:5432 failed"; \
-	echo ""; \
-	echo "Test 2: Connection via 127.0.0.1:5432"; \
-	PGPASSWORD=timesplace psql -h 127.0.0.1 -p 5432 -U timesplace -d timesplace -c "SELECT version();" 2>&1 && echo "✓ 127.0.0.1:5432 works!" || echo "✗ 127.0.0.1:5432 failed"; \
-	echo ""; \
-	echo "Checking actual port mapping..."; \
-	docker port $$POSTGRES_CONTAINER 5432 2>&1 || echo "  No port mapping found"; \
-	echo ""; \
-	echo "If both tests fail, the issue might be:"; \
-	echo "  1. Cursor's port forwarding not working correctly"; \
-	echo "  2. PostgreSQL not configured to accept external connections"; \
-	echo "  3. Try using 'make dbhost' which connects directly to the container"
-	echo "  4. Try using 'make dbproxy' to test the proxy port (5433)"
-
-dbproxy:
-	@echo "Testing database connection via proxy port (localhost:5433)..."
-	@echo "This port forwards through the backend container to postgres"
-	@echo ""
-	@PGPASSWORD=timesplace psql -h localhost -p 5433 -U timesplace -d timesplace -c "SELECT version();" 2>&1 && echo "✓ Proxy port 5433 works! Use this for pgAdmin" || echo "✗ Proxy port 5433 failed - make sure devcontainer is rebuilt"
-
-# Backend Dev Container shell and host access targets
-# Useful for external terminals like Warp
-
-dbhost:
-	@echo "Connecting to Postgres from host..."
-	@echo "Use this from Warp or other external terminals"
-	@echo "Checking if postgres container is running..."
-	@POSTGRES_CONTAINER=$$(docker ps --filter "name=postgres" --filter "status=running" --format "{{.Names}}" | head -1); \
-	if [ -z "$$POSTGRES_CONTAINER" ]; then \
-		echo "Error: Postgres container not found or not running."; \
-		echo "Make sure the devcontainer is running (use 'Reopen in Container' in Cursor or 'make bdevcontainerup')"; \
-		exit 1; \
-	fi; \
-	echo "Found postgres container: $$POSTGRES_CONTAINER"; \
-	echo "Connecting directly to postgres container..."; \
-	docker exec -it $$POSTGRES_CONTAINER psql -U timesplace -d timesplace

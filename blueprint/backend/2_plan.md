@@ -86,11 +86,13 @@ Important: sqlc does **not** “run migrations” and does not inherently “rea
 
 #### Typical developer workflow (schema/query/code)
 
-1. Add a new goose migration in `backend/db/migrations/` (schema change).
-2. Apply migrations to your dev DB (`goose up`).
-3. Update/add SQL in `backend/db/queries/` to match the new schema.
-4. Regenerate sqlc (`sqlc generate`) so `backend/db/sqlc/` matches queries+schema.
-5. Build/run the API.
+1. Open devcontainer shell: `make dbshell`
+2. Add a new goose migration in `backend/db/migrations/` (schema change).
+3. Apply migrations to your dev DB: `make bgooseup`
+4. Verify with `make bverify` (shows migration status, tables, indexes).
+5. Update/add SQL in `backend/db/queries/` to match the new schema.
+6. Regenerate sqlc: `make bsqlcgenerate` so `backend/db/sqlc/` matches queries+schema.
+7. Build/run the API.
 
 #### Production / deployment usage
 

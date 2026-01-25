@@ -25,11 +25,12 @@
 
 ## Database schema & migrations (goose)
 
-- [ ] Create migrations directory `backend/db/migrations/`
-- [ ] Add initial migration: enable `pgcrypto`
-- [ ] Add migration: create tables `venue_owners`, `venues`, `event_lists`, `events`, `refresh_tokens`
-- [ ] Add constraints + indexes (visibility checks, unique tokens, foreign keys)
-- [ ] Add migration: triggers or explicit update strategy for `modified_at` (choose one)
+- [x] Create migrations directory `backend/db/migrations/`
+- [x] Add initial migration: enable `pgcrypto`
+- [x] Add migration: create tables `venue_owners`, `venues`, `event_lists`, `events`, `refresh_tokens`
+- [x] Add constraints + indexes (visibility checks, unique tokens, foreign keys)
+- [x] Add migration: triggers or explicit update strategy for `modified_at` (choose one)
+- [x] Run migrations locally: execute `make dbgooseup` (works from host or inside devcontainer) and verify with `make dbverify` (shows migration status, tables, indexes). Alternatively, use `make devshell` to open an interactive shell in the devcontainer.
 
 ## sqlc
 

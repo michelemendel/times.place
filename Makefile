@@ -215,7 +215,6 @@ dbverify:
 		docker exec $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" -c 'SELECT schemaname, tablename, indexname FROM pg_indexes WHERE schemaname = '\''public'\'' ORDER BY tablename, indexname;'"; \
 	fi
 
-
 # Backend Code Generation (sqlc) targets
 
 sqlcgenerate:
@@ -228,7 +227,6 @@ sqlcgenerate:
 	fi; \
 	echo "Generating sqlc code..."; \
 	docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && sqlc generate"
-
 
 # Backend Test Data targets
 
@@ -252,6 +250,26 @@ dbseedclear:
 	echo "Clearing and seeding test data..."; \
 	docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear"
 
+# Backend Database access targets
+# These work both from host (via docker exec) and inside the devcontainer (direct execution)
+
+dbconnect:
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Connecting to Postgres database (inside devcontainer)..."; \
+		psql "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}"; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Connecting to Postgres database (from host via docker exec)..."; \
+		docker exec -it $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\""; \
+	fi
+
+
 # Backend Testing targets
 
 btest:
@@ -273,25 +291,6 @@ btestcover:
 	fi; \
 	echo "Running backend tests with coverage..."; \
 	docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go test ./... -cover"
-
-# Backend Database access targets
-# These work both from host (via docker exec) and inside the devcontainer (direct execution)
-
-dbconnect:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
-		echo "Connecting to Postgres database (inside devcontainer)..."; \
-		psql "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}"; \
-	else \
-		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
-		if [ -z "$$CONTAINER_NAME" ]; then \
-			echo "Error: Backend container not found. Is the devcontainer running?"; \
-			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
-			echo "Or run this command from inside the devcontainer"; \
-			exit 1; \
-		fi; \
-		echo "Connecting to Postgres database (from host via docker exec)..."; \
-		docker exec -it $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\""; \
-	fi
 
 
 # Devcontainer Management targets

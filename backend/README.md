@@ -230,27 +230,24 @@ The frontend dev server (on `http://localhost:5173`) will proxy `/api/*` request
 
 **From host machine:**
 
-- Use `make dbhost` to connect directly via docker exec (works from Warp/external terminals)
-- Or use the proxy port: `make dbproxy` to test, then connect via `localhost:5433`
-- Get connection URL: `make dburl`
+- Use `make dbconnect` to connect via docker exec (works from any terminal)
+- Or connect directly: `psql "postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable"`
 
 **Using GUI Tools (pgAdmin, DBeaver, TablePlus, etc.):**
 
-**Recommended: Use proxy port (works reliably):**
+**Recommended: Use proxy port (works reliably with Cursor port forwarding):**
 - Host: `localhost`
 - Port: `5433` (proxy port through backend container)
 - Database: `timesplace`
 - Username: `timesplace`
 - Password: `timesplace`
-- Test connection: `make dbproxy`
 
-**Alternative: Direct port (may not work due to Cursor port forwarding limitations):**
+**Alternative: Direct port (may work from host CLI, but pgAdmin may have issues):**
 - Host: `localhost`
 - Port: `5432` (direct postgres port)
 - Database: `timesplace`
 - Username: `timesplace`
 - Password: `timesplace`
-- Note: This may not work if Cursor's port forwarding isn't functioning correctly
 
 ### Loading Environment Variables in Go
 
@@ -318,11 +315,10 @@ All backend-related Makefile targets:
 - `make dbseed` - Seed test data into database
 - `make dbseedclear` - Clear existing data and seed test data
 - `make bshell` - Open shell in devcontainer (for Warp/external terminals)
-- `make dbconnect` - Connect to database with psql (inside container)
-- `make dbhost` - Connect to database from host (Warp/external terminals)
-- `make dburl` - Show database connection URL
-- `make dbports` - Show port mapping for pgAdmin/external tools
-- `make dbproxy` - Test connection via proxy port (for pgAdmin)
+- `make dbconnect` - Connect to database with psql (works from host or inside container)
+- `make dbhost` - Connect to database from host (direct connection via localhost:5432)
+- `make dburl` - Show database connection URLs
+- `make dbports` - Show port mapping info for GUI tools (pgAdmin, etc.)
 
 ## Troubleshooting
 

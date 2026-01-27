@@ -16,14 +16,11 @@ func main() {
 	clear := flag.Bool("clear", false, "Clear all test data before seeding")
 	flag.Parse()
 
-	// Note: DATABASE_URL should be set via environment variable
-	// If you have a .env file, load it manually or set DATABASE_URL before running
-
-	// Get database URL from environment
+	// Get database URL from environment (required)
+	// This should point to the development database, not the test database
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		// Default to devcontainer connection
-		dbURL = "postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable"
+		log.Fatalf("DATABASE_URL environment variable is required. This command seeds the development database.")
 	}
 
 	// Connect to database

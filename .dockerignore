@@ -1,0 +1,74 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Frontend (not needed for backend container)
+frontend/
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# IDE and editor files
+.vscode/
+.cursor/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+
+# Logs
+*.log
+logs/
+
+# Environment files (will be mounted separately)
+.env
+.env.local
+.env.*
+
+# Documentation and notes (keep only essential READMEs)
+notes.md
+blueprint/
+*.md
+!backend/README.md
+!README.md
+
+# Test data examples
+minyanim_examples/
+
+# Trunk
+.trunk/
+
+# Assets (not needed in container)
+assets/
+
+# GitHub workflows (not needed in container)
+.github/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Backend build artifacts
+backend/bin/
+backend/seed
+backend/*.exe
+backend/*.test
+backend/coverage.out

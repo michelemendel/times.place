@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start socat proxy to forward port 5432 to postgres:5432
-# This allows external tools like pgAdmin to connect via the backend container
+# This allows Cursor's port forwarding to work for pgAdmin and other GUI tools
 socat TCP-LISTEN:5432,fork,reuseaddr TCP:postgres:5432 &
 SOCAT_PID=$!
 

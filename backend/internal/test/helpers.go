@@ -35,11 +35,10 @@ type TestDB struct {
 func SetupTestDB(t *testing.T) *TestDB {
 	t.Helper()
 
-	// Get database URL from environment
-	dbURL := os.Getenv("DATABASE_URL")
+	// Get test database URL from environment (required for tests)
+	dbURL := os.Getenv("TEST_DATABASE_URL")
 	if dbURL == "" {
-		// Default to devcontainer connection
-		dbURL = "postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable"
+		t.Fatalf("TEST_DATABASE_URL environment variable is required for tests. Tests must use a separate test database.")
 	}
 
 	// Connect to database
@@ -114,11 +113,10 @@ func SetupTestDB(t *testing.T) *TestDB {
 func SetupTestDBWithoutTransaction(t *testing.T) *TestDB {
 	t.Helper()
 
-	// Get database URL from environment
-	dbURL := os.Getenv("DATABASE_URL")
+	// Get test database URL from environment (required for tests)
+	dbURL := os.Getenv("TEST_DATABASE_URL")
 	if dbURL == "" {
-		// Default to devcontainer connection
-		dbURL = "postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable"
+		t.Fatalf("TEST_DATABASE_URL environment variable is required for tests. Tests must use a separate test database.")
 	}
 
 	// Connect to database
@@ -149,25 +147,28 @@ func SetupTestDBWithoutTransaction(t *testing.T) *TestDB {
 	}
 }
 
-// GetDatabaseURL returns the database connection URL for testing.
-// It checks environment variables and provides sensible defaults.
+// GetDatabaseURL returns the test database connection URL.
+// It requires TEST_DATABASE_URL to be set for tests.
 func GetDatabaseURL() string {
-	if url := os.Getenv("DATABASE_URL"); url != "" {
-		return url
-	}
 	if url := os.Getenv("TEST_DATABASE_URL"); url != "" {
 		return url
 	}
-	// Default to devcontainer connection
-	return "postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable"
+	// For tests, we require TEST_DATABASE_URL to be set
+	// This ensures tests use a separate test database
+	return ""
 }
 
-// RequireDatabase skips the test if DATABASE_URL is not set and we can't connect.
-// Use this for integration tests that require a live database.
+// RequireDatabase skips the test if TEST_DATABASE_URL is not set and we can't connect.
+// Use this for integration tests that require a live test database.
 func RequireDatabase(t *testing.T) {
 	t.Helper()
 
-	dbURL := GetDatabaseURL()
+	dbURL := os.Getenv("TEST_DATABASE_URL")
+	if dbURL == "" {
+		t.Skipf("Skipping test: TEST_DATABASE_URL is not set. Tests require a separate test database.")
+		return
+	}
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		t.Skipf("Skipping test: cannot open database connection: %v", err)
@@ -176,7 +177,7 @@ func RequireDatabase(t *testing.T) {
 	defer db.Close()
 
 	if err := db.Ping(); err != nil {
-		t.Skipf("Skipping test: cannot connect to database: %v", err)
+		t.Skipf("Skipping test: cannot connect to test database: %v", err)
 		return
 	}
 }

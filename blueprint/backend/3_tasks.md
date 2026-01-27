@@ -34,15 +34,15 @@
 
 ## sqlc
 
-- [ ] Add `sqlc.yaml` configuration
-- [ ] Add query files under `backend/db/queries/`:
-  - [ ] Owners: create, get-by-id, get-by-email
-  - [ ] Venues: list-by-owner, get-by-id+owner, create, update, delete
-  - [ ] Event lists: list-by-venue+owner, get-by-id+owner, create, update, delete
-  - [ ] Events: list-by-event-list+owner, get-by-id+owner, create, update, delete
-  - [ ] Public browse/search queries
-  - [ ] Token lookup queries (venue token / event list token)
-- [ ] Generate sqlc code and ensure builds
+- [x] Add `sqlc.yaml` configuration
+- [x] Add query files under `backend/db/queries/`:
+  - [x] Owners: create, get-by-id, get-by-email
+  - [x] Venues: list-by-owner, get-by-id+owner, create, update, delete
+  - [x] Event lists: list-by-venue+owner, get-by-id+owner, create, update, delete
+  - [x] Events: list-by-event-list+owner, get-by-id+owner, create, update, delete
+  - [x] Public browse/search queries
+  - [x] Token lookup queries (venue token / event list token)
+- [x] Generate sqlc code and ensure builds
 
 ## API server (Echo)
 

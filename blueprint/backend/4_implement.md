@@ -81,18 +81,16 @@ This file will track backend implementation work sessions, decisions made during
 
 #### Summary
 
-- Fixed external database connection issues (pgAdmin, Warp terminal) by adding a proxy port through the backend container.
-- Cursor's port forwarding for docker-compose dependent services (postgres) doesn't work reliably, so we use Docker's native port mapping instead.
+- Fixed external database connection issues (pgAdmin, Warp terminal) by using Docker's native port mapping.
+- Direct postgres port (5432) works reliably from host, so proxy is not needed.
 
 #### Notes
 
 - **Dev container**:
-  - Added `socat` to backend container to proxy connections from backend:5432 to postgres:5432.
-  - Added port mapping `5433:5432` on backend service (host port 5433 → container port 5432).
-  - Created `start-with-proxy.sh` script that runs socat in background, then sleeps.
-  - External tools (pgAdmin) connect via `localhost:5433`, which routes through backend container to postgres.
-  - Direct postgres port (5432) may not work due to Cursor port forwarding limitations.
-  - Added `make bdbproxy` target to test proxy connection.
+  - Postgres service exposes port `5432:5432` directly (host:container).
+  - External tools (pgAdmin, CLI) connect via `localhost:5432`.
+  - Docker's native port mapping works reliably, so no proxy needed.
+  - (Previously used socat proxy on port 5433, but removed as unnecessary.)
 
 ## 2026-01-25
 
@@ -144,3 +142,47 @@ This file will track backend implementation work sessions, decisions made during
   - Updated Makefile help text to clarify that `dbgoosedown` rolls back one migration at a time
   - Use `make dbgoosedown` for incremental rollbacks, `make dbgoosereset` for full reset
 
+## 2026-01-27
+
+### Summary
+
+- **Cursor skill creation**: Created `update-backend-implement-log` skill to automate updating this implementation log with backend work.
+
+### Notes
+
+- **Cursor skill**:
+  - Created `.cursor/skills/update-backend-implement-log/SKILL.md` skill file
+  - Skill guides the agent through identifying recent backend changes, organizing them by category, and adding properly formatted entries to this log
+  - Skill automatically triggers when backend code changes need documentation or when explicitly requested
+  - Follows the established format and template structure for consistency
+
+### Summary
+
+- **sqlc configuration and queries**: Set up complete sqlc infrastructure with configuration, consolidated schema, and all required query files for CRUD operations, public endpoints, and token lookups.
+- **Makefile test database setup**: Updated `btest` and `btestcover` targets to automatically create and migrate a separate test database before running tests.
+
+### Notes
+
+- **sqlc**:
+  - Created `backend/sqlc.yaml` configuration file with PostgreSQL settings, pointing to `db/queries/` and `db/schema.sql`, outputting to `db/sqlc/` with pgx/v5 driver
+  - Created `backend/db/schema.sql` consolidating all table definitions, indexes, and constraints from migrations (serves as schema source for sqlc)
+  - Created 6 query files in `backend/db/queries/`:
+    - `owners.sql`: CreateOwner, GetOwnerByID, GetOwnerByEmail (case-insensitive)
+    - `venues.sql`: ListVenuesByOwner, GetVenueByIDAndOwner, CreateVenue, UpdateVenue, DeleteVenue
+    - `event_lists.sql`: ListEventListsByVenueAndOwner, GetEventListByIDAndOwner, CreateEventList, UpdateEventList, DeleteEventList
+    - `events.sql`: ListEventsByEventListAndOwner, GetEventByIDAndOwner, CreateEvent, UpdateEvent, DeleteEvent
+    - `public.sql`: ListPublicVenues, SearchPublicVenues, GetPublicEventListsByVenue, GetVenueByToken, GetEventListByToken, GetVenueWithEventListsByToken
+    - `refresh_tokens.sql`: CreateRefreshToken, GetRefreshTokenByHash, RevokeRefreshToken, RevokeRefreshTokenByHash, RotateRefreshToken, RevokeAllTokensForOwner
+  - Generated sqlc code successfully: 8 Go files in `backend/db/sqlc/` with 31 query functions
+  - All queries include proper authorization checks (owner-scoped queries verify ownership through JOINs)
+  - Public queries exclude owner contact info (email, mobile)
+  - Added `github.com/jackc/pgx/v5` dependency to `go.mod`
+  - Generated code compiles successfully
+- **Makefile**:
+  - Updated `btest` and `btestcover` targets to work from host (via docker exec) or inside devcontainer
+  - Both targets now automatically:
+    - Create/reset `timesplace_test` database before running tests
+    - Run migrations on test database using goose
+    - Execute tests against the isolated test database
+  - Uses `TEST_DATABASE_URL` environment variable (defaults to `timesplace_test` database)
+  - Ensures clean test environment for each test run

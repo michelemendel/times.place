@@ -46,17 +46,17 @@
 
 ## API server (Echo)
 
-- [ ] Define project layout under `backend/internal/` (http/service/db wiring)
-- [ ] Implement JWT auth middleware (extract `owner_uuid` from token)
-- [ ] Implement request validation + consistent error responses
+- [x] Define project layout under `backend/internal/` (http/service/db wiring)
+- [x] Implement JWT auth middleware (extract `owner_uuid` from token)
+- [x] Implement request validation + consistent error responses
 
 ## Auth endpoints
 
-- [ ] `POST /api/auth/register` (hash password; enforce email unique)
-- [ ] `POST /api/auth/login` (verify password; issue JWT)
-- [ ] `POST /api/auth/refresh` (validate refresh token; rotate; issue new access JWT)
-- [ ] `POST /api/auth/logout` (revoke refresh token)
-- [ ] `GET /api/auth/me`
+- [x] `POST /api/auth/register` (hash password; enforce email unique)
+- [x] `POST /api/auth/login` (verify password; issue JWT)
+- [x] `POST /api/auth/refresh` (validate refresh token; rotate; issue new access JWT)
+- [x] `POST /api/auth/logout` (revoke refresh token)
+- [x] `GET /api/auth/me`
 
 ## Owner-scoped CRUD endpoints
 

@@ -1,23 +1,20 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"os"
+
+	"github.com/michelemendel/times.place/internal/http"
 )
 
 func main() {
-	// TODO: Initialize API server
-	// This will be implemented when the API server is built
-	
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	// Create and start server
+	server, err := http.NewServer()
+	if err != nil {
+		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	fmt.Printf("API server starting on port %s...\n", port)
-	fmt.Println("TODO: Implement API server")
-	
-	// Placeholder - will be replaced with actual server implementation
-	log.Fatal("API server not yet implemented")
+	// Start server (blocks until shutdown)
+	if err := server.Start(); err != nil {
+		log.Fatalf("Server error: %v", err)
+	}
 }

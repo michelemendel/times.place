@@ -156,9 +156,7 @@ This file will track backend implementation work sessions, decisions made during
   - Skill automatically triggers when backend code changes need documentation or when explicitly requested
   - Follows the established format and template structure for consistency
 
-### Summary
-
-- **sqlc configuration and queries**: Set up complete sqlc infrastructure with configuration, consolidated schema, and all required query files for CRUD operations, public endpoints, and token lookups.
+### Summary- **sqlc configuration and queries**: Set up complete sqlc infrastructure with configuration, consolidated schema, and all required query files for CRUD operations, public endpoints, and token lookups.
 - **Makefile test database setup**: Updated `btest` and `btestcover` targets to automatically create and migrate a separate test database before running tests.
 
 ### Notes
@@ -186,3 +184,59 @@ This file will track backend implementation work sessions, decisions made during
     - Execute tests against the isolated test database
   - Uses `TEST_DATABASE_URL` environment variable (defaults to `timesplace_test` database)
   - Ensures clean test environment for each test run
+
+### Summary
+
+- **API server infrastructure**: Implemented complete Echo-based API server with project layout, database connection, middleware, error handling, and request validation.
+- **Authentication endpoints**: Implemented all 5 auth endpoints (register, login, refresh, logout, me) with password hashing, JWT tokens, refresh token management, and HttpOnly cookies.
+
+### Notes
+
+- **Project layout** (created `backend/internal/` structure):
+  - `internal/store/store.go`: Database connection wrapper using pgxpool, wraps sqlc Queries
+  - `internal/service/auth.go`: Auth service with password hashing (bcrypt), JWT generation/parsing, refresh token management
+  - `internal/http/`: HTTP layer with Echo server setup:
+    - `server.go`: Echo server initialization, middleware setup, graceful shutdown, environment variable loading
+    - `routes.go`: Route registration for all API endpoints
+    - `middleware.go`: JWT authentication middleware that extracts `owner_uuid` from token and injects into context
+    - `errors.go`: Consistent error response format with helper functions (ValidationError, UnauthorizedError, etc.)
+    - `validator.go`: Custom request validator with email format validation
+    - `auth_handlers.go`: All authentication endpoint handlers
+  - `cmd/api/main.go`: Updated to initialize and run the server
+- **Dependencies** (added to `go.mod`):
+  - `github.com/labstack/echo/v4`: Echo web framework
+  - `github.com/joho/godotenv`: Environment variable loading
+  - `github.com/golang-jwt/jwt/v5`: JWT token handling
+  - `github.com/go-playground/validator/v10`: Request validation
+  - `github.com/jackc/pgx/v5/pgxpool`: Database connection pooling
+- **Auth/JWT**:
+  - Access tokens: Short-lived JWT (15 minutes) with `sub` claim containing `owner_uuid`
+  - Refresh tokens: Long-lived (30 days), stored hashed in database, delivered via HttpOnly cookies
+  - Token rotation: Refresh endpoint rotates tokens (revokes old, creates new)
+  - Password hashing: bcrypt with cost 12
+  - JWT middleware: Extracts token from `Authorization: Bearer <token>` header, validates signature, injects `owner_uuid` into Echo context
+- **API endpoints** (all implemented in `auth_handlers.go`):
+  - `POST /api/auth/register`: Validates input, checks email uniqueness, hashes password, creates owner, generates tokens, stores refresh token, sets cookie
+  - `POST /api/auth/login`: Validates credentials, generates tokens, stores refresh token, sets cookie
+  - `POST /api/auth/refresh`: Validates refresh token, rotates tokens, generates new access token, sets new cookie
+  - `POST /api/auth/logout`: Revokes refresh token, clears cookie
+  - `GET /api/auth/me`: Protected endpoint that returns current owner profile (requires JWT middleware)
+- **Error handling**:
+  - Consistent error response format: `{ "error": { "code": "...", "message": "..." } }`
+  - Error codes: `validation_error`, `unauthorized`, `forbidden`, `not_found`, `conflict`, `internal`
+  - Proper HTTP status codes (400, 401, 403, 404, 409, 500)
+- **Request validation**:
+  - Custom validator with email format validation
+  - Field-level validation using struct tags (`validate:"required,email"`)
+  - Returns validation errors in consistent format
+- **Cookie configuration**:
+  - Refresh tokens stored in HttpOnly cookies (prevents XSS)
+  - Configurable via environment variables: `COOKIE_DOMAIN`, `COOKIE_SECURE`, `COOKIE_SAME_SITE`
+  - Secure cookies in production, lax SameSite by default
+- **UUID conversion**:
+  - Helper functions to convert between `pgtype.UUID` (database) and string UUIDs (API)
+  - Helper functions to convert `pgtype.Timestamptz` to RFC3339 strings
+- **Build fixes**:
+  - Resolved circular import by moving handlers into `http` package (renamed `handlers/auth.go` to `auth_handlers.go`)
+  - Fixed import aliases for `sqlc` package
+  - All packages compile successfully

@@ -262,3 +262,40 @@ This file will track backend implementation work sessions, decisions made during
   - Added `backend/internal/http/middleware_test.go`:
     - `JWTAuthMiddleware` behavior for valid/missing/invalid `Authorization` header formats
     - Context propagation + `GetOwnerUUIDFromContext` validation/error cases
+
+### Summary
+
+- **Owner-scoped CRUD endpoints**: Implemented protected CRUD for venues, event lists, and events (including nested list/create routes and `sort_order` updates).
+- **Public endpoints**: Implemented public browse/search plus token-based access endpoints for venues and event lists.
+- **Why**: Unblock the frontend from localStorage by providing the core read/write API surface with ownership enforcement and public sharing flows.
+
+### Notes
+
+- **API (owner-scoped CRUD)**:
+  - Added venue handlers in `backend/internal/http/venue_handlers.go`:
+    - `GET /api/venues`, `POST /api/venues`, `GET /api/venues/:venue_uuid`, `PATCH /api/venues/:venue_uuid`, `DELETE /api/venues/:venue_uuid`
+  - Added event list handlers in `backend/internal/http/event_list_handlers.go`:
+    - `GET /api/venues/:venue_uuid/event-lists`, `POST /api/venues/:venue_uuid/event-lists`
+    - `GET /api/event-lists/:event_list_uuid`, `PATCH /api/event-lists/:event_list_uuid`, `DELETE /api/event-lists/:event_list_uuid`
+  - Added event handlers in `backend/internal/http/event_handlers.go`:
+    - `GET /api/event-lists/:event_list_uuid/events`, `POST /api/event-lists/:event_list_uuid/events`
+    - `GET /api/events/:event_uuid`, `PATCH /api/events/:event_uuid`, `DELETE /api/events/:event_uuid`
+  - Ownership is enforced via `JWTAuthMiddleware` + owner-scoped sqlc queries (JOIN-based checks); handlers return `404` on ownership mismatch to avoid leaking resource existence.
+  - Cascade deletion relies on DB `ON DELETE CASCADE` constraints (venue → event_lists → events).
+  - Ordering uses `sort_order` fields and existing ORDER BY behavior in sqlc queries.
+
+- **API (public)**:
+  - Added `backend/internal/http/public_handlers.go`:
+    - `GET /api/public/venues` (supports `?query=` using `SearchPublicVenues`, otherwise `ListPublicVenues`)
+    - `GET /api/public/venues/:venue_uuid/event-lists` (public-only)
+    - `GET /api/public/venues/by-token/:token` (venue token returns venue + event lists)
+    - `GET /api/public/event-lists/by-token/:token` (event list token returns venue + event list + events)
+  - Public responses omit owner contact information (email/mobile).
+
+- **Routing**:
+  - Updated `backend/internal/http/routes.go` to register new route groups:
+    - Protected: `/api/venues`, `/api/event-lists`, `/api/events`
+    - Public: `/api/public/*`
+
+- **Build fixes**:
+  - Adjusted `pgtype.Date` handling to match pgx/v5 (`pgtype.Date.Time`), and removed a few unused imports/variables so `make bbuild` passes cleanly.

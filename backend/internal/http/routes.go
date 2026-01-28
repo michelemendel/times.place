@@ -24,9 +24,40 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 	// Protected auth routes
 	auth.GET("/me", authHandler.Me, JWTAuthMiddleware(authService))
 
-	// TODO: Add other route groups here:
-	// - venues (protected)
-	// - event-lists (protected)
-	// - events (protected)
-	// - public (public)
+	// Owner-scoped routes (protected)
+	venues := api.Group("/venues", JWTAuthMiddleware(authService))
+	venueHandler := NewVenueHandler(store)
+	venues.GET("", venueHandler.List)
+	venues.POST("", venueHandler.Create)
+	venues.GET("/:venue_uuid", venueHandler.Get)
+	venues.PATCH("/:venue_uuid", venueHandler.Update)
+	venues.DELETE("/:venue_uuid", venueHandler.Delete)
+
+	// Event lists (nested under venues + direct access)
+	eventListHandler := NewEventListHandler(store)
+	venues.GET("/:venue_uuid/event-lists", eventListHandler.ListByVenue)
+	venues.POST("/:venue_uuid/event-lists", eventListHandler.Create)
+
+	eventLists := api.Group("/event-lists", JWTAuthMiddleware(authService))
+	eventLists.GET("/:event_list_uuid", eventListHandler.Get)
+	eventLists.PATCH("/:event_list_uuid", eventListHandler.Update)
+	eventLists.DELETE("/:event_list_uuid", eventListHandler.Delete)
+
+	// Events (nested under event lists + direct access)
+	eventHandler := NewEventHandler(store)
+	eventLists.GET("/:event_list_uuid/events", eventHandler.ListByEventList)
+	eventLists.POST("/:event_list_uuid/events", eventHandler.Create)
+
+	events := api.Group("/events", JWTAuthMiddleware(authService))
+	events.GET("/:event_uuid", eventHandler.Get)
+	events.PATCH("/:event_uuid", eventHandler.Update)
+	events.DELETE("/:event_uuid", eventHandler.Delete)
+
+	// Public routes (no auth)
+	public := api.Group("/public")
+	publicHandler := NewPublicHandler(store)
+	public.GET("/venues", publicHandler.ListVenues)
+	public.GET("/venues/:venue_uuid/event-lists", publicHandler.GetEventListsByVenue)
+	public.GET("/venues/by-token/:token", publicHandler.GetVenueByToken)
+	public.GET("/event-lists/by-token/:token", publicHandler.GetEventListByToken)
 }

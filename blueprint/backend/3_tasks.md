@@ -60,24 +60,24 @@
 
 ## Owner-scoped CRUD endpoints
 
-- [ ] Venues CRUD (`/api/venues...`)
-- [ ] Event lists CRUD (`/api/venues/:venue_uuid/event-lists`, `/api/event-lists/:event_list_uuid`)
-- [ ] Events CRUD (`/api/event-lists/:event_list_uuid/events`, `/api/events/:event_uuid`)
-- [ ] Cascade deletion behavior matches spec (venue delete removes event lists/events)
-- [ ] Ordering: support `sort_order` updates for event lists and events
+- [x] Venues CRUD (`/api/venues...`)
+- [x] Event lists CRUD (`/api/venues/:venue_uuid/event-lists`, `/api/event-lists/:event_list_uuid`)
+- [x] Events CRUD (`/api/event-lists/:event_list_uuid/events`, `/api/events/:event_uuid`)
+- [x] Cascade deletion behavior matches spec (venue delete removes event lists/events)
+- [x] Ordering: support `sort_order` updates for event lists and events
 
 ## Public endpoints
 
-- [ ] `GET /api/public/venues` (+ optional `?query=` search)
-- [ ] `GET /api/public/venues/:venue_uuid/event-lists` (public-only)
-- [ ] `GET /api/public/venues/by-token/:token`
-- [ ] `GET /api/public/event-lists/by-token/:token`
+- [x] `GET /api/public/venues` (+ optional `?query=` search)
+- [x] `GET /api/public/venues/:venue_uuid/event-lists` (public-only)
+- [x] `GET /api/public/venues/by-token/:token`
+- [x] `GET /api/public/event-lists/by-token/:token`
 
 ## Testing
 
 - [x] Add unit tests for auth components (AuthService, middleware, handler helpers)
-- [ ] Add minimal integration tests for auth + one CRUD path
-- [ ] Add tests for token-based access control
+- [x] Add minimal integration tests for auth + one CRUD path
+- [x] Add tests for token-based access control
 
 ## Deployment & production (Render.com + GitHub Actions)
 

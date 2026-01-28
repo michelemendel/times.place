@@ -1,9 +1,7 @@
 <script>
-  import { get } from 'svelte/store';
-  import { ownersStore, currentOwnerStore } from '$lib/stores';
   import { goto } from '$app/navigation';
-  import { getCurrentTimestamp } from '$lib/utils/datetime.js';
-  import { generateUUID } from '$lib/utils/uuid.js';
+  import { register } from '$lib/api/auth.js';
+  import { ApiError } from '$lib/api/client.js';
 
   let name = '';
   let mobile = '';
@@ -13,6 +11,7 @@
 
   let error = '';
   let success = '';
+  let isLoading = false;
 
   /** @param {string} value */
   function normalizeEmail(value) {
@@ -33,10 +32,11 @@
   }
 
   /** @param {SubmitEvent} e */
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     error = '';
     success = '';
+    isLoading = true;
 
     const n = name.trim();
     const m = normalizeMobile(mobile);
@@ -44,47 +44,56 @@
 
     if (!n) {
       error = 'Please enter your name.';
+      isLoading = false;
       return;
     }
     if (!em || !em.includes('@')) {
       error = 'Please enter a valid email address.';
+      isLoading = false;
       return;
     }
     if (!isValidMobile(m)) {
       error = 'Please enter a valid mobile number.';
+      isLoading = false;
       return;
     }
-    if (!password || password.length < 4) {
-      error = 'Please choose a password (at least 4 characters).';
+    if (!password || password.length < 6) {
+      error = 'Please choose a password (at least 6 characters).';
+      isLoading = false;
       return;
     }
     if (password !== confirmPassword) {
       error = 'Passwords do not match.';
+      isLoading = false;
       return;
     }
 
-    const owners = get(ownersStore);
-    const existing = owners.find((o) => normalizeEmail(o.email) === em);
-    if (existing) {
-      error = 'An account with this email already exists. Please log in instead.';
-      return;
+    try {
+      const response = await register({
+        name: n,
+        email: em,
+        mobile: m,
+        password,
+      });
+      success = `Account created. You are now logged in as ${response.owner.name}.`;
+      goto('/venue-owner');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 409) {
+          error = 'An account with this email already exists. Please log in instead.';
+        } else if (err.status === 400) {
+          error = err.message || 'Please check your input and try again.';
+        } else if (err.status === 0) {
+          error = 'Network error. Please check your connection.';
+        } else {
+          error = err.message || 'Registration failed. Please try again.';
+        }
+      } else {
+        error = 'An unexpected error occurred. Please try again.';
+      }
+    } finally {
+      isLoading = false;
     }
-
-    const now = getCurrentTimestamp();
-    const owner = {
-      owner_uuid: generateUUID(),
-      name: n,
-      mobile: m,
-      email: em,
-      password,
-      created_at: now,
-      modified_at: now
-    };
-
-    ownersStore.set([...owners, owner]);
-    currentOwnerStore.set(owner);
-    success = `Account created. You are now logged in as ${owner.name}.`;
-    goto('/venue-owner');
   }
 </script>
 
@@ -149,11 +158,11 @@
               class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               bind:value={password}
               autocomplete="new-password"
-              placeholder="Choose a password"
+              placeholder="Choose a password (at least 6 characters)"
               required
             />
             <p class="mt-2 text-sm text-gray-600">
-              Prototype note: passwords are stored locally in your browser (not secure).
+              Password must be at least 6 characters long.
             </p>
           </div>
 
@@ -187,9 +196,10 @@
           <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
             <button
               type="submit"
-              class="inline-flex justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 transition-colors"
+              disabled={isLoading}
+              class="inline-flex justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create account
+              {isLoading ? 'Creating account...' : 'Create account'}
             </button>
             <a class="text-sm text-blue-600 hover:text-blue-800 font-medium" href="/login">
               Already have an account? Log in

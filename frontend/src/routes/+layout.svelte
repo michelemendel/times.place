@@ -5,6 +5,8 @@
   import { dev } from '$app/environment';
   import { currentOwnerStore } from '$lib/stores';
   import { goto } from '$app/navigation';
+  import { getCurrentOwner } from '$lib/api/auth.js';
+  import { browser } from '$app/environment';
 
   let mobileMenuOpen = false;
 
@@ -16,14 +18,26 @@
     mobileMenuOpen = false;
   }
 
-  onMount(() => {
+  onMount(async () => {
     // Seed demo data only when storage is empty.
     // Note: forcing a re-seed clears localStorage and will wipe newly-registered accounts.
     seedDemoData(false);
+
+    // Restore session on app initialization
+    if (browser) {
+      try {
+        await getCurrentOwner();
+      } catch (error) {
+        // If /api/auth/me fails, user is not authenticated
+        // This is expected for unauthenticated users, so we silently ignore
+        // The error could be 401 (no valid token) or network error
+      }
+    }
   });
 
-  function logout() {
-    currentOwnerStore.set(null);
+  async function logout() {
+    const { logout: logoutApi } = await import('$lib/api/auth.js');
+    await logoutApi();
     closeMobileMenu();
     goto('/');
   }

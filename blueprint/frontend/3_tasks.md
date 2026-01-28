@@ -100,6 +100,209 @@
 - [x] Test that private venues are not searchable/visible in public dropdown
 - [x] Test that private venue links work correctly and are unguessable
 
+## Documentation Tasks
+
+- [x] Document demo data and editing process
+- [x] Record agentic coding decisions and workflow notes in implement.md
+
+## Backend API Integration (migration from localStorage)
+
+### API Client Implementation
+
+- [x] Create `src/lib/api/client.js` with fetch wrapper:
+  - [x] Implement base URL configuration (relative `/api/...` paths for dev proxy and production)
+  - [x] Add request interceptors for adding JWT access token to Authorization header
+  - [x] Add response interceptors for error handling (parse error responses, handle 401/403/404/500)
+  - [x] Implement JWT access token storage (memory-based, not localStorage)
+  - [x] Handle refresh token cookies (automatic via browser, HttpOnly)
+  - [x] Implement automatic token refresh on 401 responses (call `/api/auth/refresh`, retry original request)
+  - [x] Add loading state management utilities
+  - [x] Handle network errors gracefully
+
+### Authentication API Integration
+
+- [x] Replace localStorage login with `POST /api/auth/login`:
+  - [x] Update login page to call API endpoint
+  - [x] Store access token in memory from response
+  - [x] Store owner data from response in store
+  - [x] Handle login errors (invalid credentials, network errors)
+- [x] Replace localStorage registration with `POST /api/auth/register`:
+  - [x] Update registration page to call API endpoint
+  - [x] Store access token in memory from response
+  - [x] Store owner data from response in store
+  - [x] Handle registration errors (email already exists, validation errors)
+- [x] Implement `POST /api/auth/refresh` for token refresh:
+  - [x] Call endpoint when access token expires (on 401 response)
+  - [x] Update stored access token with new token
+  - [x] Retry original failed request with new token
+- [x] Implement `POST /api/auth/logout` to revoke refresh token:
+  - [x] Call endpoint on logout
+  - [x] Clear access token from memory
+  - [x] Clear owner data from store
+  - [x] Redirect to home page
+- [x] Implement `GET /api/auth/me` to get current owner:
+  - [x] Call on app initialization to restore session
+  - [x] Update owner store with response data
+  - [x] Handle unauthenticated state (no valid token)
+- [x] Update auth state management:
+  - [x] Remove localStorage-based owner storage
+  - [x] Use API responses for owner data
+  - [x] Handle authentication state changes (login/logout)
+
+### Venues API Integration
+
+- [ ] Replace `venueStore` localStorage with API calls:
+  - [ ] `GET /api/venues` - List all venues owned by authenticated owner
+  - [ ] `POST /api/venues` - Create new venue
+  - [ ] `GET /api/venues/:venue_uuid` - Get single venue by UUID
+  - [ ] `PATCH /api/venues/:venue_uuid` - Update venue
+  - [ ] `DELETE /api/venues/:venue_uuid` - Delete venue
+- [ ] Update venue form (`src/routes/venue-form/+page.svelte`) to use API endpoints:
+  - [ ] Load venue data from API on mount
+  - [ ] Save venue changes via PATCH endpoint
+  - [ ] Create new venues via POST endpoint
+  - [ ] Handle API errors and loading states
+- [ ] Update venue owner dashboard (`src/routes/venue-owner/+page.svelte`) to fetch from API:
+  - [ ] Load venues list from API on mount
+  - [ ] Handle delete via DELETE endpoint
+  - [ ] Handle API errors and loading states
+- [ ] Remove client-side filtering (backend handles owner scoping)
+
+### Event Lists API Integration
+
+- [ ] Replace `eventListStore` localStorage with API calls:
+  - [ ] `GET /api/venues/:venue_uuid/event-lists` - List event lists for a venue
+  - [ ] `POST /api/venues/:venue_uuid/event-lists` - Create new event list
+  - [ ] `GET /api/event-lists/:event_list_uuid` - Get single event list by UUID
+  - [ ] `PATCH /api/event-lists/:event_list_uuid` - Update event list
+  - [ ] `DELETE /api/event-lists/:event_list_uuid` - Delete event list
+- [ ] Update venue form event list management to use API:
+  - [ ] Load event lists from API when venue is loaded
+  - [ ] Create event lists via POST endpoint
+  - [ ] Update event lists via PATCH endpoint
+  - [ ] Delete event lists via DELETE endpoint
+  - [ ] Handle sort_order updates via API
+  - [ ] Handle API errors and loading states
+
+### Events API Integration
+
+- [ ] Replace `eventStore` localStorage with API calls:
+  - [ ] `GET /api/event-lists/:event_list_uuid/events` - List events for an event list
+  - [ ] `POST /api/event-lists/:event_list_uuid/events` - Create new event
+  - [ ] `GET /api/events/:event_uuid` - Get single event by UUID
+  - [ ] `PATCH /api/events/:event_uuid` - Update event
+  - [ ] `DELETE /api/events/:event_uuid` - Delete event
+- [ ] Update venue form event management to use API:
+  - [ ] Load events from API when event list is selected
+  - [ ] Create events via POST endpoint
+  - [ ] Update events via PATCH endpoint
+  - [ ] Delete events via DELETE endpoint
+  - [ ] Handle sort_order updates via API (move up/down)
+  - [ ] Handle API errors and loading states
+
+### Public Endpoints Integration
+
+- [ ] Replace visitor page localStorage queries with public API:
+  - [ ] `GET /api/public/venues?query=...` - Search public venues (replace dropdown filtering)
+  - [ ] `GET /api/public/venues/:venue_uuid/event-lists` - Get public event lists for a venue
+  - [ ] `GET /api/public/venues/by-token/:token` - Access private venue via token (replace client-side token lookup)
+  - [ ] `GET /api/public/event-lists/by-token/:token` - Access private event list via token (replace client-side token lookup)
+- [ ] Update visitor page (`src/routes/+page.svelte`) to fetch from public API:
+  - [ ] Load public venues list from API on mount
+  - [ ] Implement search functionality using query parameter
+  - [ ] Load event lists from API when venue is selected
+  - [ ] Handle private venue/event list access via token URL parameter
+  - [ ] Remove client-side filtering (backend handles visibility)
+  - [ ] Handle API errors and loading states
+
+### Remove localStorage Code (Cutover)
+
+- [ ] Remove localStorage persistence from `stores.ts`:
+  - [ ] Remove `subscribe` handlers that save to localStorage
+  - [ ] Remove `load()` helper function
+  - [ ] Remove storage key constants
+  - [ ] Update stores to initialize from API instead of localStorage
+- [ ] Remove or replace `demo_data.ts`:
+  - [ ] Remove localStorage seeding function
+  - [ ] Optionally create API-based seeding script for development (if needed)
+- [ ] Remove client-side UUID generation:
+  - [ ] Remove `crypto.randomUUID()` calls
+  - [ ] Use UUIDs returned from API responses
+- [ ] Remove localStorage-specific utilities:
+  - [ ] Search for and remove any remaining localStorage references
+  - [ ] Clean up any localStorage-related helper functions
+- [ ] Update all components to work with API-based stores:
+  - [ ] Test venue owner dashboard
+  - [ ] Test venue form (create, edit, delete)
+  - [ ] Test visitor page (public venues, private token access)
+  - [ ] Test authentication flow (login, register, logout)
+  - [ ] Verify data consistency between frontend and backend
+
+### Data Format Updates
+
+- [ ] Update data models to match backend API response formats:
+  - [ ] Review API response types from backend handlers
+  - [ ] Update TypeScript interfaces in `src/lib/types.ts` if needed
+  - [ ] Ensure field names match (snake_case from API vs camelCase in frontend)
+- [ ] Handle RFC3339 datetime strings from API:
+  - [ ] Update datetime utilities to parse RFC3339 format (backend uses RFC3339, not Unix epoch)
+  - [ ] Update event datetime handling (API returns RFC3339 strings, not Unix timestamps)
+  - [ ] Ensure timezone handling works with RFC3339 format
+- [ ] Update UUID handling:
+  - [ ] Ensure UUIDs are strings from API (not client-generated)
+  - [ ] Remove any UUID generation logic
+- [ ] Update date/time display:
+  - [ ] Ensure event list dates work with API format (ISO 8601 date strings)
+  - [ ] Ensure event times display correctly from RFC3339 datetime strings
+
+### Error Handling & UX
+
+- [ ] Implement consistent error handling for API failures:
+  - [ ] Parse error responses from API (check for error message fields)
+  - [ ] Display user-friendly error messages
+  - [ ] Handle different error types (network, validation, auth, server errors)
+- [ ] Add loading indicators for API operations:
+  - [ ] Show loading state during API calls
+  - [ ] Disable forms/buttons during API operations
+  - [ ] Provide visual feedback for async operations
+- [ ] Handle authentication errors:
+  - [ ] Redirect to login on 401 responses (when refresh fails)
+  - [ ] Show appropriate error messages for auth failures
+  - [ ] Clear invalid auth state
+- [ ] Handle network errors gracefully:
+  - [ ] Show retry options for network failures
+  - [ ] Provide offline state detection
+  - [ ] Handle timeout errors
+
+### Testing & Validation
+
+- [ ] Test all CRUD operations via API:
+  - [ ] Create, read, update, delete venues
+  - [ ] Create, read, update, delete event lists
+  - [ ] Create, read, update, delete events
+  - [ ] Verify data persists correctly in database
+- [ ] Test authentication flow:
+  - [ ] Register new owner
+  - [ ] Login with credentials
+  - [ ] Token refresh on expiration
+  - [ ] Logout and token revocation
+  - [ ] Session restoration on page reload
+- [ ] Test public endpoints and private token access:
+  - [ ] Browse public venues
+  - [ ] Search public venues
+  - [ ] Access private venue via token
+  - [ ] Access private event list via token
+  - [ ] Verify private venues don't appear in public search
+- [ ] Test error scenarios:
+  - [ ] Network failures
+  - [ ] Authentication failures (invalid token, expired token)
+  - [ ] Validation errors (invalid data)
+  - [ ] Server errors (500, 503)
+- [ ] Verify data consistency:
+  - [ ] Ensure frontend displays match backend data
+  - [ ] Test concurrent edits (if applicable)
+  - [ ] Verify owner isolation (owners only see their venues)
+
 ## Localization
 
 - [ ] Test support for Hebrew
@@ -110,34 +313,3 @@
 - [ ] Build static site for deployment
 - [ ] Deploy to Render.com
 - [ ] Verify deployment and test on Render's default subdomain
-
-## Backend API Integration (migration from localStorage)
-
-- [ ] Implement API client layer:
-  - [ ] Create API client utility (fetch wrapper with error handling, auth token management)
-  - [ ] Configure base URL to use relative `/api/...` paths (works with dev proxy and production)
-  - [ ] Implement JWT access token storage/retrieval (memory-based or from response)
-  - [ ] Handle refresh token cookies (HttpOnly, automatic via browser)
-- [ ] Replace localStorage stores with API calls:
-  - [ ] Update `stores.ts` to use API client instead of localStorage persistence
-  - [ ] Implement API-based auth (login, register, refresh, logout)
-  - [ ] Implement API-based CRUD for venues, event lists, events
-  - [ ] Implement API-based public read endpoints (browse venues, token-based access)
-- [ ] Remove localStorage code (cutover):
-  - [ ] Remove localStorage persistence from `stores.ts` (subscribe handlers)
-  - [ ] Remove or replace `demo_data.ts` seeding (use API-based seeding if needed for dev)
-  - [ ] Remove client-side UUID generation (backend generates UUIDs)
-  - [ ] Remove any localStorage-specific utilities
-  - [ ] Update all components to work with API-based stores (test thoroughly)
-- [ ] Update authentication flow:
-  - [ ] Replace localStorage-based login/registration with API calls
-  - [ ] Handle JWT access tokens from API responses
-  - [ ] Handle refresh token cookies (set by backend)
-  - [ ] Implement automatic token refresh on 401 responses
-  - [ ] Update logout to call API endpoint (revokes refresh token)
-
-## Documentation Tasks
-
-- [x] Document demo data and editing process
-- [x] Record agentic coding decisions and workflow notes in implement.md
-

@@ -1,13 +1,16 @@
 <script>
   import { get } from 'svelte/store';
-  import { ownersStore, currentOwnerStore } from '$lib/stores';
+  import { currentOwnerStore } from '$lib/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { login } from '$lib/api/auth.js';
+  import { ApiError } from '$lib/api/client.js';
 
   let email = '';
   let password = '';
   let error = '';
   let success = '';
+  let isLoading = false;
 
   // If already logged in, take them to owner page
   onMount(() => {
@@ -21,35 +24,44 @@
   }
 
   /** @param {SubmitEvent} e */
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     error = '';
     success = '';
+    isLoading = true;
 
     const normalizedEmail = normalizeEmail(email);
     if (!normalizedEmail || !normalizedEmail.includes('@')) {
       error = 'Please enter a valid email address.';
-      return;
-    }
-    const owners = get(ownersStore);
-    const owner = owners.find((o) => normalizeEmail(o.email) === normalizedEmail);
-    if (!owner) {
-      error = 'No account found for that email. Please register first.';
+      isLoading = false;
       return;
     }
 
     if (!password) {
       error = 'Please enter your password.';
-      return;
-    }
-    if (!owner.password || password !== owner.password) {
-      error = 'Incorrect password.';
+      isLoading = false;
       return;
     }
 
-    currentOwnerStore.set(owner);
-    success = `Welcome back, ${owner.name}.`;
-    goto('/venue-owner');
+    try {
+      const response = await login(normalizedEmail, password);
+      success = `Welcome back, ${response.owner.name}.`;
+      goto('/venue-owner');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          error = 'Invalid email or password.';
+        } else if (err.status === 0) {
+          error = 'Network error. Please check your connection.';
+        } else {
+          error = err.message || 'Login failed. Please try again.';
+        }
+      } else {
+        error = 'An unexpected error occurred. Please try again.';
+      }
+    } finally {
+      isLoading = false;
+    }
   }
 </script>
 
@@ -106,9 +118,10 @@
       <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <button
           type="submit"
-          class="inline-flex justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 transition-colors"
+          disabled={isLoading}
+          class="inline-flex justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign in
+          {isLoading ? 'Signing in...' : 'Sign in'}
         </button>
         <a class="text-sm text-blue-600 hover:text-blue-800 font-medium" href="/registration">
           Need an account? Register as a venue owner

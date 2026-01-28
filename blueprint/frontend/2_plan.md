@@ -4,8 +4,8 @@
 
 - Frontend: Svelte and SvelteKit (for routing, reactivity and maintainability)
 - CSS: Use standard UI from Tailwind CSS. We do not have the energy to tweak CSS.
-- Data: Initially, static JS object/JSON, persisted to local storage.
-- Backend (planned later): Golang with PostgreSQL
+- Data: Currently using localStorage (prototype). Migrating to backend API (see "Backend API Integration" section).
+- Backend: Golang with PostgreSQL (complete and ready for integration - see `blueprint/backend/2_plan.md`)
 
 ## Data Model Structure
 
@@ -90,10 +90,8 @@
 
 ## Data Storage
 
-- Default/demo data pre-loaded on first use
-- On change, serialize data and save to localStorage
-
-**Note**: The current localStorage-based storage is a prototype. Once the backend API is implemented and stable, we will migrate to API-only data storage and remove all localStorage code (see "Backend API Integration" section below).
+- **Current (prototype)**: Default/demo data pre-loaded on first use, serialized to localStorage on change
+- **Migration in progress**: Backend API is complete and ready. We are migrating from localStorage to API-only data storage (see "Backend API Integration" section below).
 
 ## Localization
 
@@ -123,9 +121,65 @@
 
 ## Backend API Integration
 
-### Migration strategy: remove localStorage code (cutover approach)
+### Backend Status
 
-Once the backend API is implemented and stable, we will **remove all localStorage-based data storage code** and switch to API-only data access.
+**The backend is now complete and ready for integration.** All API endpoints are implemented and tested. See `blueprint/backend/2_plan.md` for complete backend architecture and API details.
+
+### API Structure
+
+The backend provides the following endpoint groups:
+
+- **Authentication** (`/api/auth/*`):
+  - `POST /api/auth/register` - Register new venue owner
+  - `POST /api/auth/login` - Login and receive JWT access token
+  - `POST /api/auth/refresh` - Refresh access token using refresh token cookie
+  - `POST /api/auth/logout` - Logout and revoke refresh token
+  - `GET /api/auth/me` - Get current authenticated owner (protected)
+
+- **Owner-scoped CRUD** (all require JWT authentication):
+  - **Venues**: `GET /api/venues`, `POST /api/venues`, `GET /api/venues/:venue_uuid`, `PATCH /api/venues/:venue_uuid`, `DELETE /api/venues/:venue_uuid`
+  - **Event Lists**: `GET /api/venues/:venue_uuid/event-lists`, `POST /api/venues/:venue_uuid/event-lists`, `GET /api/event-lists/:event_list_uuid`, `PATCH /api/event-lists/:event_list_uuid`, `DELETE /api/event-lists/:event_list_uuid`
+  - **Events**: `GET /api/event-lists/:event_list_uuid/events`, `POST /api/event-lists/:event_list_uuid/events`, `GET /api/events/:event_uuid`, `PATCH /api/events/:event_uuid`, `DELETE /api/events/:event_uuid`
+
+- **Public endpoints** (no authentication required):
+  - `GET /api/public/venues?query=...` - Search public venues
+  - `GET /api/public/venues/:venue_uuid/event-lists` - Get public event lists for a venue
+  - `GET /api/public/venues/by-token/:token` - Access private venue via token
+  - `GET /api/public/event-lists/by-token/:token` - Access private event list via token
+
+### Authentication
+
+The backend uses JWT access tokens + refresh tokens:
+
+- **Access tokens**: Short-lived JWT tokens (15 minutes) returned in JSON response body
+- **Refresh tokens**: Long-lived tokens (30 days) stored as HttpOnly cookies by the backend
+- **Token refresh**: Frontend automatically refreshes access token when it expires (on 401 responses)
+- **Storage**: Access tokens stored in memory (not localStorage) for security; refresh tokens handled automatically by browser
+
+### Development Setup
+
+Local development uses a two-process setup:
+
+- **Frontend**: SvelteKit dev server on `http://localhost:5173` (with HMR)
+- **Backend**: Go/Echo API server on `http://localhost:8080`
+
+The SvelteKit dev server proxies `/api/*` requests to the backend, so:
+- Browser makes requests to `http://localhost:5173/api/...`
+- Vite proxies to `http://localhost:8080/api/...`
+- No CORS issues (same-origin from browser perspective)
+- Refresh token cookies work correctly (HttpOnly, same-origin)
+
+### Production Deployment
+
+In production (Render.com), a single Go binary serves both:
+- **Frontend**: Static SvelteKit build served from `/` (with SPA fallback)
+- **API**: All `/api/*` routes handled by Echo
+
+The frontend uses relative URLs (`/api/...`) so the same code works in both dev (proxied) and production (served by Go).
+
+### Migration Strategy: Remove localStorage Code (Cutover Approach)
+
+We will **remove all localStorage-based data storage code** and switch to API-only data access.
 
 **Rationale**:
 
@@ -139,7 +193,7 @@ Once the backend API is implemented and stable, we will **remove all localStorag
 1. **Phase 1**: Implement API integration alongside existing localStorage code (temporary parallel implementation for testing).
 2. **Phase 2**: Once API is stable and tested, remove all localStorage code in a single cutover:
    - Remove localStorage-based stores (`stores.ts` localStorage persistence)
-   - Replace with API client calls (fetch/axios or similar)
+   - Replace with API client calls (fetch wrapper)
    - Remove demo data seeding from localStorage
    - Update all components to use API-based stores
    - Remove localStorage-related utilities if no longer needed
@@ -149,20 +203,21 @@ Once the backend API is implemented and stable, we will **remove all localStorag
 - localStorage persistence in `stores.ts` (the `subscribe` handlers that save to localStorage)
 - `demo_data.ts` seeding function (or replace with API-based seeding if needed for development)
 - Any localStorage-specific data loading/saving logic
-- Client-side UUID generation (backend will generate UUIDs)
+- Client-side UUID generation (backend generates UUIDs)
 
 **What stays**:
 
 - UI components and routing (no changes needed)
-- Date/time formatting utilities (still needed for display)
+- Date/time formatting utilities (still needed for display, but may need updates for RFC3339 format from API)
 - Form validation logic
 - All business logic and UI behavior
 
 **API client implementation**:
 
 - Use relative URLs (`/api/...`) so the same code works in dev (proxied) and production (served by Go)
-- Handle JWT access tokens (store in memory or httpOnly cookie if provided)
-- Handle refresh token cookies (HttpOnly, set by backend)
+- Store JWT access tokens in memory (not localStorage) for security
+- Handle refresh token cookies automatically (HttpOnly, set by backend)
+- Implement automatic token refresh on 401 responses
 - Implement proper error handling and loading states
 - Handle authentication state (logged-in owner)
 
@@ -171,5 +226,6 @@ Once the backend API is implemented and stable, we will **remove all localStorag
 - App will be hosted on Render.com for ease of deployment and free-tier prototyping
 - No custom domain to start; app will be accessed via Render’s default subdomain
 - When (or if) the project continues past the demo phase, revisit domain registration and production hosting
-- Initial rollout: only the frontend (Svelte/SvelteKit) will be deployed; backend integration planned for future (Golang/PostgreSQL)
+- **Deployment**: Single Go binary serves both frontend (static SvelteKit build) and backend API
+- **Next step**: Complete frontend migration to backend API, then deploy integrated application
 

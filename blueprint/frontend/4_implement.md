@@ -818,3 +818,79 @@
   - Handle JWT access tokens and refresh token cookies (HttpOnly, set by backend).
   - Implement proper error handling and loading states.
 - **Tasks added**: Created comprehensive task list for API client implementation, store migration, and localStorage removal.
+
+## 2026-01-28
+
+### Summary
+
+- **API Client Implementation**: Created comprehensive fetch wrapper with JWT token management, automatic token refresh, error handling, and loading state management.
+- **Authentication API Integration**: Migrated login and registration from localStorage to backend API endpoints with proper token handling and session restoration.
+
+### Notes
+
+- **API Client** (`frontend/src/lib/api/client.js`):
+  - Created fetch wrapper with base URL configuration using relative `/api/...` paths (works in both dev proxy and production).
+  - Implemented memory-based JWT access token storage (not localStorage for security).
+  - Added automatic token refresh on 401 responses: calls `/api/auth/refresh`, updates token, and retries original request.
+  - Implemented request interceptors to automatically add `Authorization: Bearer {token}` header when token is available.
+  - Added response interceptors for error handling: parses error responses from API (checks for `error.message` and `error.code` fields).
+  - Handles refresh token cookies automatically via `credentials: 'include'` (HttpOnly cookies set by backend).
+  - Implemented loading state management utilities (`onLoadingChange()` callback system).
+  - Added network error handling with user-friendly error messages.
+  - Created custom `ApiError` class with status code and error code for better error handling.
+  - Provides convenience methods: `get()`, `post()`, `patch()`, `delete()`, `getJSON()`, `postJSON()`, `patchJSON()`.
+
+- **Authentication API** (`frontend/src/lib/api/auth.js`):
+  - Created authentication API functions wrapping backend endpoints:
+    - `register()`: POST `/api/auth/register` - Creates new venue owner account.
+    - `login()`: POST `/api/auth/login` - Authenticates user and receives access token.
+    - `logout()`: POST `/api/auth/logout` - Revokes refresh token and clears session.
+    - `getCurrentOwner()`: GET `/api/auth/me` - Gets current authenticated owner, with automatic token refresh if no access token but refresh token cookie exists.
+  - All functions automatically store access token in memory and update `currentOwnerStore` with owner data from API responses.
+  - Handles authentication errors gracefully with appropriate error messages.
+
+- **Login Page** (`frontend/src/routes/login/+page.svelte`):
+  - Replaced localStorage-based authentication with API call to `POST /api/auth/login`.
+  - Removed dependency on `ownersStore` (no longer queries localStorage for owner lookup).
+  - Added loading state (`isLoading`) with disabled button during API call.
+  - Improved error handling: shows specific error messages for invalid credentials (401), network errors, and other API errors.
+  - Automatically stores access token and owner data from API response.
+  - Redirects to `/venue-owner` on successful login.
+
+- **Registration Page** (`frontend/src/routes/registration/+page.svelte`):
+  - Replaced localStorage-based registration with API call to `POST /api/auth/register`.
+  - Removed client-side UUID generation (backend generates UUIDs).
+  - Removed dependency on `ownersStore` and `getCurrentTimestamp()` (no longer stores owner in localStorage).
+  - Updated password validation: minimum 6 characters (matches backend requirement).
+  - Added loading state with disabled button during API call.
+  - Improved error handling: shows specific error messages for email conflicts (409), validation errors (400), network errors, and other API errors.
+  - Automatically stores access token and owner data from API response.
+  - Redirects to `/venue-owner` on successful registration.
+
+- **Session Restoration** (`frontend/src/routes/+layout.svelte`):
+  - Added `getCurrentOwner()` call on app initialization to restore session from refresh token cookie.
+  - If no access token exists but refresh token cookie is present, automatically refreshes token before calling `/api/auth/me`.
+  - Handles unauthenticated state gracefully (silently ignores errors for unauthenticated users).
+  - Updated logout function to call API `logout()` endpoint before clearing local state.
+
+- **State Management** (`frontend/src/lib/stores.ts`):
+  - Removed localStorage persistence for `currentOwnerStore` (now managed entirely by API/auth).
+  - `currentOwnerStore` initialized to `null` instead of loading from localStorage.
+  - Added comments explaining that `currentOwnerStore` is API-managed while other stores still use localStorage (pending future migration).
+  - Owner data now comes exclusively from API responses, not localStorage.
+
+- **Development Configuration** (`frontend/vite.config.js`):
+  - Added API proxy configuration to dev server:
+    - Proxies `/api/*` requests to `http://localhost:8080` (backend server).
+    - Enables seamless API calls during development without CORS issues.
+    - Uses `changeOrigin: true` for proper proxy behavior.
+  - Frontend uses relative URLs (`/api/...`) so same code works in dev (proxied) and production (served by Go backend).
+
+### Implementation Decisions
+
+- **Memory-based Token Storage**: Access tokens stored in memory (not localStorage) for better security - tokens are cleared on page refresh and must be refreshed via HttpOnly cookie.
+- **Automatic Token Refresh**: API client automatically refreshes expired tokens on 401 responses, retrying the original request transparently to the caller.
+- **Session Restoration**: On app initialization, attempts to restore session by refreshing token if refresh token cookie exists, then calling `/api/auth/me` to get current owner.
+- **Error Handling**: Consistent error parsing from API responses (checks for `error.message` and `error.code` fields matching backend `ErrorResponse` format).
+- **Cutover Approach**: Removed localStorage persistence for owner/authentication data immediately (not dual-mode) - simpler codebase, single source of truth.
+- **Proxy Configuration**: Dev server proxies API requests to backend, allowing same-origin requests from browser perspective (refresh token cookies work correctly).

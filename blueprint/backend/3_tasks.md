@@ -75,6 +75,7 @@
 
 ## Testing
 
+- [x] Add unit tests for auth components (AuthService, middleware, handler helpers)
 - [ ] Add minimal integration tests for auth + one CRUD path
 - [ ] Add tests for token-based access control
 

@@ -183,9 +183,7 @@ This file will track backend implementation work sessions, decisions made during
     - Run migrations on test database using goose
     - Execute tests against the isolated test database
   - Uses `TEST_DATABASE_URL` environment variable (defaults to `timesplace_test` database)
-  - Ensures clean test environment for each test run
-
-### Summary
+  - Ensures clean test environment for each test run### Summary
 
 - **API server infrastructure**: Implemented complete Echo-based API server with project layout, database connection, middleware, error handling, and request validation.
 - **Authentication endpoints**: Implemented all 5 auth endpoints (register, login, refresh, logout, me) with password hashing, JWT tokens, refresh token management, and HttpOnly cookies.
@@ -240,3 +238,27 @@ This file will track backend implementation work sessions, decisions made during
   - Resolved circular import by moving handlers into `http` package (renamed `handlers/auth.go` to `auth_handlers.go`)
   - Fixed import aliases for `sqlc` package
   - All packages compile successfully
+
+## 2026-01-28
+
+### Summary
+
+- **Auth unit tests**: Added focused unit tests covering `AuthService` (password hashing + JWT/refresh-token utilities), JWT middleware auth/header parsing, and refresh-token cookie helpers.
+- **Why**: Lock in auth behavior/edge cases so we can refactor auth + HTTP layers safely.
+
+### Notes
+
+- **Auth/JWT (unit tests)**:
+  - Added `backend/internal/service/auth_test.go`:
+    - Password hashing + verification (`HashPassword`, `VerifyPassword`)
+    - Access JWT generation/parsing (`GenerateAccessToken`, `ParseAccessToken`) including expiration and invalid signature cases
+    - Refresh token generation + hashing (`GenerateRefreshToken`, `HashRefreshToken`)
+    - `NewAuthService` env var behavior (`JWT_SECRET` required; `REFRESH_TOKEN_SECRET` optional fallback)
+- **API / HTTP helpers (unit tests)**:
+  - Added `backend/internal/http/auth_handlers_test.go`:
+    - Refresh token cookie set/clear behavior, including env-controlled `COOKIE_DOMAIN`, `COOKIE_SECURE`, and `COOKIE_SAME_SITE`
+    - Refresh token extraction precedence: cookie first, then JSON body fallback (`refresh_token`)
+- **Middleware (unit tests)**:
+  - Added `backend/internal/http/middleware_test.go`:
+    - `JWTAuthMiddleware` behavior for valid/missing/invalid `Authorization` header formats
+    - Context propagation + `GetOwnerUUIDFromContext` validation/error cases

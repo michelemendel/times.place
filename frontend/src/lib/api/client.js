@@ -188,10 +188,21 @@ class ApiClient {
 
       return response;
     } catch (error) {
+      // Check for offline state first
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new ApiError('You are currently offline. Please check your internet connection.', 0, 'offline');
+      }
+      
       // Handle network errors
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         throw new ApiError('Network error. Please check your connection.', 0, 'network_error');
       }
+      
+      // Handle timeout errors (AbortError from AbortController)
+      if (error.name === 'AbortError' || (error instanceof Error && error.message.includes('timeout'))) {
+        throw new ApiError('Request timed out. Please try again.', 0, 'timeout');
+      }
+      
       // Re-throw ApiError as-is
       if (error instanceof ApiError) {
         throw error;

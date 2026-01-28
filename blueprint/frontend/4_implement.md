@@ -894,3 +894,56 @@
 - **Error Handling**: Consistent error parsing from API responses (checks for `error.message` and `error.code` fields matching backend `ErrorResponse` format).
 - **Cutover Approach**: Removed localStorage persistence for owner/authentication data immediately (not dual-mode) - simpler codebase, single source of truth.
 - **Proxy Configuration**: Dev server proxies API requests to backend, allowing same-origin requests from browser perspective (refresh token cookies work correctly).
+
+### Summary
+
+- **Venues & public endpoints**: Wired the venue owner dashboard and public visitor page to the new backend API, including owner-scoped venues and public/token-based venue access.
+- **LocalStorage cutover**: Removed remaining localStorage-backed stores and demo seeding from the runtime, so all data now flows through the backend API.
+
+### Notes
+
+- **API Client** (`frontend/src/lib/api/venues.js`, `frontend/src/lib/api/eventLists.js`, `frontend/src/lib/api/events.js`, `frontend/src/lib/api/public.js`):
+  - Added dedicated clients for owner-scoped venues, event lists, and events (e.g., `/api/venues`, `/api/venues/:venue_uuid/event-lists`, `/api/event-lists/:event_list_uuid/events`, and related GET/PATCH/DELETE endpoints).
+  - Added public client functions for unauthenticated access: `listPublicVenues`, `getPublicEventListsForVenue`, `getPrivateVenueByToken`, and `getPrivateEventListByToken` bound to `/api/public/...` endpoints.
+  - All new clients use the shared `api` wrapper so they inherit JWT handling, automatic refresh, error parsing, and loading-state callbacks.
+- **Routes/Pages**:
+  - `frontend/src/routes/venue-owner/+page.svelte`: Replaced `venueStore` usage with `listVenues()`; loads the authenticated owner’s venues from `/api/venues`, loads per-venue event lists via `listEventListsForVenue()`, deletes venues via `deleteVenue()`, and surfaces loading + error states in the UI instead of mutating Svelte stores directly.
+  - `frontend/src/routes/+page.svelte`: Replaced all localStorage/store-based visitor logic with API calls:
+    - Loads public venues via `listPublicVenues()` (search backed by `?query=` parameter).
+    - Loads public event lists per venue via `getPublicEventListsForVenue()`.
+    - Resolves `?token=` URLs using `getPrivateVenueByToken()` and `getPrivateEventListByToken()` to support private venue/event-list sharing.
+    - Keeps time display RFC3339-aware using existing `formatEventTime` helpers and venue timezone, and adds explicit loading/error UX around API calls.
+  - `frontend/src/routes/+layout.svelte`: Removed `seedDemoData(false)` from app initialization so the frontend no longer seeds local demo data on load; session restoration is now purely API-based via `getCurrentOwner()`.
+- **State Management / Cutover** (`frontend/src/lib/stores.ts`):
+  - Removed all entity stores (`ownersStore`, `venueStore`, `eventListStore`, `eventStore`) and their localStorage persistence helpers (`load()`, subscribe-handlers, storage key constants).
+  - Simplified `stores.ts` to a single `currentOwnerStore` that is populated exclusively from authentication API responses, aligning with the cutover plan away from localStorage.
+- **Venue Form API Integration** (`frontend/src/routes/venue-form/+page.svelte`):
+  - Completely refactored venue form to use API endpoints instead of localStorage stores:
+    - **Loading**: Replaced store subscriptions with `getVenue()`, `listEventListsForVenue()`, and `listEventsForEventList()` API calls in `onMount`. Added `loadVenueDataFromAPI()` async function that loads venue, event lists, and events in parallel.
+    - **Saving**: Replaced `saveVenue()` store mutations with comprehensive API operations:
+      - Creates/updates venue via `createVenue()`/`updateVenue()`.
+      - For each event list: creates new lists via `createEventList()`, updates existing via `updateEventList()`, deletes removed lists via `deleteEventListApi()`.
+      - For each event: creates new events via `createEvent()`, updates existing via `updateEvent()`, deletes removed events via `deleteEventApi()`.
+      - Handles `sort_order` updates for both event lists and events when reordering.
+    - **UUID Generation**: Removed all `generateUUID()` calls and `crypto.randomUUID()` usage. Uses temporary IDs (`temp-*`) for new entities during editing, then replaces with backend-assigned UUIDs on save.
+    - **Error Handling**: Added `isLoading`, `isSaving`, `loadError`, and `saveError` state variables with UI feedback (error messages, loading indicators, disabled save button during operations).
+    - **Store Dependencies**: Removed all `venueStore`, `eventListStore`, `eventStore`, `ownersStore` imports and subscriptions. Only retains `currentOwnerStore` for authentication checks.
+    - **Undo Functionality**: Updated `handleUndo()` to work with API-loaded data structure.
+    - **Form State**: Updated `addEventList()`, `addEvent()`, `duplicateEvent()` to use temporary IDs and mark entities with `isNew` flag for API create/update logic.
+    - **Sort Order**: Updated `moveEventListUp()`, `moveEventListDown()`, `moveEventUp()`, `moveEventDown()` to track `sort_order` changes that are persisted via API on save.
+
+### Summary
+
+- **Lazy event loading**: Implemented on-demand loading of events for public event lists to improve initial page load performance.
+- **Public events API client**: Added function to retrieve events for public event lists separately from event list data.
+
+### Notes
+
+- **API Client** (`frontend/src/lib/api/public.js`):
+  - Added `getPublicEventsForEventList(eventListUuid)`: Calls `GET /api/public/event-lists/:event_list_uuid/events` to retrieve events for a public event list.
+  - Enables lazy loading of events separately from event list metadata for better performance.
+- **Routes/Pages** (`frontend/src/routes/+page.svelte`):
+  - Implemented `ensureEventsForEventList()` function that lazily loads events for event lists when needed.
+  - Events are cached in `eventListEventsMap` to avoid redundant API calls.
+  - Events are loaded on-demand when a user selects an event list, rather than loading all events upfront.
+  - Improves initial page load time by deferring event data fetching until it's actually needed.

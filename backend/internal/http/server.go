@@ -27,7 +27,10 @@ type Server struct {
 func NewServer() (*Server, error) {
 	// Load environment variables from .env file
 	// This will not error if .env doesn't exist (useful for production)
-	_ = godotenv.Load("backend/.env")
+	// Try both paths: .env (when running from backend/) and backend/.env (when running from workspace root)
+	if err := godotenv.Load(".env"); err != nil {
+		_ = godotenv.Load("backend/.env")
+	}
 
 	// Initialize Echo
 	e := echo.New()

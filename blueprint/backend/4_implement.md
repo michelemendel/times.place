@@ -299,3 +299,27 @@ This file will track backend implementation work sessions, decisions made during
 
 - **Build fixes**:
   - Adjusted `pgtype.Date` handling to match pgx/v5 (`pgtype.Date.Time`), and removed a few unused imports/variables so `make bbuild` passes cleanly.
+
+### Summary
+
+- **Health check endpoint**: Added `/health` endpoint for monitoring and deployment health checks.
+- **Public events endpoint**: Added endpoint to retrieve events for public event lists without requiring authentication.
+- **Dev workflow improvements**: Enhanced environment variable loading to support both workspace root and backend directory locations.
+
+### Notes
+
+- **API (health check)**:
+  - Added `backend/internal/http/healthcheck.go`: Health check handler with database connectivity check.
+  - `GET /health`: Returns health status with timestamp and optional database connection status.
+  - Returns `200 OK` with `{"status": "ok", "timestamp": "...", "database": "connected"}` when healthy.
+  - Returns `503 Service Unavailable` with `{"status": "degraded", "database": "unavailable"}` when database is unreachable.
+  - Public endpoint (no authentication required) for monitoring and deployment verification.
+- **API (public)**:
+  - Added `GET /api/public/event-lists/:event_list_uuid/events` endpoint in `backend/internal/http/public_handlers.go`:
+    - Returns events for a public event list (only if event list visibility is "public").
+    - Returns `404` if event list is private or not found (doesn't leak existence of private lists).
+    - Enables frontend to load events separately from event list data for better performance.
+- **Dev workflow**:
+  - Updated `backend/internal/http/server.go`: Environment variable loading now tries both `.env` (workspace root) and `backend/.env` (backend directory) for flexibility when running from different locations.
+- **Test data**:
+  - Updated `backend/internal/testdata/seed.go`: Added "DEMO:" prefix to all venue names in test data to clearly distinguish demo venues from production data.

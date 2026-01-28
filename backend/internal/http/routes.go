@@ -10,6 +10,10 @@ import (
 func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthService) {
 	// Create handlers
 	authHandler := NewAuthHandler(store, authService)
+	healthcheckHandler := NewHealthcheckHandler(store)
+
+	// Health check endpoint (public, no auth)
+	e.GET("/health", healthcheckHandler.Health)
 
 	// API routes group
 	api := e.Group("/api")
@@ -60,4 +64,5 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 	public.GET("/venues/:venue_uuid/event-lists", publicHandler.GetEventListsByVenue)
 	public.GET("/venues/by-token/:token", publicHandler.GetVenueByToken)
 	public.GET("/event-lists/by-token/:token", publicHandler.GetEventListByToken)
+	public.GET("/event-lists/:event_list_uuid/events", publicHandler.GetEventsByEventList)
 }

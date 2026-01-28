@@ -4,10 +4,13 @@
   import { browser } from '$app/environment';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
-  import { currentOwnerStore, venueStore, eventListStore, eventStore, ownersStore } from '$lib/stores';
-  import { generateUUID } from '$lib/utils/uuid.js';
-  import { getCurrentTimestamp, updateModifiedTimestamp, parseISODate, createEventTimestamp } from '$lib/utils/datetime.js';
+  import { currentOwnerStore } from '$lib/stores';
+  import { getVenue, createVenue, updateVenue } from '$lib/api/venues.js';
+  import { listEventListsForVenue, createEventList, updateEventList, deleteEventList as deleteEventListApi } from '$lib/api/eventLists.js';
+  import { listEventsForEventList, createEvent, updateEvent, deleteEvent as deleteEventApi } from '$lib/api/events.js';
+  import { parseISODate } from '$lib/utils/datetime.js';
   import { formatEventTime } from '$lib/utils/datetime.js';
+  import { ApiError } from '$lib/api/client.js';
 
   // Common timezones organized by region
   /** @type {any} */
@@ -70,12 +73,12 @@
   /** @type {any} */
   let venue = null;
   let isNewVenue = false;
-  /** @type {any[]} */
-  let allEventLists = [];
-  /** @type {any[]} */
-  let allEvents = [];
-  /** @type {any[]} */
-  let allOwners = [];
+  
+  // Loading and error states
+  let isLoading = false;
+  let isSaving = false;
+  let loadError = '';
+  let saveError = '';
 
   // Form state
   let venueName = '';
@@ -121,21 +124,9 @@
   /** @type {HTMLElement | null} */
   let timezoneHelpPopup = null;
 
-  // Subscribe to stores
+  // Subscribe to owner store only (for auth check)
   currentOwnerStore.subscribe((val) => {
     currentOwner = val;
-  });
-
-  eventListStore.subscribe((val) => {
-    allEventLists = val;
-  });
-
-  eventStore.subscribe((val) => {
-    allEvents = val;
-  });
-
-  ownersStore.subscribe((val) => {
-    allOwners = val;
   });
 
   /**
@@ -160,9 +151,16 @@
     const previousState = undoStack.pop();
     if (previousState.venue) {
       venue = previousState.venue;
-      loadVenueData();
+      loadVenueFormFields();
+      // Reload event lists and events from API if venue exists
+      if (venue.venue_uuid && !venue.venue_uuid.startsWith('temp-')) {
+        loadVenueDataFromAPI();
+      } else {
+        eventListsData = previousState.eventListsData || [];
+      }
+    } else {
+      eventListsData = previousState.eventListsData || [];
     }
-    eventListsData = previousState.eventListsData;
   }
 
   /**
@@ -186,67 +184,75 @@
   }
 
   /**
-   * Load venue data into form
+   * Load venue data from API into form
    */
-  function loadVenueData() {
+  async function loadVenueDataFromAPI() {
+    if (!venue || !venue.venue_uuid) return;
+    
+    isLoading = true;
+    loadError = '';
+    
+    try {
+      // Load event lists for this venue
+      const venueEventLists = await listEventListsForVenue(venue.venue_uuid);
+      
+      // Load events for each event list in parallel
+      const eventListsWithEvents = await Promise.all(
+        venueEventLists.map(async (el) => {
+          try {
+            const events = await listEventsForEventList(el.event_list_uuid);
+            return { eventList: el, events };
+          } catch (err) {
+            console.error('Failed to load events for event list', el.event_list_uuid, err);
+            return { eventList: el, events: [] };
+          }
+        })
+      );
+      
+      // Transform to eventListsData format
+      eventListsData = eventListsWithEvents.map(({ eventList: el, events }) => {
+        const eventListDate = el.date !== undefined && el.date !== null ? el.date : '';
+        const eventsWithTime = events.map((e) => ({
+          ...e,
+          time: extractTimeFromRFC3339(e.datetime),
+          duration_minutes: e.duration_minutes && e.duration_minutes > 0 ? e.duration_minutes : ''
+        }));
+        return {
+          ...el,
+          date: eventListDate,
+          visibility: el.visibility || 'private',
+          event_uuids: events.map(e => e.event_uuid),
+          events: eventsWithTime
+        };
+      });
+      
+      // Set preview to first event list
+      if (eventListsData.length > 0) {
+        previewEventListId = eventListsData[0].event_list_uuid;
+      }
+    } catch (err) {
+      console.error('Failed to load venue data', err);
+      loadError = 'Failed to load venue data. Please try again.';
+      if (err instanceof ApiError && err.status === 404) {
+        loadError = 'Venue not found.';
+        goto('/venue-owner');
+      }
+    } finally {
+      isLoading = false;
+    }
+  }
+  
+  /**
+   * Load venue form fields from venue object (after API load)
+   */
+  function loadVenueFormFields() {
     if (!venue) return;
     venueName = venue.name || '';
     venueAddress = venue.address || '';
     venueGeolocation = venue.geolocation || '';
     venueComment = venue.comment || '';
     venueBannerImage = venue.banner_image || '';
-    // Preserve empty timezone if it exists, only default for new venues
     venueTimezone = venue.timezone !== undefined && venue.timezone !== null ? venue.timezone : '';
-
-    // Get current values from stores (in case stores haven't updated yet)
-    const currentEventLists = get(eventListStore);
-    const currentEvents = get(eventStore);
-
-    // Load event lists for this venue
-    const venueEventLists = currentEventLists.filter((el) => el.venue_uuid === venue.venue_uuid);
-    // Always initialize as an array, even if empty
-    // Deduplicate events by event_uuid within each event list to prevent duplicates when loadVenueData() is called multiple times
-    eventListsData = venueEventLists.map((el) => {
-      const listEvents = currentEvents.filter((e) => el.event_uuids.includes(e.event_uuid));
-      // Preserve existing date, including empty string for no date
-      const eventListDate = el.date !== undefined && el.date !== null ? el.date : '';
-      // Deduplicate events by event_uuid within this event list
-      const seenEventUuids = new Set();
-      const uniqueEvents = [];
-      for (const e of listEvents) {
-        if (!seenEventUuids.has(e.event_uuid)) {
-          seenEventUuids.add(e.event_uuid);
-          uniqueEvents.push(e);
-        }
-      }
-      const eventsWithTime = uniqueEvents.map((/** @type {any} */ e) => {
-        // Preserve existing time field if it exists (for new events being edited)
-        // Otherwise extract time from datetime
-        const existingTime = e.time;
-        return {
-          ...e,
-          // Extract time from datetime for editing (only if time field doesn't already exist)
-          time: existingTime || extractTimeFromRFC3339(e.datetime),
-          // Convert 0 duration to empty string for display (0 means no duration)
-          duration_minutes: e.duration_minutes && e.duration_minutes > 0 ? e.duration_minutes : ''
-        };
-      });
-      return {
-        ...el,
-        date: eventListDate,
-        visibility: el.visibility || 'private', // Default to private if not set
-        events: eventsWithTime || []
-      };
-    });
-    // Ensure eventListsData is always an array
-    if (!Array.isArray(eventListsData)) {
-      eventListsData = [];
-    }
-
-    // Set preview to first event list
-    if (eventListsData.length > 0) {
-      previewEventListId = eventListsData[0].event_list_uuid;
-    }
   }
 
   /**
@@ -340,35 +346,23 @@
    * Add new event list
    */
   function addEventList() {
-    if (!currentOwner) return;
-    // For new venues, create a temporary venue UUID if needed
-    let venueUuid = venue?.venue_uuid;
-    if (!venueUuid) {
-      venueUuid = generateUUID();
-      if (!venue) {
-        venue = {
-          venue_uuid: venueUuid,
-          owner_uuid: currentOwner.owner_uuid
-        };
-      } else {
-        venue.venue_uuid = venueUuid;
-      }
-    }
+    if (!currentOwner || !venue?.venue_uuid) return;
     saveUndoState();
+    // For new venues, we'll create a temporary local-only event list
+    // UUID will be assigned by backend when venue is saved
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
     const newList = {
-      event_list_uuid: generateUUID(),
-      venue_uuid: venueUuid,
+      event_list_uuid: tempId,
+      venue_uuid: venue.venue_uuid,
       name: 'New Event List',
-      date: '', // No date by default
+      date: '',
       comment: '',
-      visibility: 'private', // Default to private
-      private_link_token: generateUUID(),
+      visibility: 'private',
       event_uuids: [],
       events: [],
-      created_at: getCurrentTimestamp(),
-      modified_at: getCurrentTimestamp()
+      sort_order: eventListsData.length,
+      isNew: true // Mark as new so we know to create via API on save
     };
-    // Reassign to trigger Svelte reactivity
     eventListsData = [...eventListsData, newList];
     if (!previewEventListId) {
       previewEventListId = newList.event_list_uuid;
@@ -401,8 +395,8 @@
     saveUndoState();
     const newData = [...eventListsData];
     const temp = newData[index];
-    newData[index] = newData[index - 1];
-    newData[index - 1] = temp;
+    newData[index] = { ...newData[index - 1], sort_order: index };
+    newData[index - 1] = { ...temp, sort_order: index - 1 };
     eventListsData = newData;
   }
 
@@ -415,8 +409,8 @@
     saveUndoState();
     const newData = [...eventListsData];
     const temp = newData[index];
-    newData[index] = newData[index + 1];
-    newData[index + 1] = temp;
+    newData[index] = { ...newData[index + 1], sort_order: index };
+    newData[index + 1] = { ...temp, sort_order: index + 1 };
     eventListsData = newData;
   }
 
@@ -494,16 +488,17 @@
       ? list.date
       : new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
 
+    const tempEventId = `temp-event-${Date.now()}-${Math.random()}`;
     const newEvent = {
-      event_uuid: generateUUID(),
+      event_uuid: tempEventId,
       event_list_uuid: listUuid,
       event_name: 'New Event',
       datetime: combineTimeAndDate('12:00', placeholderDate, venueTimezone),
       time: '12:00',
       comment: '',
-      duration_minutes: '', // Empty string means no duration
-      created_at: getCurrentTimestamp(),
-      modified_at: getCurrentTimestamp()
+      duration_minutes: '',
+      sort_order: list.events.length,
+      isNew: true // Mark as new so we know to create via API on save
     };
 
     // Create new arrays with the new event added
@@ -568,12 +563,13 @@
     const originalEvent = list.events.find((/** @type {any} */ e) => e.event_uuid === eventUuid);
     if (!originalEvent) return;
 
+    const tempEventId = `temp-event-${Date.now()}-${Math.random()}`;
     const newEvent = {
       ...originalEvent,
-      event_uuid: generateUUID(),
+      event_uuid: tempEventId,
       event_name: `${originalEvent.event_name} (Copy)`,
-      created_at: getCurrentTimestamp(),
-      modified_at: getCurrentTimestamp()
+      sort_order: originalEvent.sort_order !== undefined ? originalEvent.sort_order + 1 : list.events.length,
+      isNew: true // Mark as new so we know to create via API on save
     };
 
     const index = list.events.findIndex((/** @type {any} */ e) => e.event_uuid === eventUuid);
@@ -614,8 +610,8 @@
     // Create new arrays with swapped elements
     const newEvents = [...list.events];
     const temp = newEvents[eventIndex];
-    newEvents[eventIndex] = newEvents[eventIndex - 1];
-    newEvents[eventIndex - 1] = temp;
+    newEvents[eventIndex] = { ...newEvents[eventIndex - 1], sort_order: eventIndex };
+    newEvents[eventIndex - 1] = { ...temp, sort_order: eventIndex - 1 };
 
     const newEventUuids = [...list.event_uuids];
     const tempUuid = newEventUuids[eventIndex];
@@ -652,8 +648,8 @@
     // Create new arrays with swapped elements
     const newEvents = [...list.events];
     const temp = newEvents[eventIndex];
-    newEvents[eventIndex] = newEvents[eventIndex + 1];
-    newEvents[eventIndex + 1] = temp;
+    newEvents[eventIndex] = { ...newEvents[eventIndex + 1], sort_order: eventIndex };
+    newEvents[eventIndex + 1] = { ...temp, sort_order: eventIndex + 1 };
 
     const newEventUuids = [...list.event_uuids];
     const tempUuid = newEventUuids[eventIndex];
@@ -710,14 +706,12 @@
     if (listIndex === -1) return;
     const list = eventListsData[listIndex];
 
-    // Preserve existing token - only generate if switching to private and token doesn't exist
+    // Preserve existing token - backend will generate if needed when saving
     // Don't set to undefined when switching to public - keep the token for future use
     const updatedList = {
       ...list,
       visibility: newVisibility,
-      private_link_token: newVisibility === 'private'
-        ? (list.private_link_token || generateUUID())
-        : list.private_link_token // Preserve token even when public
+      private_link_token: list.private_link_token // Preserve token, backend generates if missing on save
     };
 
     eventListsData = [
@@ -728,35 +722,31 @@
   }
 
   /**
-   * Save venue and all related data
+   * Save venue and all related data via API
    */
-  function saveVenue() {
+  async function saveVenue() {
     if (!currentOwner) {
-      alert('You must be logged in to save a venue');
+      saveError = 'You must be logged in to save a venue';
       return;
     }
 
     // Validate required fields
     if (!venueName.trim()) {
-      alert('Venue name is required');
+      saveError = 'Venue name is required';
       return;
     }
 
     // Validate event list dates (optional, but if provided must be valid)
     for (const list of eventListsData) {
       const dateValue = list.date ? String(list.date).trim() : '';
-      // Only validate format if a date is provided
+      if (dateValue && !/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+        saveError = `Invalid date format for event list "${list.name}". Please use ISO 8601 format (YYYY-MM-DD).`;
+        return;
+      }
       if (dateValue) {
-        // type="date" inputs should return YYYY-MM-DD format
-        // Validate the format
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-          alert(`Invalid date format for event list "${list.name}". Please use ISO 8601 format (YYYY-MM-DD). Got: "${dateValue}"`);
-          return;
-        }
-        // Validate that it's a valid date
         const parsedDate = parseISODate(dateValue);
         if (!parsedDate) {
-          alert(`Invalid date for event list "${list.name}". Please use a valid date in ISO 8601 format (YYYY-MM-DD). Got: "${dateValue}"`);
+          saveError = `Invalid date for event list "${list.name}". Please use a valid date in ISO 8601 format (YYYY-MM-DD).`;
           return;
         }
       }
@@ -767,11 +757,9 @@
       for (const event of list.events) {
         const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
         if (!timeRegex.test(event.time)) {
-          alert(`Invalid time format for event "${event.event_name}". Please use HH:MM format.`);
+          saveError = `Invalid time format for event "${event.event_name}". Please use HH:MM format.`;
           return;
         }
-        // Update datetime with the time
-        // If no date is provided, use today's date as placeholder
         const dateToUse = list.date && list.date.trim()
           ? list.date
           : new Date().toISOString().split('T')[0];
@@ -779,151 +767,152 @@
       }
     }
 
-    const now = getCurrentTimestamp();
+    isSaving = true;
+    saveError = '';
 
-    // Create or update venue
-    if (isNewVenue && currentOwner) {
-      venue = {
-        venue_uuid: generateUUID(),
-        owner_uuid: currentOwner.owner_uuid,
-        name: sanitizeInput(venueName.trim()),
-        banner_image: venueBannerImage,
-        address: sanitizeInput(venueAddress.trim()),
-        geolocation: sanitizeInput(venueGeolocation.trim()),
-        comment: sanitizeInput(venueComment.trim()),
-        event_list_uuids: eventListsData.map((el) => el.event_list_uuid),
-        timezone: venueTimezone,
-        created_at: now,
-        modified_at: now
-      };
-    } else if (venue) {
-      venue = updateModifiedTimestamp({
-        ...venue,
-        name: sanitizeInput(venueName.trim()),
-        banner_image: venueBannerImage,
-        address: sanitizeInput(venueAddress.trim()),
-        geolocation: sanitizeInput(venueGeolocation.trim()),
-        comment: sanitizeInput(venueComment.trim()),
-        event_list_uuids: eventListsData.map((el) => el.event_list_uuid),
-        timezone: venueTimezone
-      });
-    }
-
-    // Update venue store
-    if (!venue) return;
-    const currentVenues = get(venueStore);
-    if (isNewVenue) {
-      venueStore.set([...currentVenues, venue]);
-    } else {
-      venueStore.set(currentVenues.map((v) => (v.venue_uuid === venue.venue_uuid ? venue : v)));
-    }
-
-    // Update event lists
-    if (!venue) return;
-    const currentEventLists = get(eventListStore);
-    /** @type {import('$lib/types').EventList[]} */
-    const updatedEventLists = eventListsData.map((listData) => {
-      const existingList = currentEventLists.find((el) => el.event_list_uuid === listData.event_list_uuid);
-      if (existingList) {
-        // Preserve private_link_token: prefer existing token, then current data token, only generate if private and none exists
-        // The token should persist even when visibility is public, so we preserve it
-        const preservedToken = existingList.private_link_token || listData.private_link_token;
-        const finalToken = listData.visibility === 'private'
-          ? (preservedToken || generateUUID())  // If private, use preserved token or generate if missing
-          : preservedToken;  // If public, preserve token for future use (don't set to undefined)
-        const updated = /** @type {import('$lib/types').EventList} */ (updateModifiedTimestamp({
-          ...existingList,
-          name: sanitizeInput(listData.name.trim()),
-          date: listData.date,
-          comment: sanitizeInput(listData.comment || ''),
-          visibility: listData.visibility || 'private',
-          event_uuids: listData.event_uuids,
-          private_link_token: finalToken
-        }));
-        return updated;
-      } else {
-        // For new lists, preserve token from listData (which should have been set at creation)
-        // Only generate if private and token doesn't exist
-        const finalToken = listData.visibility === 'private'
-          ? (listData.private_link_token || generateUUID())
-          : listData.private_link_token;  // Preserve token even if public
-        /** @type {import('$lib/types').EventList} */
-        const newList = {
-          event_list_uuid: listData.event_list_uuid,
-          venue_uuid: venue.venue_uuid,
-          name: sanitizeInput(listData.name.trim()),
-          date: listData.date,
-          comment: sanitizeInput(listData.comment || ''),
-          visibility: listData.visibility || 'private',
-          private_link_token: finalToken,
-          event_uuids: listData.event_uuids,
-          created_at: listData.created_at || now,
-          modified_at: now
-        };
-        return newList;
+    try {
+      // Step 1: Create or update venue
+      if (isNewVenue) {
+        venue = await createVenue({
+          name: sanitizeInput(venueName.trim()),
+          banner_image: venueBannerImage,
+          address: sanitizeInput(venueAddress.trim()),
+          geolocation: sanitizeInput(venueGeolocation.trim()),
+          comment: sanitizeInput(venueComment.trim()),
+          timezone: venueTimezone,
+          visibility: 'private' // Default to private for new venues
+        });
+      } else if (venue) {
+        venue = await updateVenue(venue.venue_uuid, {
+          name: sanitizeInput(venueName.trim()),
+          banner_image: venueBannerImage,
+          address: sanitizeInput(venueAddress.trim()),
+          geolocation: sanitizeInput(venueGeolocation.trim()),
+          comment: sanitizeInput(venueComment.trim()),
+          timezone: venueTimezone
+        });
       }
-    });
 
-    // Remove deleted event lists
-    const existingListUuids = eventListsData.map((/** @type {any} */ el) => el.event_list_uuid);
-    const listsToKeep = currentEventLists.filter(
-      (el) => el.venue_uuid !== venue.venue_uuid || existingListUuids.includes(el.event_list_uuid)
-    );
-    /** @type {import('$lib/types').EventList[]} */
-    const allEventLists = [...listsToKeep.filter((el) => el.venue_uuid !== venue.venue_uuid), ...updatedEventLists];
-    eventListStore.set(allEventLists);
+      if (!venue || !venue.venue_uuid) {
+        saveError = 'Failed to save venue';
+        return;
+      }
 
-    // Update events
-    if (!venue) return;
-    const currentEvents = get(eventStore);
-    const allEventUuids = eventListsData.flatMap((el) => el.event_uuids);
-    const updatedEvents = eventListsData.flatMap((listData) =>
-      listData.events.map((/** @type {any} */ eventData) => {
-        const existingEvent = currentEvents.find((e) => e.event_uuid === eventData.event_uuid);
-        if (existingEvent) {
-          return updateModifiedTimestamp({
-            ...existingEvent,
-            event_name: sanitizeInput(eventData.event_name.trim()),
-            datetime: eventData.datetime,
-            comment: sanitizeInput(eventData.comment || ''),
-            duration_minutes: eventData.duration_minutes && eventData.duration_minutes !== '' && Number(eventData.duration_minutes) > 0 ? Number(eventData.duration_minutes) : undefined
-          });
-        } else {
-          return {
-            event_uuid: eventData.event_uuid,
-            event_list_uuid: listData.event_list_uuid,
-            event_name: sanitizeInput(eventData.event_name.trim()),
-            datetime: eventData.datetime,
-            comment: sanitizeInput(eventData.comment || ''),
-            duration_minutes: eventData.duration_minutes && eventData.duration_minutes !== '' && Number(eventData.duration_minutes) > 0 ? Number(eventData.duration_minutes) : undefined,
-            created_at: eventData.created_at || now,
-            modified_at: now
-          };
+      // Step 2: Get existing event lists from API to determine what to delete
+      const existingEventLists = await listEventListsForVenue(venue.venue_uuid);
+      const existingListUuids = new Set(existingEventLists.map(el => el.event_list_uuid));
+      const currentListUuids = new Set(eventListsData.map(el => el.event_list_uuid).filter(uuid => !uuid.startsWith('temp-')));
+      
+      // Delete event lists that were removed
+      for (const existingList of existingEventLists) {
+        if (!currentListUuids.has(existingList.event_list_uuid)) {
+          try {
+            await deleteEventListApi(existingList.event_list_uuid);
+          } catch (err) {
+            console.error('Failed to delete event list', existingList.event_list_uuid, err);
+            // Continue with other operations even if delete fails
+          }
         }
-      })
-    );
-
-    // Deduplicate updatedEvents by event_uuid to prevent duplicates
-    const uniqueUpdatedEvents = [];
-    const seenEventUuids = new Set();
-    for (const event of updatedEvents) {
-      if (!seenEventUuids.has(event.event_uuid)) {
-        seenEventUuids.add(event.event_uuid);
-        uniqueUpdatedEvents.push(event);
       }
+
+      // Step 3: Create/update event lists and their events
+      for (let listIndex = 0; listIndex < eventListsData.length; listIndex++) {
+        const listData = eventListsData[listIndex];
+        let eventListUuid = listData.event_list_uuid;
+        let eventList;
+
+        if (listData.isNew || eventListUuid.startsWith('temp-')) {
+          // Create new event list
+          eventList = await createEventList(venue.venue_uuid, {
+            name: sanitizeInput(listData.name.trim()),
+            date: listData.date || '',
+            comment: sanitizeInput(listData.comment || ''),
+            visibility: listData.visibility || 'private',
+            sort_order: listIndex
+          });
+          eventListUuid = eventList.event_list_uuid;
+          
+          // Update eventListsData with real UUID
+          eventListsData[listIndex] = {
+            ...listData,
+            event_list_uuid: eventListUuid,
+            event_uuids: eventList.event_uuids || []
+          };
+        } else {
+          // Update existing event list
+          eventList = await updateEventList(eventListUuid, {
+            name: sanitizeInput(listData.name.trim()),
+            date: listData.date || '',
+            comment: sanitizeInput(listData.comment || ''),
+            visibility: listData.visibility || 'private',
+            sort_order: listIndex
+          });
+        }
+
+        // Step 4: Get existing events for this list
+        const existingEvents = await listEventsForEventList(eventListUuid);
+        const existingEventUuids = new Set(existingEvents.map((/** @type {any} */ e) => e.event_uuid));
+        const currentEventUuids = new Set(listData.events.map((/** @type {any} */ e) => e.event_uuid).filter((/** @type {string} */ uuid) => !uuid.startsWith('temp-event-')));
+        
+        // Delete events that were removed
+        for (const existingEvent of existingEvents) {
+          if (!currentEventUuids.has(existingEvent.event_uuid)) {
+            try {
+              await deleteEventApi(existingEvent.event_uuid);
+            } catch (err) {
+              console.error('Failed to delete event', existingEvent.event_uuid, err);
+            }
+          }
+        }
+
+        // Step 5: Create/update events
+        for (let eventIndex = 0; eventIndex < listData.events.length; eventIndex++) {
+          const eventData = listData.events[eventIndex];
+          const duration = eventData.duration_minutes && eventData.duration_minutes !== '' && Number(eventData.duration_minutes) > 0
+            ? Number(eventData.duration_minutes)
+            : null;
+
+          if (eventData.isNew || eventData.event_uuid.startsWith('temp-event-')) {
+            // Create new event
+            await createEvent(eventListUuid, {
+              event_name: sanitizeInput(eventData.event_name.trim()),
+              datetime: eventData.datetime,
+              comment: sanitizeInput(eventData.comment || ''),
+              duration_minutes: duration,
+              sort_order: eventIndex
+            });
+          } else if (existingEventUuids.has(eventData.event_uuid)) {
+            // Update existing event
+            await updateEvent(eventData.event_uuid, {
+              event_name: sanitizeInput(eventData.event_name.trim()),
+              datetime: eventData.datetime,
+              comment: sanitizeInput(eventData.comment || ''),
+              duration_minutes: duration,
+              sort_order: eventIndex
+            });
+          }
+        }
+      }
+
+      // Success - navigate back to venue owner page
+      goto('/venue-owner');
+    } catch (err) {
+      console.error('Failed to save venue', err);
+      if (err instanceof ApiError) {
+        if (err.status === 401) {
+          saveError = 'Your session has expired. Please log in again.';
+          goto('/login');
+        } else if (err.status === 404) {
+          saveError = 'Venue not found. It may have been deleted.';
+        } else {
+          saveError = err.message || 'Failed to save venue. Please try again.';
+        }
+      } else {
+        saveError = 'An unexpected error occurred. Please try again.';
+      }
+    } finally {
+      isSaving = false;
     }
-
-    // Remove all events belonging to this venue's event lists (we'll replace them with updatedEvents)
-    // Keep only events that don't belong to this venue's event lists
-    const venueEventListUuids = eventListsData.map((el) => el.event_list_uuid);
-    const eventsToKeep = currentEvents.filter(
-      (e) => !venueEventListUuids.includes(e.event_list_uuid)
-    );
-    // Add all updated events for this venue's event lists
-    eventStore.set([...eventsToKeep, ...uniqueUpdatedEvents]);
-
-    // Navigate back to venue owner page
-    goto('/venue-owner');
   }
 
   /**
@@ -1183,7 +1172,7 @@
     }
   }
 
-  onMount(() => {
+  onMount(async () => {
     currentOwner = get(currentOwnerStore);
     if (!currentOwner) {
       goto('/login');
@@ -1222,30 +1211,35 @@
     }
 
     if (venueUuidFromUrl) {
-      // Editing existing venue
-      const allVenues = get(venueStore);
-      venue = allVenues.find((v) => v.venue_uuid === venueUuidFromUrl);
-      if (!venue) {
-        alert('Venue not found');
-        goto('/venue-owner');
-        return;
-      }
-      // Check ownership
-      if (venue.owner_uuid !== currentOwner.owner_uuid) {
-        alert('You do not have permission to edit this venue');
-        goto('/venue-owner');
-        return;
-      }
+      // Editing existing venue - load from API
       isNewVenue = false;
-      dataLoaded = false;
-      // Try to load data - always call loadVenueData to initialize eventListsData
-      loadVenueData();
-      // Check if we successfully loaded data for this venue
-      const currentEventLists = get(eventListStore);
-      const venueEventLists = currentEventLists.filter((el) => el.venue_uuid === venue.venue_uuid);
-      // Mark as loaded if stores have data (even if this venue has no event lists yet)
-      if (currentEventLists.length > 0) {
+      isLoading = true;
+      loadError = '';
+      
+      try {
+        venue = await getVenue(venueUuidFromUrl);
+        // Check ownership (backend should handle this, but double-check)
+        if (venue.owner_uuid !== currentOwner.owner_uuid) {
+          loadError = 'You do not have permission to edit this venue';
+          goto('/venue-owner');
+          return;
+        }
+        
+        loadVenueFormFields();
+        await loadVenueDataFromAPI();
         dataLoaded = true;
+      } catch (err) {
+        console.error('Failed to load venue', err);
+        if (err instanceof ApiError && err.status === 404) {
+          loadError = 'Venue not found';
+        } else if (err instanceof ApiError && err.status === 401) {
+          loadError = 'Your session has expired. Please log in again.';
+          goto('/login');
+        } else {
+          loadError = 'Failed to load venue. Please try again.';
+        }
+      } finally {
+        isLoading = false;
       }
     } else {
       // Creating new venue
@@ -1253,23 +1247,11 @@
       venue = null;
       eventListsData = [];
       previewEventListId = null;
+      dataLoaded = true;
     }
   });
 
-  // Reload venue data when stores update (if we're editing an existing venue and data hasn't been loaded yet)
-  // Watch allEventLists to trigger when stores are populated
-  // Check if THIS venue has event lists, or if stores are populated (to attempt loading)
-  $: if (venue && !isNewVenue && !dataLoaded) {
-    const currentEventLists = get(eventListStore);
-    const venueEventLists = currentEventLists.filter((el) => el.venue_uuid === venue.venue_uuid);
-    // Trigger loading if stores are populated (even if this venue has no event lists yet)
-    // This ensures we load the data when stores become available
-    if (currentEventLists.length > 0 || allEventLists.length > 0) {
-      loadVenueData();
-      // Mark as loaded after calling loadVenueData (it always sets eventListsData, even if empty)
-      dataLoaded = true;
-    }
-  }
+  // Data loading is now handled in onMount via API calls
 
   // Initialize geolocation map when container is ready
   afterUpdate(() => {
@@ -1331,13 +1313,31 @@
       </button>
       <button
         on:click={saveVenue}
-        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        disabled={isSaving || isLoading}
+        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Save Venue
+        {isSaving ? 'Saving...' : 'Save Venue'}
       </button>
     </div>
   </div>
 
+  {#if loadError}
+    <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      {loadError}
+    </div>
+  {/if}
+
+  {#if saveError}
+    <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      {saveError}
+    </div>
+  {/if}
+
+  {#if isLoading}
+    <div class="mb-4 text-center text-gray-600">
+      Loading venue data...
+    </div>
+  {:else if dataLoaded}
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full overflow-x-hidden max-w-full">
     <!-- Editing Pane -->
     <div class="bg-white rounded-xl shadow-lg p-6 space-y-6 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)] w-full">
@@ -1545,14 +1545,8 @@
 
       <!-- Event Lists -->
       <div class="space-y-4">
-        <div class="flex items-center justify-between">
+        <div>
           <h3 class="text-lg font-medium text-gray-800">Event Lists</h3>
-          <button
-            on:click={addEventList}
-            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-          >
-            + Add Event List
-          </button>
         </div>
 
         {#if eventListsData.length === 0}
@@ -1678,15 +1672,7 @@
             </div>
 
             <div>
-              <div class="flex items-center justify-between mb-2">
-                <div class="block text-sm font-medium text-gray-700">Events</div>
-                <button
-                  on:click={() => addEvent(listData.event_list_uuid)}
-                  class="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
-                >
-                  + Add Event
-                </button>
-              </div>
+              <div class="block text-sm font-medium text-gray-700 mb-2">Events</div>
 
               {#if !listData.events || listData.events.length === 0}
                 <p class="text-sm text-gray-500 py-2">No events yet. Click "+ Add Event" to add one.</p>
@@ -1796,9 +1782,21 @@
                   </div>
                 </div>
               {/each}
+              <button
+                on:click={() => addEvent(listData.event_list_uuid)}
+                class="mt-2 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+              >
+                + Add Event
+              </button>
             </div>
           </div>
         {/each}
+        <button
+          on:click={addEventList}
+          class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+        >
+          + Add Event List
+        </button>
       </div>
     </div>
 
@@ -1929,6 +1927,7 @@
       {/if}
     </div>
   </div>
+  {/if}
 </div>
 
 <style>

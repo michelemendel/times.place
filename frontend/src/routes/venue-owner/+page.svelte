@@ -2,42 +2,67 @@
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
-  import { browser } from '$app/environment';
-  import { currentOwnerStore, venueStore, eventListStore, eventStore } from '$lib/stores';
-  import { generateUUID } from '$lib/utils/uuid.js';
-  import { updateModifiedTimestamp } from '$lib/utils/datetime.js';
+  import { currentOwnerStore } from '$lib/stores';
+  import { listVenues, deleteVenue } from '$lib/api/venues.js';
+  import { listEventListsForVenue } from '$lib/api/eventLists.js';
 
   /** @type {import('$lib/types').VenueOwner | null} */
   let owner = null;
   /** @type {import('$lib/types').Venue[]} */
   let ownerVenues = [];
-  /** @type {import('$lib/types').EventList[]} */
-  let allEventLists = [];
+  /** @type {Record<string, import('$lib/types').EventList[]>} */
+  let eventListsByVenue = {};
   /** @type {import('$lib/types').Venue | null} */
   let deleteConfirmVenue = null;
   /** @type {string | null} */
   let copiedLinkToken = null;
+  let isLoading = false;
+  let loadError = '';
 
-  // Use reactive store syntax ($store) to automatically update when stores change
-  $: {
-    const currentOwner = $currentOwnerStore;
-    if (currentOwner) {
-      owner = currentOwner;
-      const allVenues = $venueStore;
-      // Filter venues by owner_uuid and sort alphabetically
-      ownerVenues = allVenues
-        .filter(v => v.owner_uuid === currentOwner.owner_uuid)
-        .sort((a, b) => a.name.localeCompare(b.name));
+  async function loadVenuesAndLists() {
+    isLoading = true;
+    loadError = '';
+    try {
+      const venues = await listVenues();
+      ownerVenues = venues.sort((a, b) => a.name.localeCompare(b.name));
+
+      // Load event lists for each venue in parallel
+      const entries = await Promise.all(
+        ownerVenues.map(async (venue) => {
+          try {
+            const lists = await listEventListsForVenue(venue.venue_uuid);
+            return [venue.venue_uuid, lists];
+          } catch (err) {
+            console.error('Failed to load event lists for venue', venue.venue_uuid, err);
+            return [venue.venue_uuid, []];
+          }
+        })
+      );
+
+      /** @type {Record<string, import('$lib/types').EventList[]>} */
+      const map = {};
+      for (const [id, lists] of entries) {
+        map[/** @type {string} */ (id)] = /** @type {import('$lib/types').EventList[]} */ (
+          lists
+        );
+      }
+      eventListsByVenue = map;
+    } catch (err) {
+      console.error('Failed to load venues', err);
+      loadError = 'Failed to load venues. Please try again.';
+    } finally {
+      isLoading = false;
     }
-    allEventLists = $eventListStore;
   }
 
-  onMount(() => {
+  onMount(async () => {
     owner = get(currentOwnerStore);
     if (!owner) {
       goto('/login');
       return;
     }
+
+    await loadVenuesAndLists();
   });
 
   /**
@@ -45,7 +70,8 @@
    * @returns {number}
    */
   function getEventListCount(venue) {
-    return venue.event_list_uuids.length;
+    const lists = eventListsByVenue[venue.venue_uuid] || [];
+    return lists.length;
   }
 
   function handleAddVenue() {
@@ -66,31 +92,22 @@
     deleteConfirmVenue = venue;
   }
 
-  function handleDeleteConfirm() {
+  async function handleDeleteConfirm() {
     if (!deleteConfirmVenue || !owner) return;
 
     const venue = deleteConfirmVenue;
 
-    // Get all event lists for this venue
-    const venueEventLists = allEventLists.filter(el => el.venue_uuid === venue.venue_uuid);
-
-    // Get all events for these event lists
-    const allEvents = get(eventStore);
-    const venueEventUuids = venueEventLists.flatMap(el => el.event_uuids);
-
-    // Remove venue from store
-    const currentVenues = get(venueStore);
-    venueStore.set(currentVenues.filter(v => v.venue_uuid !== venue.venue_uuid));
-
-    // Remove event lists from store
-    const currentEventLists = get(eventListStore);
-    eventListStore.set(currentEventLists.filter(el => el.venue_uuid !== venue.venue_uuid));
-
-    // Remove events from store
-    const currentEvents = get(eventStore);
-    eventStore.set(currentEvents.filter(e => !venueEventUuids.includes(e.event_uuid)));
-
-    deleteConfirmVenue = null;
+    try {
+      await deleteVenue(venue.venue_uuid);
+      ownerVenues = ownerVenues.filter((v) => v.venue_uuid !== venue.venue_uuid);
+      const { [venue.venue_uuid]: _removed, ...rest } = eventListsByVenue;
+      eventListsByVenue = rest;
+    } catch (err) {
+      console.error('Failed to delete venue', err);
+      loadError = 'Failed to delete venue. Please try again.';
+    } finally {
+      deleteConfirmVenue = null;
+    }
   }
 
   function handleDeleteCancel() {
@@ -113,8 +130,8 @@
    * @returns {import('$lib/types').EventList[]}
    */
   function getVenueEventLists(venue) {
-    return allEventLists
-      .filter(el => el.venue_uuid === venue.venue_uuid)
+    const lists = eventListsByVenue[venue.venue_uuid] || [];
+    return lists
       .sort((a, b) => {
         // Sort by date, then by name
         if (a.date !== b.date) {
@@ -130,25 +147,9 @@
    * @returns {import('$lib/types').EventList}
    */
   function ensureEventListToken(eventList) {
-    if (eventList.private_link_token) {
-      return eventList;
-    }
-
-    // Generate token and update store
-    const token = generateUUID();
-    const updatedList = /** @type {import('$lib/types').EventList} */ (updateModifiedTimestamp({
-      ...eventList,
-      private_link_token: token
-    }));
-
-    // Update in store
-    const currentEventLists = get(eventListStore);
-    const updatedEventLists = currentEventLists.map(el =>
-      el.event_list_uuid === eventList.event_list_uuid ? updatedList : el
-    );
-    eventListStore.set(updatedEventLists);
-
-    return updatedList;
+    // In the API-backed version, private_link_token is managed by the backend.
+    // We simply rely on what the server returns; if it's missing, we don't fabricate one.
+    return eventList;
   }
 
   /**
@@ -159,7 +160,7 @@
   function getPrivateLink(eventList) {
     const listWithToken = ensureEventListToken(eventList);
     if (!listWithToken.private_link_token) return '';
-    if (!browser) return '';
+    if (typeof window === 'undefined') return '';
     return `${window.location.origin}/?token=${listWithToken.private_link_token}`;
   }
 

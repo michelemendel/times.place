@@ -4,8 +4,8 @@ export interface VenueOwner {
   mobile: string;
   email: string;
   /**
-   * Prototype-only password stored in localStorage.
-   * Not secure; for demo purposes only.
+   * Password field (optional, used during registration/login).
+   * Passwords are handled by the backend and never stored client-side.
    */
   password?: string;
   created_at: string;

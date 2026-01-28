@@ -331,3 +331,84 @@ func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
 		Events:    events,
 	})
 }
+
+// GetEventsByEventList handles GET /api/public/event-lists/:event_list_uuid/events
+// Only returns events if the event list is public
+func (h *PublicHandler) GetEventsByEventList(c echo.Context) error {
+	eventListUUIDStr := c.Param("event_list_uuid")
+	if eventListUUIDStr == "" {
+		return ValidationError(c, "event_list_uuid is required")
+	}
+
+	ctx := c.Request().Context()
+
+	// Convert UUID
+	eventListUUID, err := stringToUUID(eventListUUIDStr)
+	if err != nil {
+		return ValidationError(c, "Invalid event_list_uuid format")
+	}
+
+	// Query event list directly to check if it exists and is public
+	row := h.store.DB().QueryRow(ctx,
+		"SELECT event_list_uuid, venue_uuid, name, date, comment, visibility, private_link_token, sort_order, created_at, modified_at FROM event_lists WHERE event_list_uuid = $1",
+		eventListUUID)
+	
+	var el sqlc.EventList
+	err = row.Scan(
+		&el.EventListUuid,
+		&el.VenueUuid,
+		&el.Name,
+		&el.Date,
+		&el.Comment,
+		&el.Visibility,
+		&el.PrivateLinkToken,
+		&el.SortOrder,
+		&el.CreatedAt,
+		&el.ModifiedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return NotFoundError(c, "Event list not found")
+		}
+		return InternalError(c, "Failed to get event list")
+	}
+
+	// Only allow access to public event lists
+	if el.Visibility != "public" {
+		return NotFoundError(c, "Event list not found")
+	}
+
+	// Get events for this event list (public access - no owner check)
+	eventRows, err := h.store.DB().Query(ctx,
+		"SELECT event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at FROM events WHERE event_list_uuid = $1 ORDER BY sort_order ASC, datetime ASC",
+		eventListUUID)
+	if err != nil {
+		return InternalError(c, "Failed to get events")
+	}
+	defer eventRows.Close()
+
+	events := make([]EventResponse, 0)
+	for eventRows.Next() {
+		var e sqlc.Event
+		err := eventRows.Scan(
+			&e.EventUuid,
+			&e.EventListUuid,
+			&e.EventName,
+			&e.Datetime,
+			&e.Comment,
+			&e.DurationMinutes,
+			&e.SortOrder,
+			&e.CreatedAt,
+			&e.ModifiedAt,
+		)
+		if err != nil {
+			return InternalError(c, "Failed to scan event")
+		}
+		events = append(events, eventToResponse(e))
+	}
+	if err := eventRows.Err(); err != nil {
+		return InternalError(c, "Failed to read events")
+	}
+
+	return c.JSON(http.StatusOK, events)
+}

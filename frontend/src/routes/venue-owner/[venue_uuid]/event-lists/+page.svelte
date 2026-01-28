@@ -4,10 +4,11 @@
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
   import { browser } from '$app/environment';
-  import { currentOwnerStore, venueStore, eventListStore, eventStore } from '$lib/stores';
+  import { currentOwnerStore } from '$lib/stores';
   import { formatEventListDate, formatEventTime } from '$lib/utils/datetime.js';
-  import { generateUUID } from '$lib/utils/uuid.js';
-  import { getCurrentTimestamp, updateModifiedTimestamp } from '$lib/utils/datetime.js';
+  import { getVenue } from '$lib/api/venues.js';
+  import { listEventListsForVenue } from '$lib/api/eventLists.js';
+  import { listEventsForEventList } from '$lib/api/events.js';
 
   /**
    * Format event time from RFC3339 string
@@ -26,96 +27,104 @@
   let venue = null;
   /** @type {import('$lib/types').EventList[]} */
   let venueEventLists = [];
-  /** @type {import('$lib/types').Event[]} */
-  let allEvents = [];
   /** @type {string | null} */
   let copiedLinkToken = null;
   /** @type {import('$lib/types').EventList | null} */
   let linkModalEventList = null;
+  let isLoading = false;
+  let loadError = '';
 
   // Get venue UUID from route params
   $: venueUuid = browser && $page.params ? $page.params.venue_uuid : null;
 
-  // Load data when venue UUID is available
-  $: {
-    if (venueUuid) {
-      const currentOwner = $currentOwnerStore;
-      if (currentOwner) {
-        owner = currentOwner;
-        const allVenues = $venueStore;
-        const foundVenue = allVenues.find(v => v.venue_uuid === venueUuid);
-        
-        // Verify ownership - only set venue if authorized
-        if (foundVenue && foundVenue.owner_uuid === currentOwner.owner_uuid) {
-          venue = foundVenue;
-          const allEventLists = $eventListStore;
-          venueEventLists = allEventLists
-            .filter(el => el.venue_uuid === venue.venue_uuid)
-            .sort((a, b) => {
-              // Sort by date, then by name
-              if (a.date !== b.date) {
-                return a.date.localeCompare(b.date);
-              }
-              return a.name.localeCompare(b.name);
-            });
-        } else if (foundVenue) {
-          // Not authorized - venue will be null, handled in template
-          venue = null;
+  /**
+   * Load venue and event lists from API
+   */
+  async function loadData() {
+    if (!venueUuid) return;
+    
+    isLoading = true;
+    loadError = '';
+    
+    try {
+      // Load venue
+      const loadedVenue = await getVenue(venueUuid);
+      
+      // Verify ownership
+      const currentOwner = get(currentOwnerStore);
+      if (!currentOwner) {
+        goto('/login');
+        return;
+      }
+      
+      if (loadedVenue.owner_uuid !== currentOwner.owner_uuid) {
+        // Not authorized - redirect
+        goto('/venue-owner');
+        return;
+      }
+      
+      owner = currentOwner;
+      venue = loadedVenue;
+      
+      // Load event lists
+      const eventLists = await listEventListsForVenue(venueUuid);
+      
+      // Load events for each event list in parallel
+      const eventListsWithEvents = await Promise.all(
+        eventLists.map(async (el) => {
+          try {
+            const events = await listEventsForEventList(el.event_list_uuid);
+            return { ...el, events };
+          } catch (err) {
+            console.error('Failed to load events for event list', el.event_list_uuid, err);
+            return { ...el, events: [] };
+          }
+        })
+      );
+      
+      // Sort event lists by date, then by name
+      venueEventLists = eventListsWithEvents.sort((a, b) => {
+        if (a.date !== b.date) {
+          return (a.date || '').localeCompare(b.date || '');
+        }
+        return a.name.localeCompare(b.name);
+      });
+    } catch (err) {
+      console.error('Failed to load venue data', err);
+      loadError = 'Failed to load venue data. Please try again.';
+      if (err && typeof err === 'object' && 'status' in err) {
+        const status = err.status;
+        if (status === 404) {
+          loadError = 'Venue not found.';
+        } else if (status === 401) {
+          goto('/login');
         }
       }
-      allEvents = $eventStore;
+    } finally {
+      isLoading = false;
     }
   }
 
-  onMount(() => {
+  onMount(async () => {
     owner = get(currentOwnerStore);
     if (!owner) {
       goto('/login');
       return;
     }
     
-    // Check authorization after stores are loaded
-    if (venueUuid && owner) {
-      const allVenues = get(venueStore);
-      const foundVenue = allVenues.find(v => v.venue_uuid === venueUuid);
-      if (foundVenue && foundVenue.owner_uuid !== owner.owner_uuid) {
-        // Not authorized - redirect
-        goto('/venue-owner');
-      }
-    }
+    await loadData();
   });
 
   /**
-   * Ensure event list has a private link token, generate if missing
+   * Ensure event list has a private link token (from backend).
+   * Returns the event list as-is - tokens are generated by the backend.
    * @param {import('$lib/types').EventList} eventList
    * @returns {import('$lib/types').EventList}
    */
   function ensureEventListToken(eventList) {
-    if (eventList.private_link_token) {
-      return eventList;
-    }
-    
-    // Generate token and update store
-    const token = generateUUID();
-    const updatedList = updateModifiedTimestamp({
-      ...eventList,
-      private_link_token: token
-    });
-    
-    // Update in store
-    const currentEventLists = get(eventListStore);
-    eventListStore.set(
-      currentEventLists.map(el => 
-        el.event_list_uuid === eventList.event_list_uuid ? updatedList : el
-      )
-    );
-    
-    // Update local reactive variable to reflect the change
-    venueEventLists = venueEventLists.map(el =>
-      el.event_list_uuid === eventList.event_list_uuid ? updatedList : el
-    );
-    
-    return updatedList;
+    // Tokens are generated by the backend when event lists are created/updated
+    // If no token exists, the event list needs to be saved/updated via the API
+    return eventList;
   }
 
   /**
@@ -255,12 +264,12 @@
   }
 
   /**
-   * Get events for an event list
-   * @param {import('$lib/types').EventList} eventList
+   * Get events for an event list (from the loaded data)
+   * @param {import('$lib/types').EventList & { events?: import('$lib/types').Event[] }} eventList
    * @returns {import('$lib/types').Event[]}
    */
   function getEventsForList(eventList) {
-    return allEvents.filter(e => eventList.event_uuids.includes(e.event_uuid));
+    return eventList.events || [];
   }
 </script>
 
@@ -272,6 +281,26 @@
   {#if !owner}
     <div class="text-center py-8">
       <p class="text-gray-600">Please log in to view event lists.</p>
+    </div>
+  {:else if isLoading}
+    <div class="text-center py-8">
+      <p class="text-gray-600">Loading venue data...</p>
+    </div>
+  {:else if loadError}
+    <div class="text-center py-8">
+      <p class="text-red-600 mb-4">{loadError}</p>
+      <button
+        on:click={() => loadData()}
+        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+      >
+        Retry
+      </button>
+      <button
+        on:click={() => goto('/venue-owner')}
+        class="ml-2 bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+      >
+        Back to Venues
+      </button>
     </div>
   {:else if !venue}
     <div class="text-center py-8">
@@ -313,7 +342,7 @@
         <h2 class="text-2xl font-semibold text-gray-900 mb-2">No event lists yet</h2>
         <p class="text-gray-600 mb-6">This venue doesn't have any event lists. Edit the venue to add event lists.</p>
         <button
-          on:click={() => goto(`/venue-form?venue_uuid=${venue.venue_uuid}`)}
+          on:click={() => venue && goto(`/venue-form?venue_uuid=${venue.venue_uuid}`)}
           class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors duration-200"
         >
           Edit Venue
@@ -433,22 +462,24 @@
           </button>
         </div>
         <p class="text-gray-700 mb-4">
-          Share this link to allow others to view the event list <strong>{linkModalEventList.name}</strong>:
+          Share this link to allow others to view the event list <strong>{linkModalEventList?.name || 'Untitled'}</strong>:
         </p>
         <div class="flex gap-2 mb-4">
           <input
             type="text"
             readonly
-            value={getPrivateLink(linkModalEventList)}
+            value={linkModalEventList ? getPrivateLink(linkModalEventList) : ''}
             on:focus={selectLinkText}
             class="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 font-mono text-sm"
           />
           <button
             on:click={() => {
-              const link = getPrivateLink(linkModalEventList);
+              if (!linkModalEventList) return;
+              const eventList = linkModalEventList;
+              const link = getPrivateLink(eventList);
               if (link) {
                 navigator.clipboard.writeText(link).then(() => {
-                  copiedLinkToken = linkModalEventList.event_list_uuid;
+                  copiedLinkToken = eventList.event_list_uuid;
                   setTimeout(() => {
                     copiedLinkToken = null;
                   }, 2000);
@@ -460,7 +491,7 @@
             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
             title="Copy to clipboard"
           >
-            {#if copiedLinkToken === linkModalEventList.event_list_uuid}
+            {#if linkModalEventList && copiedLinkToken === linkModalEventList.event_list_uuid}
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>

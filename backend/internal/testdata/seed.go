@@ -93,14 +93,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 	// Owner 1 - Venue 1: Beth El Synagogue - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
-	`, data.Owner1UUID, "Beth El Synagogue").Scan(&data.Venue1UUID)
+	`, data.Owner1UUID, "DEMO: Beth El Synagogue").Scan(&data.Venue1UUID)
 	if err == sql.ErrNoRows {
 		// Venue doesn't exist, insert it
 		data.Venue1UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
 			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, created_at, modified_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		`, data.Venue1UUID, data.Owner1UUID, "Beth El Synagogue", "https://placehold.co/600x200?text=Beth+El",
+		`, data.Venue1UUID, data.Owner1UUID, "DEMO: Beth El Synagogue", "https://placehold.co/600x200?text=Beth+El",
 			"15 King George Street, Jerusalem", "31.7787,35.2175", "A welcoming community in the heart of the city.",
 			"Asia/Jerusalem", "public", now, now)
 		if err != nil {
@@ -113,14 +113,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 	// Owner 1 - Venue 2: Community Center - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
-	`, data.Owner1UUID, "Community Center").Scan(&data.Venue2UUID)
+	`, data.Owner1UUID, "DEMO: Community Center").Scan(&data.Venue2UUID)
 	if err == sql.ErrNoRows {
 		// Venue doesn't exist, insert it
 		data.Venue2UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
 			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, created_at, modified_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		`, data.Venue2UUID, data.Owner1UUID, "Community Center", "https://placehold.co/600x200?text=Community+Center",
+		`, data.Venue2UUID, data.Owner1UUID, "DEMO: Community Center", "https://placehold.co/600x200?text=Community+Center",
 			"42 Ben Yehuda Street, Jerusalem", "31.7800,35.2167", "Multi-purpose community space.",
 			"Asia/Jerusalem", "public", now, now)
 		if err != nil {
@@ -133,14 +133,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 	// Owner 2 - Venue 1: Beit Midrash - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
-	`, data.Owner2UUID, "Beit Midrash").Scan(&data.Venue3UUID)
+	`, data.Owner2UUID, "DEMO: Beit Midrash").Scan(&data.Venue3UUID)
 	if err == sql.ErrNoRows {
 		// Venue doesn't exist, insert it
 		data.Venue3UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
 			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, created_at, modified_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		`, data.Venue3UUID, data.Owner2UUID, "Beit Midrash", "https://placehold.co/600x200?text=Beit+Midrash",
+		`, data.Venue3UUID, data.Owner2UUID, "DEMO: Beit Midrash", "https://placehold.co/600x200?text=Beit+Midrash",
 			"28 Jaffa Road, Jerusalem", "31.7820,35.2180", "Study hall and prayer space.",
 			"Asia/Jerusalem", "public", now, now)
 		if err != nil {
@@ -153,14 +153,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 	// Owner 2 - Venue 2: Chagat House - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
-	`, data.Owner2UUID, "Chagat House").Scan(&data.Venue4UUID)
+	`, data.Owner2UUID, "DEMO: Chagat House").Scan(&data.Venue4UUID)
 	if err == sql.ErrNoRows {
 		// Venue doesn't exist, insert it
 		data.Venue4UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
 			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, created_at, modified_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		`, data.Venue4UUID, data.Owner2UUID, "Chagat House", "https://placehold.co/600x200?text=Chagat+House",
+		`, data.Venue4UUID, data.Owner2UUID, "DEMO: Chagat House", "https://placehold.co/600x200?text=Chagat+House",
 			"12 Rechov Agron, Jerusalem", "31.7750,35.2200", "Warm and welcoming Chagat center.",
 			"Asia/Jerusalem", "public", now, now)
 		if err != nil {

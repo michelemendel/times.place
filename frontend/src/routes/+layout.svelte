@@ -1,6 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
-  import { seedDemoData } from '../lib/demo_data';
+  import { onMount, onDestroy } from 'svelte';
   import '../app.css';
   import { dev } from '$app/environment';
   import { currentOwnerStore } from '$lib/stores';
@@ -9,6 +8,10 @@
   import { browser } from '$app/environment';
 
   let mobileMenuOpen = false;
+  let isOnline = true;
+  
+  let handleOnline;
+  let handleOffline;
 
   function toggleMobileMenu() {
     mobileMenuOpen = !mobileMenuOpen;
@@ -19,10 +22,6 @@
   }
 
   onMount(async () => {
-    // Seed demo data only when storage is empty.
-    // Note: forcing a re-seed clears localStorage and will wipe newly-registered accounts.
-    seedDemoData(false);
-
     // Restore session on app initialization
     if (browser) {
       try {
@@ -32,6 +31,20 @@
         // This is expected for unauthenticated users, so we silently ignore
         // The error could be 401 (no valid token) or network error
       }
+      
+      // Set up offline detection
+      isOnline = navigator.onLine;
+      handleOnline = () => { isOnline = true; };
+      handleOffline = () => { isOnline = false; };
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+    }
+  });
+  
+  onDestroy(() => {
+    if (browser && handleOnline && handleOffline) {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     }
   });
 
@@ -45,6 +58,11 @@
 </script>
 
 <div class="flex flex-col min-h-screen">
+  {#if !isOnline}
+    <div class="bg-red-600 text-white text-center py-2 px-4">
+      <p class="text-sm font-medium">You are currently offline. Some features may not be available.</p>
+    </div>
+  {/if}
   <header class="bg-gray-100 shadow-sm">
     <nav class="container mx-auto h-20 flex items-center justify-between relative">
       <div class="flex items-center pl-4 md:pl-0">

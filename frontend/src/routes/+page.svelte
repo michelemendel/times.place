@@ -1,23 +1,34 @@
 <script>
   import { onMount, afterUpdate, onDestroy } from 'svelte';
   import { page } from '$app/stores';
-  import { venueStore, eventListStore, eventStore, ownersStore } from '$lib/stores';
-  import { seedDemoData } from '$lib/demo_data';
-  import { formatEventTime } from '$lib/utils/datetime.js';
   import { dev, browser } from '$app/environment';
+  import { formatEventTime } from '$lib/utils/datetime.js';
+  import {
+    listPublicVenues,
+    getPublicEventListsForVenue,
+    getPrivateVenueByToken,
+    getPrivateEventListByToken,
+    getPublicEventsForEventList
+  } from '$lib/api/public.js';
 
   /** @type {string | null} */
   let selectedVenueId = null;
   /** @type {string | null} */
   let selectedEventListId = null;
-  /** @type {any[]} */
+
+  /** @type {import('$lib/types').Venue[]} */
   let venues = [];
-  /** @type {any[]} */
-  let eventLists = [];
-  /** @type {any[]} */
-  let events = [];
-  /** @type {any[]} */
-  let owners = [];
+  /** @type {Record<string, import('$lib/types').EventList[]>} */
+  let venueEventListsMap = {};
+  /** @type {Record<string, import('$lib/types').Event[]>} */
+  let eventListEventsMap = {};
+
+  /** @type {import('$lib/types').Venue | null} */
+  let tokenVenue = null;
+  /** @type {import('$lib/types').EventList | null} */
+  let tokenEventList = null;
+  /** @type {import('$lib/types').Event[] | null} */
+  let tokenEvents = null;
 
   /** @type {HTMLElement | null} */
   let mapContainer = null;
@@ -34,57 +45,155 @@
   /** @type {HTMLElement | null} */
   let venueDropdownRef = null;
 
-  // Subscribe to stores
-  venueStore.subscribe((v) => {
-    venues = v;
-    // Reset selection if selected venue no longer exists
-    if (selectedVenueId && !venues.find((v) => v.venue_uuid === selectedVenueId)) {
-      selectedVenueId = null;
-      selectedEventListId = null;
+  // Loading & error state
+  let isLoadingVenues = false;
+  let isLoadingListsAndEvents = false;
+  let loadError = '';
+
+  // Private token from URL (only in browser to avoid prerender issues)
+  $: privateLinkToken = browser && $page.url.searchParams
+    ? $page.url.searchParams.get('token') || null
+    : null;
+
+  /**
+   * Load public venues list (optionally with search query).
+   * This drives the main dropdown.
+   * @param {string} [query]
+   */
+  async function loadVenues(query) {
+    isLoadingVenues = true;
+    loadError = '';
+    try {
+      venues = await listPublicVenues(query ?? '');
+    } catch (err) {
+      console.error('Failed to load venues', err);
+      loadError = 'Failed to load venues. Please try again.';
+    } finally {
+      isLoadingVenues = false;
     }
-  });
+  }
 
-  eventListStore.subscribe((v) => {
-    eventLists = v;
-    // Reset event list selection if it no longer exists
-    if (selectedEventListId && !eventLists.find((el) => el.event_list_uuid === selectedEventListId)) {
-      selectedEventListId = null;
-    }
-  });
+  /**
+   * When we have a token, resolve either a private venue or private event list.
+   */
+  async function resolveTokenIfPresent() {
+    if (!privateLinkToken) return;
 
-  eventStore.subscribe((v) => {
-    events = v;
-  });
+    loadError = '';
+    isLoadingListsAndEvents = true;
+    tokenVenue = null;
+    tokenEventList = null;
+    tokenEvents = null;
 
-  ownersStore.subscribe((v) => {
-    owners = v;
-  });
-
-  onMount(() => {
-    // Seed demo data if needed
-    // Seed demo data only when storage is empty.
-    // Note: forcing a re-seed clears localStorage and will wipe newly-registered accounts.
-    seedDemoData(false);
-
-    // If there's a private link token, try to find and select the venue or event list
-    if (privateLinkToken) {
-      // First check if it's a venue token
-      const privateVenue = venues.find(
-        (v) => v.visibility === 'private' && v.private_link_token === privateLinkToken
-      );
-      if (privateVenue) {
-        selectedVenueId = privateVenue.venue_uuid;
-      } else {
-        // Check if it's an event list token
-        const eventList = eventLists.find((el) => el.private_link_token === privateLinkToken);
-        if (eventList) {
-          const venue = venues.find((v) => v.venue_uuid === eventList.venue_uuid);
-          if (venue) {
-            selectedVenueId = venue.venue_uuid;
-            selectedEventListId = eventList.event_list_uuid;
-          }
+    try {
+      // Try venue-by-token first
+      try {
+        const venueResult = await getPrivateVenueByToken(privateLinkToken);
+        tokenVenue = venueResult.venue;
+        const venue = venueResult.venue;
+        // Merge into venues list if not already there
+        const exists = venues.find((v) => v.venue_uuid === venue.venue_uuid);
+        if (!exists) {
+          venues = [...venues, venue];
         }
+        // Populate event lists map for this venue
+        venueEventListsMap[venue.venue_uuid] = venueResult.event_lists || [];
+        selectedVenueId = venue.venue_uuid;
+
+        // Auto-select first event list, if any
+        if (venueResult.event_lists && venueResult.event_lists.length > 0) {
+          selectedEventListId = venueResult.event_lists[0].event_list_uuid;
+        }
+        return;
+      } catch (e) {
+        // If venue token failed with 404 or similar, fall through to event-list token
       }
+
+      // Try event-list-by-token
+      const listResult = await getPrivateEventListByToken(privateLinkToken);
+      tokenVenue = listResult.venue;
+      tokenEventList = listResult.event_list;
+      tokenEvents = listResult.events || [];
+
+      // Merge into venues & maps
+      if (tokenVenue) {
+        const venue = tokenVenue;
+        const exists = venues.find((v) => v.venue_uuid === venue.venue_uuid);
+        if (!exists) {
+          venues = [...venues, venue];
+        }
+        venueEventListsMap[venue.venue_uuid] = [
+          ...(venueEventListsMap[venue.venue_uuid] || []),
+          tokenEventList
+        ];
+        eventListEventsMap[tokenEventList.event_list_uuid] = tokenEvents;
+        selectedVenueId = venue.venue_uuid;
+        selectedEventListId = tokenEventList.event_list_uuid;
+      }
+    } catch (err) {
+      console.error('Failed to resolve private link token', err);
+      loadError = 'Private link is invalid or expired.';
+    } finally {
+      isLoadingListsAndEvents = false;
+    }
+  }
+
+  /**
+   * Ensure we have event lists for the currently selected venue.
+   * Uses the public venue event-lists endpoint.
+   * @param {string} venueUuid
+   */
+  async function ensureEventListsForVenue(venueUuid) {
+    if (venueEventListsMap[venueUuid]) return;
+    isLoadingListsAndEvents = true;
+    loadError = '';
+    try {
+      const lists = await getPublicEventListsForVenue(venueUuid);
+      venueEventListsMap = {
+        ...venueEventListsMap,
+        [venueUuid]: lists
+      };
+    } catch (err) {
+      console.error('Failed to load event lists', err);
+      loadError = 'Failed to load event lists. Please try again.';
+    } finally {
+      isLoadingListsAndEvents = false;
+    }
+  }
+
+  /**
+   * Ensure we have events for a given event list.
+   * Fetches events for public event lists via the public API endpoint.
+   * @param {string} eventListUuid
+   */
+  async function ensureEventsForEventList(eventListUuid) {
+    // If we already have events for this list, return them
+    if (eventListEventsMap[eventListUuid]) {
+      return eventListEventsMap[eventListUuid];
+    }
+
+    // Try to fetch events for this public event list
+    try {
+      const events = await getPublicEventsForEventList(eventListUuid);
+      eventListEventsMap = {
+        ...eventListEventsMap,
+        [eventListUuid]: events
+      };
+      return events;
+    } catch (err) {
+      console.error('Failed to load events for event list', eventListUuid, err);
+      // Return empty array if fetch fails (event list might be private or not found)
+      return [];
+    }
+  }
+
+  onMount(async () => {
+    // Initial venues load (no search)
+    await loadVenues();
+
+    // If a token is present, resolve it and update selection.
+    if (privateLinkToken) {
+      await resolveTokenIfPresent();
     }
 
     // Load Leaflet.js dynamically
@@ -144,90 +253,25 @@
     }
   });
 
-  // Get private link token from URL (only in browser to avoid prerendering errors)
-  $: privateLinkToken = browser && $page.url.searchParams ? $page.url.searchParams.get('token') || null : null;
+  // Visible venues (public list plus any token-derived venue)
+  $: visibleVenues = venues;
 
-  // Check if token matches an event list
-  $: eventListFromToken = privateLinkToken
-    ? eventLists.find((el) => el.private_link_token === privateLinkToken)
-    : null;
-
-  // If token matches an event list, find its venue
-  $: venueFromEventListToken = eventListFromToken
-    ? venues.find((v) => v.venue_uuid === eventListFromToken.venue_uuid)
-    : null;
-
-  // Filter venues: show venues that have at least one public event list OR venues with event lists accessed via token
-  // If all event lists are private (and not accessed via token), the venue should not appear
-  $: visibleVenues = venues.filter((venue) => {
-    const venueEventLists = eventLists.filter((el) =>
-      venue.event_list_uuids.includes(el.event_list_uuid)
-    );
-
-    // If venue has no event lists, don't show it
-    if (venueEventLists.length === 0) return false;
-
-    // Show venue if it contains an event list accessed via token
-    if (venueFromEventListToken && venue.venue_uuid === venueFromEventListToken.venue_uuid) {
-      return true;
-    }
-
-    // Show venue if it has at least one public event list
-    const hasPublicEventList = venueEventLists.some((el) => el.visibility === 'public');
-    if (hasPublicEventList) return true;
-
-    return false;
-  });
-
-  // Sorted venues (only visible ones)
+  // Sorted venues
   $: sortedVenues = [...visibleVenues].sort((a, b) => a.name.localeCompare(b.name));
 
   /**
-   * Check if a venue matches the search query by searching across all searchable fields:
-   * - Venue: name, address, comment
-   * - Venue Owner: name, mobile
-   * - Event List: name, comment
-   * - Event: event_name, comment
-   * @param {any} venue
+   * Filter venues by search query across venue name/address/comment.
+   * (Owner and event fields are handled by backend search endpoint.)
+   * @param {import('$lib/types').Venue} venue
    * @param {string} query
    * @returns {boolean}
    */
   function venueMatchesSearch(venue, query) {
     if (!query) return true;
-    const lowerQuery = query.toLowerCase();
-
-    // Check venue fields
-    if (venue.name?.toLowerCase().includes(lowerQuery)) return true;
-    if (venue.address?.toLowerCase().includes(lowerQuery)) return true;
-    if (venue.comment?.toLowerCase().includes(lowerQuery)) return true;
-
-    // Check venue owner fields
-    const owner = owners.find((o) => o.owner_uuid === venue.owner_uuid);
-    if (owner) {
-      if (owner.name?.toLowerCase().includes(lowerQuery)) return true;
-      if (owner.mobile?.toLowerCase().includes(lowerQuery)) return true;
-    }
-
-    // Check event list fields
-    const venueEventLists = eventLists.filter((el) =>
-      venue.event_list_uuids.includes(el.event_list_uuid)
-    );
-    for (const eventList of venueEventLists) {
-      if (eventList.name?.toLowerCase().includes(lowerQuery)) return true;
-      if (eventList.comment?.toLowerCase().includes(lowerQuery)) return true;
-    }
-
-    // Check event fields
-    for (const eventList of venueEventLists) {
-      const listEvents = events.filter((e) =>
-        eventList.event_uuids.includes(e.event_uuid)
-      );
-      for (const event of listEvents) {
-        if (event.event_name?.toLowerCase().includes(lowerQuery)) return true;
-        if (event.comment?.toLowerCase().includes(lowerQuery)) return true;
-      }
-    }
-
+    const lower = query.toLowerCase();
+    if (venue.name?.toLowerCase().includes(lower)) return true;
+    if (venue.address?.toLowerCase().includes(lower)) return true;
+    if (venue.comment?.toLowerCase().includes(lower)) return true;
     return false;
   }
 
@@ -241,51 +285,50 @@
     ? venues.find((v) => v.venue_uuid === selectedVenueId)
     : null;
 
-  // Get event lists for selected venue, filtered by visibility
-  // Show public event lists OR private event lists accessed via token
-  $: venueEventLists = selectedVenue
-    ? eventLists
-        .filter((el) => selectedVenue.event_list_uuids.includes(el.event_list_uuid))
-        .filter((el) => {
-          // Show public event lists
-          if (el.visibility === 'public') return true;
-          // Show private event lists if accessed via token
-          if (el.visibility === 'private' && privateLinkToken && el.private_link_token === privateLinkToken) {
-            return true;
-          }
-          return false;
-        })
-    : [];
+  // Event lists for selected venue (public lists or token-derived lists)
+  $: selectedVenueEventLists =
+    selectedVenue && venueEventListsMap[selectedVenue.venue_uuid]
+      ? venueEventListsMap[selectedVenue.venue_uuid]
+      : [];
 
-  // Auto-select first event list or event list from token
+  // Auto-select first event list if none selected yet
   $: {
-    if (selectedVenue && venueEventLists.length > 0) {
-      // If we have an event list from token, select it
-      if (eventListFromToken && venueEventLists.find(el => el.event_list_uuid === eventListFromToken.event_list_uuid)) {
-        selectedEventListId = eventListFromToken.event_list_uuid;
-      } else if (!selectedEventListId) {
-        // Otherwise, select first event list
-        selectedEventListId = venueEventLists[0].event_list_uuid;
+    if (selectedVenue && selectedVenueEventLists.length > 0) {
+      if (!selectedEventListId) {
+        selectedEventListId = selectedVenueEventLists[0].event_list_uuid;
       }
-    } else if (!selectedVenue || venueEventLists.length === 0) {
+    } else if (!selectedVenue || selectedVenueEventLists.length === 0) {
       selectedEventListId = null;
     }
   }
 
   // Get selected event list
   $: selectedEventList = selectedEventListId
-    ? eventLists.find((el) => el.event_list_uuid === selectedEventListId)
+    ? selectedVenueEventLists.find((el) => el.event_list_uuid === selectedEventListId) || null
     : null;
 
-  // Get events for selected event list
-  $: listEvents = selectedEventList
-    ? events.filter((e) => selectedEventList.event_uuids.includes(e.event_uuid))
-    : [];
-
-  // Get venue owner for selected venue
-  $: venueOwner = selectedVenue
-    ? owners.find((o) => o.owner_uuid === selectedVenue.owner_uuid)
-    : null;
+  // Events for selected list
+  /** @type {import('$lib/types').Event[]} */
+  let listEvents = /** @type {import('$lib/types').Event[]} */ ([]);
+  let isLoadingEvents = false;
+  
+  // Reactive statement to load events when event list changes
+  $: {
+    if (selectedEventList) {
+      isLoadingEvents = true;
+      ensureEventsForEventList(selectedEventList.event_list_uuid).then(events => {
+        listEvents = /** @type {import('$lib/types').Event[]} */ (events);
+        isLoadingEvents = false;
+      }).catch(err => {
+        console.error('Failed to load events', err);
+        listEvents = /** @type {import('$lib/types').Event[]} */ ([]);
+        isLoadingEvents = false;
+      });
+    } else {
+      listEvents = /** @type {import('$lib/types').Event[]} */ ([]);
+      isLoadingEvents = false;
+    }
+  }
 
   /**
    * Parse geolocation string (format: "latitude,longitude")
@@ -305,7 +348,7 @@
   /**
    * Generate Google Maps directions URL
    * Prefers coordinates if available (more accurate), otherwise uses address
-   * @param {any} venue
+   * @param {import('$lib/types').Venue | null} venue
    * @returns {string | null}
    */
   function getDirectionsUrl(venue) {
@@ -392,8 +435,6 @@
    */
   function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
     const unixTimestamp = rfc3339ToUnixTimestamp(rfc3339);
-    // Explicitly check for non-empty timezone string (trim whitespace)
-    // If venue timezone is set, use it; otherwise fall back to visitor's browser timezone
     const timezoneToUse = venueTimezone && typeof venueTimezone === 'string' && venueTimezone.trim()
       ? venueTimezone.trim()
       : undefined;
@@ -402,31 +443,25 @@
   }
 
   /**
-   * @param {Event} event
-   */
-  function handleVenueChange(event) {
-    const target = /** @type {HTMLSelectElement} */ (event.target);
-    selectedVenueId = target.value || null;
-    selectedEventListId = null; // Reset event list selection
-  }
-
-  /**
    * @param {string | null} venueId
    */
-  function selectVenue(venueId) {
+  async function selectVenue(venueId) {
     selectedVenueId = venueId || null;
     selectedEventListId = null;
-    // Look up the venue directly instead of relying on reactive selectedVenue
     const venue = venueId ? venues.find((v) => v.venue_uuid === venueId) : null;
     venueSearchQuery = venue ? venue.name : '';
     showVenueDropdown = false;
     highlightedVenueIndex = -1;
+
+    if (selectedVenueId) {
+      await ensureEventListsForVenue(selectedVenueId);
+    }
   }
 
   /**
    * @param {Event} event
    */
-  function handleVenueSearchInput(event) {
+  async function handleVenueSearchInput(event) {
     const target = /** @type {HTMLInputElement} */ (event.target);
     const newValue = target.value;
     venueSearchQuery = newValue;
@@ -435,6 +470,9 @@
     if (!newValue || newValue.trim() === '') {
       selectedVenueId = null;
       selectedEventListId = null;
+      await loadVenues();
+    } else {
+      await loadVenues(newValue);
     }
 
     showVenueDropdown = true;
@@ -449,7 +487,7 @@
   /**
    * @param {KeyboardEvent} event
    */
-  function handleVenueSearchKeydown(event) {
+  async function handleVenueSearchKeydown(event) {
     if (!showVenueDropdown || filteredVenues.length === 0) {
       if (event.key === 'ArrowDown' && filteredVenues.length > 0) {
         showVenueDropdown = true;
@@ -475,7 +513,7 @@
       case 'Enter':
         event.preventDefault();
         if (highlightedVenueIndex >= 0 && highlightedVenueIndex < filteredVenues.length) {
-          selectVenue(filteredVenues[highlightedVenueIndex].venue_uuid);
+          await selectVenue(filteredVenues[highlightedVenueIndex].venue_uuid);
         }
         break;
       case 'Escape':
@@ -486,11 +524,12 @@
     }
   }
 
-  function clearVenueSearch() {
+  async function clearVenueSearch() {
     venueSearchQuery = '';
     selectedVenueId = null;
     selectedEventListId = null;
     showVenueDropdown = false;
+    await loadVenues();
   }
 
   /**
@@ -502,10 +541,6 @@
       highlightedVenueIndex = -1;
     }
   }
-
-  // Update search query when venue is selected via click/keyboard
-  // This is handled in selectVenue(), so we don't need a reactive statement here
-  // to avoid conflicts when user is typing to clear/reset
 
   /**
    * @param {Event} event
@@ -609,8 +644,8 @@
       <!-- Venue Name -->
       <h2 class="text-3xl font-bold mb-3 text-gray-900">{selectedVenue.name}</h2>
 
-      <!-- Address, Contact, Comment, and Map -->
-      {#if selectedVenue.address || selectedVenue.geolocation || venueOwner || selectedVenue.comment}
+      <!-- Address, Comment, and Map -->
+      {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment}
         <div class="mb-3 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex flex-col justify-start">
             {#if selectedVenue.address}
@@ -654,13 +689,13 @@
       {/if}
 
       <!-- Event Lists Section -->
-      {#if venueEventLists.length === 0}
+      {#if selectedVenueEventLists.length === 0}
         <div class="mt-6 p-4 bg-gray-50 rounded-lg">
           <p class="text-gray-500 text-center">
             This venue currently has no event schedules available.
           </p>
         </div>
-      {:else if venueEventLists.length === 1}
+      {:else if selectedVenueEventLists.length === 1}
         <!-- Single event list - no selector needed -->
         {#if selectedEventList}
           <div class="mt-6">
@@ -705,7 +740,7 @@
             on:change={handleEventListChange}
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 mb-4 no-print-event-list-selector"
           >
-            {#each venueEventLists as eventList}
+            {#each selectedVenueEventLists as eventList}
               <option value={eventList.event_list_uuid} selected={selectedEventListId === eventList.event_list_uuid}>
                 {eventList.name}
               </option>

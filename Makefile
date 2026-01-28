@@ -1,7 +1,7 @@
-.PHONY: help dev build preview install-frontend install-backend f-dev f-build f-preview f-install b-build b-run b-install
+.PHONY: help dev build preview install-frontend install-backend f-dev f-build f-preview f-install b-build b-run b-install b-health
 .PHONY: devcontainerup devcontainerdown devcontainerrebuild
 .PHONY: dbgooseup dbgoosedown dbgoosestatus dbgoosecreate dbverify
-.PHONY: sqlcgenerate brun dbconnect devshell
+.PHONY: sqlcgenerate bstart bstop brestart dbconnect devshell
 
 help:
 	@echo "Available commands:"
@@ -14,8 +14,11 @@ help:
 	@echo ""
 	@echo "Backend:"
 	@echo "  make bbuild    - Build backend"
-	@echo "  make brun      - Run backend server"
+	@echo "  make bstart    - Start backend server"
+	@echo "  make bstop     - Stop backend server"
+	@echo "  make brestart  - Restart backend server"
 	@echo "  make binstall  - Install backend dependencies"
+	@echo "  make bhealth   - Test healthcheck endpoint (requires server running)"
 	@echo ""
 	@echo "Backend Dev Container Shell:"
 	@echo "  make devshell            - Open shell in devcontainer (run all commands from here)"
@@ -77,11 +80,72 @@ finstall:
 bbuild:
 	cd backend && go build ./...
 
-brun:
-	cd backend && go run ./cmd/api/main.go
+bstart: bbuild
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Starting backend server (inside devcontainer)..."; \
+		cd /workspace/backend && go run ./cmd/api/main.go; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Starting backend server (from host via docker exec)..."; \
+		docker exec -it $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/api/main.go"; \
+	fi
 
 binstall:
 	cd backend && go mod download
+
+bstop:
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Stopping backend server (inside devcontainer)..."; \
+		pkill -f "go run ./cmd/api/main.go" || pkill -f "times.place" || echo "No running server process found."; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			exit 1; \
+		fi; \
+		echo "Stopping backend server (from host via docker exec)..."; \
+		docker exec $$CONTAINER_NAME pkill -f "go run ./cmd/api/main.go" || docker exec $$CONTAINER_NAME pkill -f "times.place" || echo "No running server process found."; \
+	fi
+
+brestart:
+	@echo "Restarting backend server..."
+	@$(MAKE) bstop || true
+	@sleep 1
+	@$(MAKE) bstart
+
+bhealth:
+	@echo "Testing healthcheck endpoint..."
+	@if ! command -v curl > /dev/null 2>&1; then \
+		echo "Error: curl is not installed. Please install curl to use this command."; \
+		exit 1; \
+	fi; \
+	RESPONSE=$$(curl -s -w "\n%{http_code}" http://localhost:8080/health 2>&1); \
+	HTTP_CODE=$$(echo "$$RESPONSE" | tail -n1); \
+	BODY=$$(echo "$$RESPONSE" | sed '$$d'); \
+	if [ -z "$$HTTP_CODE" ] || [ "$$HTTP_CODE" = "000" ]; then \
+		echo ""; \
+		echo "Error: Cannot connect to backend server at http://localhost:8080"; \
+		echo "  - Is the server running? Try: make bstart"; \
+		echo "  - Is the devcontainer running with port forwarding enabled?"; \
+		exit 1; \
+	elif [ "$$HTTP_CODE" != "200" ]; then \
+		echo ""; \
+		echo "Error: Server returned HTTP $$HTTP_CODE"; \
+		echo "Response: $$BODY"; \
+		exit 1; \
+	else \
+		if command -v jq > /dev/null 2>&1; then \
+			echo "$$BODY" | jq .; \
+		else \
+			echo "$$BODY"; \
+		fi; \
+	fi
 
 
 # Backend Dev Container shell

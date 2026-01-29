@@ -164,13 +164,10 @@ Benefits:
 - Configure the SvelteKit/Vite dev server to proxy `/api` to the backend.
 - In the frontend code, always call the API using **relative URLs** (e.g. `fetch('/api/auth/me')`) so the same code works in dev (proxied) and in production (served by Go).
 
-**Technical implementation (runtime flag)**:
+**Technical implementation**:
 
-- The Go binary embeds the frontend build assets using Go's `embed` directive (always included at build time).
-- A runtime environment variable `SERVE_FRONTEND` controls whether Go serves the frontend:
-  - **Local dev**: `SERVE_FRONTEND=false` (or unset) → Go serves only `/api/*` routes.
-  - **Production**: `SERVE_FRONTEND=true` (or default) → Go serves both `/` (frontend) and `/api/*`.
-- This allows the same binary to work in both environments without code duplication or separate build targets.
+- The backend always attempts to serve built frontend assets from `frontend/build/` (static files + SPA `index.html` fallback for non-API routes).
+- If `frontend/build/` is not present (common during API-only development), the backend still runs normally and serves `/api/*` routes; frontend routes will not be available until you run `make fbuild`.
 
 ### Contents (proposed)
 
@@ -187,7 +184,6 @@ Benefits:
 
 **Non-secret variables** (can be committed or set in devcontainer):
 
-- `SERVE_FRONTEND=false` (or unset) - controls whether Go serves frontend assets
 - `PORT=8080` (or similar) - backend API port
 - `LOG_LEVEL=debug` (or `info`) - logging verbosity
 
@@ -239,10 +235,8 @@ We deploy a single Go web service that serves:
 
 **Runtime behavior**:
 
-- Go Echo router conditionally serves frontend based on `SERVE_FRONTEND` env var:
-  - If `SERVE_FRONTEND=true` (production default): serve static files from `embed.FS` and SPA fallback (serve `index.html` for non-API routes).
-  - If `SERVE_FRONTEND=false` (local dev): serve only `/api/*` routes.
-- Same binary works in both environments; no separate build targets needed.
+- Go Echo router registers `/api/*` routes and also registers a frontend catch-all (static + SPA fallback) that serves built assets from `frontend/build/` when available.
+- Same binary works in all environments; the only requirement for frontend serving is that `frontend/build/` exists.
 
 ### Relationship to local development
 
@@ -256,7 +250,6 @@ We deploy a single Go web service that serves:
 
 **Non-secret variables** (set in Render dashboard, can be visible):
 
-- `SERVE_FRONTEND=true` (or default to true) - enables Go to serve frontend assets
 - `LOG_LEVEL=info` (or `warn` for production) - logging verbosity
 - `PORT` - Render sets this automatically (usually `10000`), but can be overridden
 

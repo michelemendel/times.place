@@ -31,7 +31,6 @@ Edit `backend/.env` and set your values:
 - **DATABASE_URL**: PostgreSQL connection string
 - **JWT_SECRET**: Strong random secret for JWT signing (generate with `openssl rand -base64 32`)
 - **REFRESH_TOKEN_SECRET**: Strong random secret for refresh tokens (generate with `openssl rand -base64 32`)
-- **SERVE_FRONTEND**: Set to `false` for local dev (frontend runs separately)
 - **PORT**: Backend API port (default: `8080`)
 - **LOG_LEVEL**: Logging verbosity (`debug`, `info`, `warn`, `error`)
 
@@ -86,31 +85,31 @@ make bdevcontainerrebuild
 Apply database migrations:
 
 ```bash
-make bgooseup
+make dbup
 ```
 
 Check migration status:
 
 ```bash
-make bgoosestatus
+make dbstatus
 ```
 
 Verify schema (shows migration status, tables, and indexes):
 
 ```bash
-make bverify
+make dbverify
 ```
 
 Rollback last migration (if needed):
 
 ```bash
-make bgoosedown
+make dbdown
 ```
 
 Create a new migration:
 
 ```bash
-make bgoosecreate NAME=your_migration_name
+make goosecreate NAME=your_migration_name
 ```
 
 This creates a new migration file in `backend/db/migrations/`.
@@ -126,7 +125,7 @@ make dbconnect
 If you want to run multiple commands interactively or explore the container:
 
 ```bash
-make dbshell
+make devshell
 ```
 
 Once inside the shell, you can run commands directly (e.g., `goose status`, `psql`, etc.) without the Makefile wrappers.
@@ -159,7 +158,7 @@ The server will:
 
 - Load environment variables from `backend/.env` (if using `godotenv`)
 - Start on the port specified in `PORT` (default: `8080`)
-- Serve only `/api/*` routes when `SERVE_FRONTEND=false`
+- Serve `/api/*` routes, and (if `frontend/build/` exists) also serve the frontend at `/` with SPA fallback routing
 
 ## Local Development Workflow
 
@@ -201,16 +200,40 @@ The server will:
 
 6. **Run the server**
 
-   ```bash
-   make brun
-   ```
+   You can run the application in two modes:
 
-7. **Run frontend separately** (in another terminal, from project root)
+   **Development Mode (Recommended for local development):**
+   
+   - Frontend runs on Vite dev server with Hot Module Replacement (HMR)
+   - Backend runs separately serving only API routes
+   - Best for active frontend development
+   
    ```bash
-   make fdev
+   # Terminal 1: Start backend (API only)
+   make bstart
+   
+   # Terminal 2: Start frontend dev server
+   make fstart
    ```
+   
+   The frontend dev server (on `http://localhost:5173`) will proxy `/api/*` requests to the backend (on `http://localhost:8080`).
 
-The frontend dev server (on `http://localhost:5173`) will proxy `/api/*` requests to the backend (on `http://localhost:8080`).
+   **Production Mode (Backend serves frontend):**
+   
+   - Frontend is built and served by the backend
+   - Single server on port 8080
+   - Matches production deployment setup
+   - Useful for testing production-like behavior locally
+   
+   ```bash
+   # Build frontend, then start backend serving it
+   make fbuild
+   make pstart
+   ```
+   
+   The application will be available at `http://localhost:8080` with both API (`/api/*`) and frontend routes served by the backend.
+   
+   **Note:** `make pstart` expects the frontend to already be built (run `make fbuild` first) and then starts the backend, which will serve the built frontend from `frontend/build/`.
 
 ### Database Connection
 
@@ -307,14 +330,16 @@ All backend-related Makefile targets:
 - `make bdevcontainerup` - Start devcontainer
 - `make bdevcontainerdown` - Stop devcontainer
 - `make bdevcontainerrebuild` - Rebuild devcontainer
-- `make bgooseup` - Apply all pending migrations
-- `make bgoosedown` - Rollback last migration
-- `make bgoosestatus` - Show migration status
-- `make bgoosecreate NAME=name` - Create new migration
+- `make dbup` - Apply all pending migrations
+- `make dbdown` - Rollback last migration
+- `make dbreset` - Rollback ALL migrations (drops all tables)
+- `make dbstatus` - Show migration status
+- `make goosecreate NAME=name` - Create new migration
+- `make dbverify` - Verify schema: show migration status and list tables
 - `make bsqlcgenerate` - Generate sqlc code
 - `make dbseed` - Seed test data into database
 - `make dbseedclear` - Clear existing data and seed test data
-- `make bshell` - Open shell in devcontainer (for Warp/external terminals)
+- `make devshell` - Open shell in devcontainer (for Warp/external terminals)
 - `make dbconnect` - Connect to database with psql (works from host or inside container)
 - `make dbhost` - Connect to database from host (direct connection via localhost:5432)
 - `make dburl` - Show database connection URLs
@@ -409,7 +434,6 @@ When deploying to Render.com, configure the following environment variables in t
 
 Set these in the Render dashboard (visible values):
 
-- **SERVE_FRONTEND**: `true` (enables Go to serve frontend static assets)
 - **LOG_LEVEL**: `info` or `warn` (production logging verbosity)
 - **PORT**: Usually set automatically by Render (default: `10000`), but can be overridden
 - **COOKIE_DOMAIN**: Domain for refresh token cookies (e.g., `.times.place` for subdomain support, or leave empty for same-origin)
@@ -449,7 +473,6 @@ Set these in the Render dashboard with the **"Secret" toggle enabled** (values h
 | `DATABASE_URL`         | Secret     | Yes      | -       | PostgreSQL connection string                     |
 | `JWT_SECRET`           | Secret     | Yes      | -       | Secret for JWT signing                           |
 | `REFRESH_TOKEN_SECRET` | Secret     | Yes      | -       | Secret for refresh tokens                        |
-| `SERVE_FRONTEND`       | Non-secret | Yes      | `true`  | Enable frontend serving                          |
 | `PORT`                 | Non-secret | No       | `10000` | Server port (Render sets automatically)          |
 | `LOG_LEVEL`            | Non-secret | No       | `info`  | Logging level (`debug`, `info`, `warn`, `error`) |
 | `COOKIE_DOMAIN`        | Non-secret | No       | -       | Cookie domain (empty for same-origin)            |
@@ -458,7 +481,7 @@ Set these in the Render dashboard with the **"Secret" toggle enabled** (values h
 
 ## Testing
 
-For detailed information about testing, test data management, and database testing strategies, see [TESTING.md](./TESTING.md).
+For detailed information about testing, test data management, and database testing strategies, see [TESTING_STRATEGY.md](./TESTING_STRATEGY.md).
 
 **Quick Start:**
 
@@ -474,7 +497,7 @@ go test ./... -cover
 - Tests run against a live database (not mocks)
 - Test isolation via database transactions (automatic rollback)
 - Test data seeding utilities in `backend/internal/testdata/`
-- See `TESTING.md` for full documentation
+- See `TESTING_STRATEGY.md` for full documentation
 
 ## Next Steps
 
@@ -483,6 +506,6 @@ After setting up the development environment:
 1. Create database schema migrations (see `blueprint/backend/3_tasks.md`)
 2. Write SQL queries for sqlc (see `blueprint/backend/3_tasks.md`)
 3. Implement API endpoints (see `blueprint/backend/3_tasks.md`)
-4. Write tests using the test helpers (see `TESTING.md`)
+4. Write tests using the test helpers (see `TESTING_STRATEGY.md`)
 
 Refer to `blueprint/backend/` for detailed specifications and implementation plans.

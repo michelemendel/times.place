@@ -98,6 +98,15 @@ Notes:
 - If you develop inside a Dev Container, these tools can be installed/provided inside the container instead of on your host.
 - You will also need access to a **PostgreSQL** instance for backend work (locally via container during development, and Render Postgres in production).
 
+### Building the frontend on host (macOS/Windows)
+
+If you run `make fbuild` on your host machine and see an error like `Cannot find module @rollup/rollup-darwin-arm64`, it’s because `node_modules` was installed inside the devcontainer (Linux), so Rollup’s optional platform binaries don’t match your host. Fix it by reinstalling frontend dependencies on the host:
+
+```bash
+make finstall-clean
+make fbuild
+```
+
 ## My Notes
 
 - [Perplexity Space: times.place](https://www.perplexity.ai/spaces/times-place-0QMkL8qGR16UjuPLu0HfIw)

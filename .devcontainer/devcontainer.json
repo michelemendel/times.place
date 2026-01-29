@@ -7,6 +7,9 @@
 	"features": {
 		"ghcr.io/devcontainers/features/go:1": {
 			"version": "1.25.5"
+		},
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "lts"
 		}
 	},
 
@@ -31,7 +34,6 @@
 	},
 
 	"containerEnv": {
-		"SERVE_FRONTEND": "false",
 		"PORT": "8080",
 		"LOG_LEVEL": "debug"
 	},

@@ -1,17 +1,18 @@
-# Example GitHub Actions workflow for backend tests
-# Copy this to .github/workflows/backend-tests.yml and customize as needed
+# CI: build and test backend + frontend before deployment (e.g. Render.com).
+# Runs on every push to main and on pull requests.
 
-name: Backend Tests
+name: CI
 
 on:
-  pull_request:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -28,43 +29,62 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v3
-      
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # --- Backend ---
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.25.5'
-      
-      - name: Install dependencies
-        run: go mod download
-      
+          go-version: "1.25.5"
+
+      - name: Backend dependencies
+        run: cd backend && go mod download
+
       - name: Install goose
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
-      
+
       - name: Run migrations
         env:
           DATABASE_URL: postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable
         run: |
           cd backend
           goose -dir db/migrations postgres "$DATABASE_URL" up
-      
-      - name: Run tests
+
+      - name: Backend tests
         env:
           DATABASE_URL: postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable
+          TEST_DATABASE_URL: postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable
         run: |
           cd backend
           go test ./... -v
-      
-      - name: Run tests with coverage
+
+      - name: Backend tests (coverage)
         env:
           DATABASE_URL: postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable
+          TEST_DATABASE_URL: postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable
         run: |
           cd backend
           go test ./... -coverprofile=coverage.out
-      
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
+
+      - name: Upload backend coverage
+        uses: codecov/codecov-action@v4
         with:
           file: ./backend/coverage.out
           flags: backend
           name: backend-coverage
+        continue-on-error: true
+
+      # --- Frontend ---
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Frontend build
+        run: cd frontend && npm run build

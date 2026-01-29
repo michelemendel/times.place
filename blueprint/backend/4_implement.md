@@ -69,13 +69,12 @@ This file will track backend implementation work sessions, decisions made during
 
 - **Frontend serving (technical)**:
   - Documented using Go's `embed` directive to embed frontend build assets at compile time.
-  - Documented `SERVE_FRONTEND` runtime flag to control whether Go serves frontend (false in dev, true in prod).
   - Clarified build order: frontend must be built before backend (Go embed reads files during compilation).
   - Same binary works in both environments; no separate build targets needed.
 - **Environment variables**:
   - Documented local dev setup: `.env` file (gitignored), `.env.example` template, devcontainer support.
   - Documented production setup: Render dashboard configuration, secret vs non-secret variables, cookie settings.
-  - Listed required variables: `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET` (secrets), `SERVE_FRONTEND`, `LOG_LEVEL`, cookie settings (non-secrets).
+  - Listed required variables: `DATABASE_URL`, `JWT_SECRET`, `REFRESH_TOKEN_SECRET` (secrets), `LOG_LEVEL`, cookie settings (non-secrets).
 
 ### Connection issues
 
@@ -99,7 +98,7 @@ This file will track backend implementation work sessions, decisions made during
 - **Database schema & migrations**: Created complete database schema with 4 migrations covering all core tables, indexes, constraints, and triggers.
 - **Makefile database commands**: Set up comprehensive Makefile targets for database operations (migrations, seeding, verification, connection).
 - **Test data infrastructure**: Created seed data system for both CLI usage and automated testing with transaction isolation.
-- **Migration rollback fix**: Discovered that `dbgoosedown` only rolls back one migration at a time, added `dbgoosereset` command to rollback all migrations at once.
+- **Migration rollback fix**: Discovered that `dbdown` only rolls back one migration at a time, added `dbreset` command to rollback all migrations at once.
 
 ### Notes
 
@@ -120,11 +119,11 @@ This file will track backend implementation work sessions, decisions made during
   - `00004_add_modified_at_trigger.sql`: Creates `update_modified_at()` function and triggers for automatic `modified_at` timestamp updates on all tables
   - All migrations include proper `-- +goose Down` sections for rollback support
 - **Makefile database targets**:
-  - `dbgooseup`: Apply all pending migrations
-  - `dbgoosedown`: Rollback last migration (one at a time)
-  - `dbgoosereset`: Rollback ALL migrations (drops all tables) - added today
-  - `dbgoosestatus`: Show migration status
-  - `dbgoosecreate`: Create new migration file
+  - `dbup`: Apply all pending migrations
+  - `dbdown`: Rollback last migration (one at a time)
+  - `dbreset`: Rollback ALL migrations (drops all tables) - added today
+  - `dbstatus`: Show migration status
+  - `goosecreate`: Create new migration file
   - `dbverify`: Verify schema (shows migration status, tables, indexes)
   - `dbseed`: Seed test data into database
   - `dbseedclear`: Clear existing data and seed test data
@@ -137,10 +136,10 @@ This file will track backend implementation work sessions, decisions made during
   - Test helpers use database transactions for automatic cleanup (rollback after each test)
 - **Migration rollback behavior**:
   - `goose down` command only rolls back the last applied migration (one at a time)
-  - After running `dbgooseup` (applies migrations 1-3) and then `dbgoosedown` (rolls back only migration 3), tables from migration 2 remain in the database
-  - Added `make dbgoosereset` target that uses `goose reset` to rollback all migrations at once
-  - Updated Makefile help text to clarify that `dbgoosedown` rolls back one migration at a time
-  - Use `make dbgoosedown` for incremental rollbacks, `make dbgoosereset` for full reset
+  - After running `dbup` (applies migrations 1-3) and then `dbdown` (rolls back only migration 3), tables from migration 2 remain in the database
+  - Added `make dbreset` target that uses `goose reset` to rollback all migrations at once
+  - Updated Makefile help text to clarify that `dbdown` rolls back one migration at a time
+  - Use `make dbdown` for incremental rollbacks, `make dbreset` for full reset
 
 ## 2026-01-27
 
@@ -323,3 +322,36 @@ This file will track backend implementation work sessions, decisions made during
   - Updated `backend/internal/http/server.go`: Environment variable loading now tries both `.env` (workspace root) and `backend/.env` (backend directory) for flexibility when running from different locations.
 - **Test data**:
   - Updated `backend/internal/testdata/seed.go`: Added "DEMO:" prefix to all venue names in test data to clearly distinguish demo venues from production data.
+
+## 2026-01-29
+
+### Summary
+
+- **Frontend serving simplification**: Removed the `SERVE_FRONTEND` runtime flag; the backend now always attempts to serve the built frontend (when `frontend/build/` exists) and otherwise serves the API normally.
+- **Dev workflow clarity**: Updated Makefile targets and documentation to remove `SERVE_FRONTEND` references while keeping the two-process HMR workflow intact (`make fstart` + `make bstart`).
+
+### Notes
+
+- **API / routing**:
+  - Updated `backend/internal/http/routes.go` to always register frontend routes after `/api/*` routes, keeping the existing “warn but don’t fail” behavior when `frontend/build/` is missing.
+- **Dev workflow / Makefile**:
+  - Updated `Makefile` so `bstart` no longer sets `SERVE_FRONTEND=false`.
+  - Updated `Makefile` so `pstart` no longer sets `SERVE_FRONTEND=true` (it remains a convenience wrapper that errors if `frontend/build/` is missing).
+- **Dev container / env vars**:
+  - Removed `SERVE_FRONTEND` from `.devcontainer/devcontainer.json` and `backend/.env.example`.
+- **Docs**:
+  - Updated `backend/README.md` and backend blueprint docs to remove `SERVE_FRONTEND` and describe the new “serve built assets if present” behavior.
+
+### Summary
+
+- **Frontend build path resolution**: Made serving the frontend from the backend robust across different working directories (workspace root, backend/, devcontainer vs host). Added `FRONTEND_BUILD_DIR` env support and CWD-based candidate paths, with startup logging when the build dir is found.
+
+### Notes
+
+- **API / frontend serving** (`backend/internal/http/frontend.go`):
+  - `getFrontendFS()` now returns `(fs.FS, string, error)` (added absolute path used for logging).
+  - **FRONTEND_BUILD_DIR**: If set (absolute or relative to CWD), that path is used first to locate `frontend/build`.
+  - **CWD-based candidates**: Build path is resolved from `os.Getwd()`: `cwd/frontend/build`, `cwd/../frontend/build`, `cwd/../../frontend/build`, plus legacy relative paths, so the build is found whether the server runs from workspace root or backend/.
+  - **Success logging**: On successful setup, server logs `Serving frontend from <absolute-path>` so operators can confirm which build is served.
+- **Routing** (`backend/internal/http/routes.go`):
+  - When frontend routes fail to setup, warning message now suggests setting `FRONTEND_BUILD_DIR` to the `frontend/build` path if needed.

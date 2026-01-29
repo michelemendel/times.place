@@ -18,7 +18,7 @@
   - [x] Document how to load `.env` in Go (e.g. using `godotenv` or similar)
   - [x] Configure devcontainer to use local `.env` or set non-secret vars in `devcontainer.json`
 - [ ] Set up production environment variables on Render.com:
-  - [ ] Configure non-secret variables in Render Web Service dashboard (SERVE_FRONTEND, LOG_LEVEL, cookie settings)
+  - [ ] Configure non-secret variables in Render Web Service dashboard (LOG_LEVEL, cookie settings)
   - [ ] Configure secret variables in Render with "Secret" toggle enabled (DATABASE_URL, JWT_SECRET, REFRESH_TOKEN_SECRET)
   - [ ] Link Render Postgres instance to Web Service (auto-provides DATABASE_URL) or set manually
   - [x] Document all required production environment variables and their purposes
@@ -30,7 +30,7 @@
 - [x] Add migration: create tables `venue_owners`, `venues`, `event_lists`, `events`, `refresh_tokens`
 - [x] Add constraints + indexes (visibility checks, unique tokens, foreign keys)
 - [x] Add migration: triggers or explicit update strategy for `modified_at` (choose one)
-- [x] Run migrations locally: execute `make dbgooseup` (works from host or inside devcontainer) and verify with `make dbverify` (shows migration status, tables, indexes). Alternatively, use `make devshell` to open an interactive shell in the devcontainer.
+- [x] Run migrations locally: execute `make dbup` (works from host or inside devcontainer) and verify with `make dbverify` (shows migration status, tables, indexes). Alternatively, use `make devshell` to open an interactive shell in the devcontainer.
 
 ## sqlc
 

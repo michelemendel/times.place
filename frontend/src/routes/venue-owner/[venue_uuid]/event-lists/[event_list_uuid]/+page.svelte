@@ -3,8 +3,10 @@
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
-  import { browser } from '$app/environment';
-  import { currentOwnerStore, venueStore, eventListStore, eventStore } from '$lib/stores';
+  import { currentOwnerStore } from '$lib/stores';
+  import { getVenue } from '$lib/api/venues.js';
+  import { getEventList } from '$lib/api/eventLists.js';
+  import { listEventsForEventList } from '$lib/api/events.js';
   import { formatEventListDate, formatEventTime } from '$lib/utils/datetime.js';
 
   /**
@@ -26,61 +28,52 @@
   let eventList = null;
   /** @type {import('$lib/types').Event[]} */
   let listEvents = [];
+  /** @type {boolean} */
+  let loading = true;
+  /** @type {string} */
+  let loadError = '';
 
-  // Get venue UUID and event list UUID from route params
-  $: venueUuid = browser && $page.params ? $page.params.venue_uuid : null;
-  $: eventListUuid = browser && $page.params ? $page.params.event_list_uuid : null;
-
-  // Load data when UUIDs are available
-  $: {
-    if (venueUuid && eventListUuid) {
-      const currentOwner = $currentOwnerStore;
-      if (currentOwner) {
-        owner = currentOwner;
-        const allVenues = $venueStore;
-        const foundVenue = allVenues.find(v => v.venue_uuid === venueUuid);
-
-        // Verify ownership - only set venue if authorized
-        if (foundVenue && foundVenue.owner_uuid === currentOwner.owner_uuid) {
-          venue = foundVenue;
-          const allEventLists = $eventListStore;
-          const foundEventList = allEventLists.find(el =>
-            el.event_list_uuid === eventListUuid && el.venue_uuid === foundVenue.venue_uuid
-          );
-
-          if (foundEventList) {
-            eventList = foundEventList;
-            const allEvents = $eventStore;
-            listEvents = allEvents
-              .filter(e => foundEventList.event_uuids.includes(e.event_uuid))
-              .sort((a, b) => {
-                // Sort by datetime
-                return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
-              });
-          }
-        } else if (foundVenue) {
-          // Not authorized - venue will be null, handled in template
-          venue = null;
-        }
-      }
-    }
-  }
-
-  onMount(() => {
+  onMount(async () => {
     owner = get(currentOwnerStore);
     if (!owner) {
       goto('/login');
       return;
     }
 
-    // Check authorization after stores are loaded
-    if (venueUuid && owner) {
-      const allVenues = get(venueStore);
-      const foundVenue = allVenues.find(v => v.venue_uuid === venueUuid);
-      if (foundVenue && foundVenue.owner_uuid !== owner.owner_uuid) {
-        // Not authorized - redirect
-        goto('/venue-owner');
+    const params = get(page).params;
+    const venueUuid = params?.venue_uuid;
+    const eventListUuid = params?.event_list_uuid;
+
+    if (!venueUuid || !eventListUuid) {
+      loading = false;
+      return;
+    }
+
+    loading = true;
+    loadError = '';
+
+    try {
+      venue = await getVenue(venueUuid);
+      eventList = await getEventList(eventListUuid);
+
+      // Defensive: ensure event list belongs to venue route param.
+      if (!eventList || eventList.venue_uuid !== venueUuid) {
+        venue = null;
+        eventList = null;
+        return;
       }
+
+      const events = await listEventsForEventList(eventListUuid);
+      listEvents = (events ?? []).slice().sort((a, b) => {
+        return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
+      });
+    } catch (e) {
+      venue = null;
+      eventList = null;
+      listEvents = [];
+      loadError = e instanceof Error ? e.message : 'Failed to load event list.';
+    } finally {
+      loading = false;
     }
   });
 
@@ -108,9 +101,15 @@
     <div class="text-center py-8">
       <p class="text-gray-600">Please log in to view event lists.</p>
     </div>
+  {:else if loading}
+    <div class="text-center py-8">
+      <p class="text-gray-600">Loading...</p>
+    </div>
   {:else if !venue || !eventList}
     <div class="text-center py-8">
-      <p class="text-gray-600">Event list not found.</p>
+      <p class="text-gray-600">
+        {loadError || 'Event list not found.'}
+      </p>
       <button
         on:click={goBack}
         class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"

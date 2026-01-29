@@ -236,7 +236,7 @@
   - [x] Test venue form (create, edit, delete)
   - [x] Test visitor page (public venues, private token access)
   - [x] Test authentication flow (login, register, logout)
-  - [ ] Verify data consistency between frontend and backend
+  - [x] Verify data consistency between frontend and backend
 
 ### Data Format Updates
 

@@ -503,7 +503,7 @@
 
     // Create new arrays with the new event added
     const newEvents = [...list.events, newEvent];
-    const newEventUuids = [...list.event_uuids, newEvent.event_uuid];
+    const newEventUuids = [...(list.event_uuids || []), newEvent.event_uuid];
 
     // Create new list object with new arrays
     const updatedList = {
@@ -533,7 +533,7 @@
 
     // Create new arrays with the event removed
     const newEvents = list.events.filter((/** @type {any} */ e) => e.event_uuid !== eventUuid);
-    const newEventUuids = list.event_uuids.filter((/** @type {any} */ uuid) => uuid !== eventUuid);
+    const newEventUuids = (list.event_uuids || []).filter((/** @type {any} */ uuid) => uuid !== eventUuid);
 
     // Create new list object with new arrays
     const updatedList = {
@@ -577,7 +577,7 @@
     // Create new arrays with the duplicated event inserted
     const newEvents = [...list.events];
     newEvents.splice(index + 1, 0, newEvent);
-    const newEventUuids = [...list.event_uuids];
+    const newEventUuids = [...(list.event_uuids || [])];
     newEventUuids.splice(index + 1, 0, newEvent.event_uuid);
 
     // Create new list object with new arrays
@@ -613,7 +613,7 @@
     newEvents[eventIndex] = { ...newEvents[eventIndex - 1], sort_order: eventIndex };
     newEvents[eventIndex - 1] = { ...temp, sort_order: eventIndex - 1 };
 
-    const newEventUuids = [...list.event_uuids];
+    const newEventUuids = [...(list.event_uuids || [])];
     const tempUuid = newEventUuids[eventIndex];
     newEventUuids[eventIndex] = newEventUuids[eventIndex - 1];
     newEventUuids[eventIndex - 1] = tempUuid;
@@ -651,7 +651,7 @@
     newEvents[eventIndex] = { ...newEvents[eventIndex + 1], sort_order: eventIndex };
     newEvents[eventIndex + 1] = { ...temp, sort_order: eventIndex + 1 };
 
-    const newEventUuids = [...list.event_uuids];
+    const newEventUuids = [...(list.event_uuids || [])];
     const tempUuid = newEventUuids[eventIndex];
     newEventUuids[eventIndex] = newEventUuids[eventIndex + 1];
     newEventUuids[eventIndex + 1] = tempUuid;

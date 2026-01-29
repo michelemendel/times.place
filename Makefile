@@ -1,6 +1,6 @@
-.PHONY: help dev build preview install-frontend install-backend f-dev f-build f-preview f-install b-build b-run b-install b-health
+.PHONY: help dev build preview install-frontend install-backend f-dev f-build f-preview f-install finstall-clean b-build b-run b-install b-health pstart
 .PHONY: devcontainerup devcontainerdown devcontainerrebuild
-.PHONY: dbgooseup dbgoosedown dbgoosestatus dbgoosecreate dbverify
+.PHONY: dbup dbdown dbreset dbstatus goosecreate dbverify
 .PHONY: sqlcgenerate bstart bstop brestart dbconnect devshell
 
 help:
@@ -8,28 +8,36 @@ help:
 	@echo ""
 	@echo "Frontend:"
 	@echo "  make fbuild    - Build frontend for production"
-	@echo "  make fdev      - Start frontend development server"
+	@echo "  make fstart    - Start frontend development server (with HMR)"
 	@echo "  make fpreview  - Preview frontend production build"
 	@echo "  make finstall  - Install frontend dependencies"
+	@echo "  make finstall-clean - Reinstall frontend deps (fixes rollup on host macOS/Windows after devcontainer)"
 	@echo ""
 	@echo "Backend:"
 	@echo "  make bbuild    - Build backend"
-	@echo "  make bstart    - Start backend server"
+	@echo "  make bstart    - Start backend server (serves API; serves built frontend if present)"
 	@echo "  make bstop     - Stop backend server"
 	@echo "  make brestart  - Restart backend server"
 	@echo "  make binstall  - Install backend dependencies"
 	@echo "  make bhealth   - Test healthcheck endpoint (requires server running)"
 	@echo ""
+	@echo "Production Mode (Backend serves frontend):"
+	@echo "  make pstart    - Start backend serving frontend (assumes frontend is already built)"
+	@echo ""
+	@echo "Development Mode (Separate servers):"
+	@echo "  make dev       - Start both frontend (Vite) and backend (API only) in separate terminals"
+	@echo "  Note: Use 'make fstart' and 'make bstart' in separate terminals for full control"
+	@echo ""
 	@echo "Backend Dev Container Shell:"
 	@echo "  make devshell            - Open shell in devcontainer (run all commands from here)"
 	@echo ""
-	@echo "Backend Database (goose) - works from host or inside devcontainer:"
-	@echo "  make dbgooseup      - Run all pending migrations"
-	@echo "  make dbgoosedown    - Rollback last migration (one at a time)"
-	@echo "  make dbgoosereset   - Rollback ALL migrations (drops all tables)"
-	@echo "  make dbgoosestatus  - Show migration status"
-	@echo "  make dbgoosecreate  - Create new migration (usage: make dbgoosecreate NAME=migration_name)"
-	@echo "  make dbverify       - Verify schema: show migration status and list tables"
+	@echo "Backend Database - works from host or inside devcontainer:"
+	@echo "  make dbup         - Run all pending migrations"
+	@echo "  make dbdown       - Rollback last migration (one at a time)"
+	@echo "  make dbreset      - Rollback ALL migrations (drops all tables)"
+	@echo "  make dbstatus     - Show migration status"
+	@echo "  make dbverify     - Verify schema: show migration status and list tables"
+	@echo "  make goosecreate  - Create new migration (usage: make goosecreate NAME=migration_name)"
 	@echo ""
 	@echo "Backend Code Generation (sqlc):"
 	@echo "  make sqlcgenerate - Generate sqlc code from queries"
@@ -65,7 +73,7 @@ help:
 fbuild:
 	cd frontend && npm run build
 
-fdev:
+fstart:
 	cd frontend && npm run dev
 
 fpreview:
@@ -73,6 +81,12 @@ fpreview:
 
 finstall:
 	cd frontend && npm install
+
+# Reinstall frontend deps from scratch. Use when building on host (e.g. macOS) after
+# node_modules was installed in devcontainer (Linux); npm optional deps are platform-specific.
+# Uses npx rimraf so node_modules is removed reliably (avoids "Directory not empty" on macOS).
+finstall-clean:
+	cd frontend && npx --yes rimraf node_modules && rm -f package-lock.json && npm install
 
 
 # Backend targets
@@ -82,7 +96,7 @@ bbuild:
 
 bstart: bbuild
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
-		echo "Starting backend server (inside devcontainer)..."; \
+		echo "Starting backend server..."; \
 		cd /workspace/backend && go run ./cmd/api/main.go; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
@@ -92,7 +106,28 @@ bstart: bbuild
 			echo "Or run this command from inside the devcontainer"; \
 			exit 1; \
 		fi; \
-		echo "Starting backend server (from host via docker exec)..."; \
+		echo "Starting backend server..."; \
+		docker exec -it $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/api/main.go"; \
+	fi
+
+# Production mode: backend serves frontend
+pstart: bbuild
+	@if [ ! -d "frontend/build" ]; then \
+		echo "Error: Frontend build directory not found. Run 'make fbuild' first."; \
+		exit 1; \
+	fi
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Starting backend server (serving built frontend)..."; \
+		cd /workspace/backend && go run ./cmd/api/main.go; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Starting backend server (serving built frontend)..."; \
 		docker exec -it $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/api/main.go"; \
 	fi
 
@@ -159,14 +194,14 @@ devshell:
 		exit 1; \
 	fi; \
 	echo "Opening shell in devcontainer backend service..."; \
-	echo "From here you can run: make dbgooseup, make dbgoosestatus, make dbconnect, etc."; \
+	echo "From here you can run: make dbup, make dbstatus, make dbconnect, etc."; \
 	docker exec -it $$CONTAINER_NAME /bin/bash
 
 
 # Backend Database (goose) targets
 # These work both from host (via docker exec) and inside the devcontainer (direct execution)
 
-dbgooseup:
+dbup:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Running migrations (inside devcontainer)..."; \
 		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" up; \
@@ -182,7 +217,7 @@ dbgooseup:
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" up"; \
 	fi
 
-dbgoosedown:
+dbdown:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Rolling back last migration (inside devcontainer)..."; \
 		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" down; \
@@ -198,7 +233,7 @@ dbgoosedown:
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" down"; \
 	fi
 
-dbgoosereset:
+dbreset:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Rolling back ALL migrations (inside devcontainer)..."; \
 		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" reset; \
@@ -214,7 +249,7 @@ dbgoosereset:
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" reset"; \
 	fi
 
-dbgoosestatus:
+dbstatus:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Migration status (inside devcontainer):"; \
 		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" status; \
@@ -228,26 +263,6 @@ dbgoosestatus:
 		fi; \
 		echo "Migration status (from host via docker exec):"; \
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" status"; \
-	fi
-
-dbgoosecreate:
-	@if [ -z "$(NAME)" ]; then \
-		echo "Error: NAME is required. Usage: make dbgoosecreate NAME=migration_name"; \
-		exit 1; \
-	fi
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
-		echo "Creating new migration: $(NAME) (inside devcontainer)"; \
-		cd /workspace/backend && goose -dir db/migrations create $(NAME) sql; \
-	else \
-		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
-		if [ -z "$$CONTAINER_NAME" ]; then \
-			echo "Error: Backend container not found. Is the devcontainer running?"; \
-			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
-			echo "Or run this command from inside the devcontainer"; \
-			exit 1; \
-		fi; \
-		echo "Creating new migration: $(NAME) (from host via docker exec)"; \
-		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations create $(NAME) sql"; \
 	fi
 
 dbverify:
@@ -280,6 +295,26 @@ dbverify:
 		echo ""; \
 		echo "=== Indexes ==="; \
 		docker exec $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" -c 'SELECT schemaname, tablename, indexname FROM pg_indexes WHERE schemaname = '\''public'\'' ORDER BY tablename, indexname;'"; \
+	fi
+
+goosecreate:
+	@if [ -z "$(NAME)" ]; then \
+		echo "Error: NAME is required. Usage: make goosecreate NAME=migration_name"; \
+		exit 1; \
+	fi
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Creating new migration: $(NAME) (inside devcontainer)"; \
+		cd /workspace/backend && goose -dir db/migrations create $(NAME) sql; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Creating new migration: $(NAME) (from host via docker exec)"; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations create $(NAME) sql"; \
 	fi
 
 # Backend Code Generation (sqlc) targets

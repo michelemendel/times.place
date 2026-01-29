@@ -6,7 +6,7 @@ import (
 	"github.com/michelemendel/times.place/internal/store"
 )
 
-// RegisterRoutes registers all API routes
+// RegisterRoutes registers all API routes and frontend static files (if built assets exist).
 func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthService) {
 	// Create handlers
 	authHandler := NewAuthHandler(store, authService)
@@ -65,4 +65,12 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 	public.GET("/venues/by-token/:token", publicHandler.GetVenueByToken)
 	public.GET("/event-lists/by-token/:token", publicHandler.GetEventListByToken)
 	public.GET("/event-lists/:event_list_uuid/events", publicHandler.GetEventsByEventList)
+
+	// Serve frontend static files (if available).
+	// This must be registered AFTER all API routes
+	if err := setupFrontendRoutes(e); err != nil {
+		// Log error but don't fail - frontend serving is optional.
+		// The server will still work for API routes.
+		e.Logger.Warnf("Failed to setup frontend routes: %v (set FRONTEND_BUILD_DIR to frontend/build path if needed)", err)
+	}
 }

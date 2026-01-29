@@ -947,3 +947,19 @@
   - Events are cached in `eventListEventsMap` to avoid redundant API calls.
   - Events are loaded on-demand when a user selects an event list, rather than loading all events upfront.
   - Improves initial page load time by deferring event data fetching until it's actually needed.
+
+## 2026-01-29
+
+### Summary
+
+- **Data consistency with backend API**: Aligned frontend TypeScript types and venue-form usage with backend response shapes. Made `event_list_uuids` and `event_uuids` optional (API does not return them; they are derived client-side). Added `sort_order` to EventList and Event; clarified `duration_minutes` as `number | null`. Guarded all reads of `event_uuids` in venue-form with `(list.event_uuids || [])`.
+
+### Notes
+
+- **Types** (`frontend/src/lib/types.ts`):
+  - **Venue**: `event_list_uuids` is now optional (`event_list_uuids?: string[]`) with a comment that it is client-only and derived from listing event-lists.
+  - **EventList**: `event_uuids` is now optional (`event_uuids?: string[]`) with a comment that it is client-only and derived from listing events; added required `sort_order: number` to match backend `EventListResponse`.
+  - **Event**: Added required `sort_order: number`; changed `duration_minutes` to `duration_minutes?: number | null` to match backend nullable response.
+- **Routes/Pages** (`frontend/src/routes/venue-form/+page.svelte`):
+  - All reads of `list.event_uuids` now use `(list.event_uuids || [])` so optional field is safe when API returns event lists without the array (e.g. after load from API).
+  - Updated when appending a new event, when removing an event, and when copying for reorder/update (multiple call sites).

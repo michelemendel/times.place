@@ -20,7 +20,8 @@ export interface Venue {
   address: string;
   geolocation: string;
   comment?: string;
-  event_list_uuids: string[];
+  /** Client-side only; API does not return this. Derived from listing event-lists. */
+  event_list_uuids?: string[];
   timezone: string;
   visibility: 'public' | 'private';
   private_link_token?: string;
@@ -31,12 +32,14 @@ export interface Venue {
 export interface EventList {
   event_list_uuid: string;
   venue_uuid: string;
-  event_uuids: string[];
+  /** Client-side only; API does not return this. Derived from listing events. */
+  event_uuids?: string[];
   name: string;
   date: string; // ISO 8601 date string (e.g., "2024-12-25")
   comment?: string;
   visibility: 'public' | 'private';
   private_link_token?: string;
+  sort_order: number;
   created_at: string;
   modified_at: string;
 }
@@ -47,7 +50,8 @@ export interface Event {
   event_name: string;
   datetime: string; // RFC3339
   comment?: string;
-  duration_minutes?: number;
+  duration_minutes?: number | null;
+  sort_order: number;
   created_at: string;
   modified_at: string;
 }

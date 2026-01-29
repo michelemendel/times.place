@@ -84,12 +84,15 @@
 - [ ] Add GitHub Actions workflow:
   - [ ] Run backend build + tests on PRs
   - [ ] On merge to `main`, trigger Render Deploy Hook
-- [ ] Create Render Postgres instance and store connection details securely
-- [ ] Create Render Web Service for Go backend (Option B: serves `/` + `/api`)
-- [ ] Configure production environment variables in Render (DB URL, JWT secret, cookie settings)
-- [ ] Ensure database migrations run on deploy:
-  - [ ] Choose deployment migration strategy (Render deploy command vs GitHub Actions step)
-  - [ ] Run `goose up` against production DB as part of deploy
+- [x] Create Render Postgres instance and store connection details securely
+- [x] Create Render Web Service for Go backend (Option B: serves `/` + `/api`)
+- [x] Configure production environment variables in Render (DB URL, JWT secret, cookie settings)
+- [x] Ensure database migrations run on deploy:
+  - [x] Choose deployment migration strategy (Render deploy command vs GitHub Actions step)
+  - [x] Run `goose up` against production DB as part of deploy
 - [ ] Verify production routing:
-  - [ ] `/` serves frontend `index.html` (SPA fallback)
-  - [ ] `/api/...` serves API
+  - [x] `/` serves frontend `index.html` (SPA fallback)
+  - [ ] `/api/...` serves API  
+    **How to check:** Call a public API endpoint (no auth). Expect 200 + JSON, not HTML.  
+    - **Local:** `curl -s http://localhost:8080/api/public/venues` → JSON array (e.g. `[]`). Or `make bverify-api`.  
+    - **Production:** `curl -s https://<your-render-url>/api/public/venues` → same. If you get HTML, the `/api` prefix is not routed to the API.

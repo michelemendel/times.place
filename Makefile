@@ -1,4 +1,4 @@
-.PHONY: help dev build preview install-frontend install-backend f-dev f-build f-preview f-install finstall-clean b-build b-run b-install b-health pstart
+.PHONY: help dev build preview install-frontend install-backend f-dev f-build f-preview f-install finstall-clean b-build b-run b-install b-health bverify-api pstart
 .PHONY: devcontainerup devcontainerdown devcontainerrebuild
 .PHONY: dbup dbdown dbreset dbstatus goosecreate dbverify
 .PHONY: sqlcgenerate bstart bstop brestart dbconnect dbconnect-renderdotcom devshell
@@ -19,7 +19,8 @@ help:
 	@echo "  make bstop     - Stop backend server"
 	@echo "  make brestart  - Restart backend server"
 	@echo "  make binstall  - Install backend dependencies"
-	@echo "  make bhealth   - Test healthcheck endpoint (requires server running)"
+	@echo "  make bhealth     - Test healthcheck endpoint (requires server running)"
+	@echo "  make bverify-api - Verify /api/... serves API (GET /api/public/venues → JSON); use BASE_URL for production"
 	@echo ""
 	@echo "Production Mode (Backend serves frontend):"
 	@echo "  make pstart    - Start backend serving frontend (assumes frontend is already built)"
@@ -196,6 +197,29 @@ bhealth:
 		fi; \
 	fi
 
+# Verify that /api/... serves the API (JSON), not the SPA. Use for local or production.
+# Local: make bverify-api
+# Production: make bverify-api BASE_URL=https://your-app.onrender.com
+BASE_URL ?= http://localhost:8080
+bverify-api:
+	@echo "Verifying /api/... serves API at $(BASE_URL)..."
+	@if ! command -v curl > /dev/null 2>&1; then \
+		echo "Error: curl is not installed."; exit 1; \
+	fi; \
+	RESPONSE=$$(curl -s -w "\n%{http_code}" "$(BASE_URL)/api/public/venues" 2>&1); \
+	HTTP_CODE=$$(echo "$$RESPONSE" | tail -n1); \
+	BODY=$$(echo "$$RESPONSE" | sed '$$d'); \
+	if [ -z "$$HTTP_CODE" ] || [ "$$HTTP_CODE" = "000" ]; then \
+		echo "Error: Cannot connect to $(BASE_URL)"; exit 1; \
+	elif [ "$$HTTP_CODE" != "200" ]; then \
+		echo "Error: Got HTTP $$HTTP_CODE (expected 200). Response: $$BODY"; exit 1; \
+	elif echo "$$BODY" | grep -q "<!DOCTYPE html>\|<html"; then \
+		echo "Error: /api/public/venues returned HTML (SPA) instead of JSON. Routing may be wrong."; echo "$$BODY" | head -3; exit 1; \
+	else \
+		echo "OK: /api/... serves API (JSON)."; \
+		if command -v jq > /dev/null 2>&1; then echo "$$BODY" | jq .; else echo "$$BODY"; fi; \
+		echo ""; echo "URL: $(BASE_URL)/api/public/venues"; \
+	fi
 
 # Backend Dev Container shell
 # All database commands should be run from inside the devcontainer

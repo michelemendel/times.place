@@ -1,7 +1,7 @@
 .PHONY: help dev build preview install-frontend install-backend f-dev f-build f-preview f-install finstall-clean b-build b-run b-install b-health pstart
 .PHONY: devcontainerup devcontainerdown devcontainerrebuild
 .PHONY: dbup dbdown dbreset dbstatus goosecreate dbverify
-.PHONY: sqlcgenerate bstart bstop brestart dbconnect devshell
+.PHONY: sqlcgenerate bstart bstop brestart dbconnect dbconnect-renderdotcom devshell
 
 help:
 	@echo "Available commands:"
@@ -51,8 +51,9 @@ help:
 	@echo "  make btestcover   - Run backend tests with coverage"
 	@echo ""
 	@echo "Backend Database Access (works from host or inside devcontainer):"
-	@echo "  make dbconnect     - Connect to database with psql"
-	@echo "  make dbhost        - Connect to database from host (direct connection)"
+	@echo "  make dbconnect        - Connect to database with psql"
+	@echo "  make dbconnect-renderdotcom - Connect to Render.com Postgres (uses DATABASE_URL_RENDER_COM from backend/.env)"
+	@echo "  make dbhost           - Connect to database from host (direct connection)"
 	@echo "  make dburl         - Show database connection URLs"
 	@echo "  make dbports       - Show port mapping info for GUI tools"
 	@echo ""
@@ -408,6 +409,19 @@ dbconnect:
 		docker exec -it $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\""; \
 	fi
 
+# Connect to Render.com Postgres. Requires DATABASE_URL_RENDER_COM in backend/.env (external URL from Render dashboard).
+dbconnect-renderdotcom:
+	@if [ ! -f backend/.env ]; then \
+		echo "Error: backend/.env not found. Add DATABASE_URL_RENDER_COM with your Render external Postgres URL."; \
+		exit 1; \
+	fi; \
+	set -a && . backend/.env && set +a && \
+	if [ -z "$$DATABASE_URL_RENDER_COM" ]; then \
+		echo "Error: DATABASE_URL_RENDER_COM not set in backend/.env"; \
+		exit 1; \
+	fi && \
+	echo "Connecting to Render.com Postgres..." && \
+	psql "$$DATABASE_URL_RENDER_COM"
 
 # Backend Testing targets
 # These work both from host (via docker exec) and inside the devcontainer (direct execution)

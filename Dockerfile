@@ -38,10 +38,12 @@ WORKDIR /app
 # Frontend static assets (Go server serves these at /)
 COPY --from=frontend-builder /app/frontend/build ./frontend/build
 
-# Go binary and migrations (for Render Pre-Deploy: goose -dir backend/db/migrations ...)
+# Go binary, migrations, and Pre-Deploy script (Render: Pre-Deploy = ./scripts/render-pre-deploy.sh)
 COPY --from=go-builder /app/backend/bin/api ./backend/bin/api
 COPY --from=go-builder /app/backend/db/migrations ./backend/db/migrations
 COPY --from=go-builder /go/bin/goose /usr/local/bin/goose
+COPY scripts/render-pre-deploy.sh ./scripts/render-pre-deploy.sh
+RUN chmod +x ./scripts/render-pre-deploy.sh
 
 # Server listens on PORT (Render sets this)
 EXPOSE 10000

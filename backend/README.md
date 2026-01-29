@@ -448,6 +448,14 @@ The CI workflow (`.github/workflows/ci.yml`) runs build and tests on every push 
 
 After that, every push to `main` that passes CI will run the **Deploy to Render** job and trigger a new deploy. The workflow does **not** trigger the deploy on pull requests, only on pushes to `main`.
 
+### Pre-Deploy (database migrations)
+
+In Render, set **Pre-Deploy Command** so migrations run before each deploy:
+
+- **Pre-Deploy Command:** `./scripts/render-pre-deploy.sh`
+
+The script runs `goose up` against `DATABASE_URL`. It also strips surrounding double or single quotes from `DATABASE_URL` so migrations work even when the URL is pasted with quotes (which would otherwise cause goose to fail with "failed to parse as keyword/value"). If you see that error, either use this script as Pre-Deploy or ensure `DATABASE_URL` in Render has **no** leading/trailing quote characters.
+
 ## Production Environment Variables (Render.com)
 
 When deploying to Render.com, configure the following environment variables in the Render Web Service dashboard:
@@ -466,9 +474,10 @@ Set these in the Render dashboard (visible values):
 
 Set these in the Render dashboard with the **"Secret" toggle enabled** (values hidden in UI/logs):
 
-- **DATABASE_URL**: PostgreSQL connection string
+- **DATABASE_URL**: PostgreSQL connection string (no surrounding quotes)
   - If you link a Render Postgres instance to the Web Service, Render automatically provides this
-  - Otherwise, set manually: `postgres://user:password@host:port/database?sslmode=require`
+  - Otherwise, set manually: `postgres://user:password@host:port/database?sslmode=require` or `postgresql://...`
+  - Do not include literal double or single quotes around the value; the Pre-Deploy script strips them if present
 - **JWT_SECRET**: Strong random secret for signing JWT access tokens
   - Generate with: `openssl rand -base64 32`
   - Must be a strong, random string

@@ -12,13 +12,23 @@ import { api } from './client.js';
 
 /**
  * List public venues, optionally filtered by a search query.
+ * Uses cache-busting param so new venues always show (avoids stale cache).
  * @param {string} [query]
  * @returns {Promise<import('../types').Venue[]>}
  */
 export async function listPublicVenues(query) {
-  const qs = query && query.trim() ? `?query=${encodeURIComponent(query.trim())}` : '';
+  const params = new URLSearchParams();
+  if (query && query.trim()) params.set('query', query.trim());
+  params.set('_', String(Date.now())); // cache-bust
+  const qs = `?${params.toString()}`;
   return /** @type {Promise<import('../types').Venue[]>} */ (
-    api.getJSON(`/api/public/venues${qs}`)
+    api.getJSON(`/api/public/venues${qs}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache'
+      }
+    })
   );
 }
 

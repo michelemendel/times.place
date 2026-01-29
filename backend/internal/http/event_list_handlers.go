@@ -85,8 +85,13 @@ func stringToDate(dateStr string) (pgtype.Date, error) {
 	}, nil
 }
 
-// eventListToResponse converts sqlc.EventList to EventListResponse
+// eventListToResponse converts sqlc.EventList to EventListResponse (used internally).
 func eventListToResponse(eventList sqlc.EventList) EventListResponse {
+	return EventListToResponse(eventList)
+}
+
+// EventListToResponse converts sqlc.EventList to EventListResponse (exported for use by venue handler).
+func EventListToResponse(eventList sqlc.EventList) EventListResponse {
 	return EventListResponse{
 		EventListUuid:    uuidToString(eventList.EventListUuid),
 		VenueUuid:        uuidToString(eventList.VenueUuid),
@@ -102,6 +107,47 @@ func eventListToResponse(eventList sqlc.EventList) EventListResponse {
 }
 
 // Handlers
+
+// ListByVenueQuery handles GET /api/event-lists?venue_uuid=xxx
+// Used by the frontend to list event lists for a venue (avoids path-matching issues with nested routes).
+func (h *EventListHandler) ListByVenueQuery(c echo.Context) error {
+	venueUUIDStr := c.QueryParam("venue_uuid")
+	if venueUUIDStr == "" {
+		return ValidationError(c, "venue_uuid query parameter is required")
+	}
+
+	ownerUUIDStr, err := GetOwnerUUIDFromContext(c)
+	if err != nil {
+		return UnauthorizedError(c, "Unauthorized")
+	}
+
+	ctx := c.Request().Context()
+
+	venueUUID, err := stringToUUID(venueUUIDStr)
+	if err != nil {
+		return ValidationError(c, "Invalid venue_uuid format")
+	}
+
+	ownerUUID, err := stringToUUID(ownerUUIDStr)
+	if err != nil {
+		return ValidationError(c, "Invalid owner UUID")
+	}
+
+	eventLists, err := h.store.Queries.ListEventListsByVenueAndOwner(ctx, sqlc.ListEventListsByVenueAndOwnerParams{
+		VenueUuid: venueUUID,
+		OwnerUuid: ownerUUID,
+	})
+	if err != nil {
+		return InternalError(c, "Failed to list event lists")
+	}
+
+	response := make([]EventListResponse, len(eventLists))
+	for i, eventList := range eventLists {
+		response[i] = eventListToResponse(eventList)
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
 
 // ListByVenue handles GET /api/venues/:venue_uuid/event-lists
 func (h *EventListHandler) ListByVenue(c echo.Context) error {

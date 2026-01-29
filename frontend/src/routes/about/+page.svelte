@@ -137,16 +137,16 @@
       Visibility & Security
     </h2>
     <p>
-      times.place includes a visibility feature as a security measure to help you control who can see your venue and event information.
+      times.place includes a visibility feature as a security measure to help you control who can see your event list and event information.
     </p>
     <p>
-      <strong>Public visibility:</strong> Venues and event lists marked as public are visible to everyone and appear in search results. This is ideal for community events that you want to share broadly.
+      <strong>Public visibility:</strong> Event lists marked as public are visible to everyone and appear in search results. A venue appears in the public venue list if it has at least one public event list. This is ideal for community events that you want to share broadly.
     </p>
     <p>
-      <strong>Private visibility:</strong> Venues and event lists marked as private are only accessible via a special shareable link. This link contains a secure token that you can share with specific people. Private venues and event lists do not appear in public searches, providing an additional layer of privacy and security for your information.
+      <strong>Private visibility:</strong> Event lists marked as private are only accessible via a special shareable link. This link contains a secure token that you can share with specific people. Private event lists do not appear in public searches, providing an additional layer of privacy and security for your information.
     </p>
     <p>
-      As a venue owner, you can choose the visibility setting for each event list, giving you granular control over who can access your schedules.
+      As a venue owner, you choose the visibility setting for each event list, giving you granular control over who can access your schedules.
     </p>
 
     <h2 class="text-2xl font-semibold mt-10 mb-4 text-gray-900">Contact</h2>

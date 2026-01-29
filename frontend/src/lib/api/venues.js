@@ -42,7 +42,6 @@ export async function getVenue(venueUuid) {
  * @param {string} [data.geolocation]
  * @param {string} [data.comment]
  * @param {string} [data.timezone]
- * @param {'public'|'private'} [data.visibility] - defaults to "private" if omitted
  * @returns {Promise<import('../types').Venue>}
  */
 export async function createVenue(data) {
@@ -53,7 +52,6 @@ export async function createVenue(data) {
     geolocation: data.geolocation ?? '',
     comment: data.comment ?? '',
     timezone: data.timezone ?? '',
-    visibility: data.visibility ?? 'private',
     // Let backend generate private_link_token when not provided
   };
 
@@ -75,7 +73,6 @@ export async function createVenue(data) {
  *   geolocation: string;
  *   comment: string;
  *   timezone: string;
- *   visibility: 'public' | 'private';
  * }>} data
  * @returns {Promise<import('../types').Venue>}
  */
@@ -88,7 +85,6 @@ export async function updateVenue(venueUuid, data) {
   if (data.geolocation !== undefined) payload.geolocation = data.geolocation;
   if (data.comment !== undefined) payload.comment = data.comment;
   if (data.timezone !== undefined) payload.timezone = data.timezone;
-  if (data.visibility !== undefined) payload.visibility = data.visibility;
 
   return /** @type {Promise<import('../types').Venue>} */ (
     api.patchJSON(`/api/venues/${encodeURIComponent(venueUuid)}`, payload)

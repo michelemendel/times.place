@@ -27,6 +27,7 @@ type TestData struct {
 	EventList1UUID uuid.UUID
 	EventList2UUID uuid.UUID
 	EventList3UUID uuid.UUID
+	EventList4UUID uuid.UUID // Community Center - public, so venue appears in public list
 	Event1UUID uuid.UUID
 	Event2UUID uuid.UUID
 	Event3UUID uuid.UUID
@@ -98,11 +99,11 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		// Venue doesn't exist, insert it
 		data.Venue1UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		`, data.Venue1UUID, data.Owner1UUID, "DEMO: Beth El Synagogue", "https://placehold.co/600x200?text=Beth+El",
 			"15 King George Street, Jerusalem", "31.7787,35.2175", "A welcoming community in the heart of the city.",
-			"Asia/Jerusalem", "public", now, now)
+			"Asia/Jerusalem", now, now)
 		if err != nil {
 			return nil, err
 		}
@@ -118,11 +119,11 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		// Venue doesn't exist, insert it
 		data.Venue2UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		`, data.Venue2UUID, data.Owner1UUID, "DEMO: Community Center", "https://placehold.co/600x200?text=Community+Center",
 			"42 Ben Yehuda Street, Jerusalem", "31.7800,35.2167", "Multi-purpose community space.",
-			"Asia/Jerusalem", "public", now, now)
+			"Asia/Jerusalem", now, now)
 		if err != nil {
 			return nil, err
 		}
@@ -138,11 +139,11 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		// Venue doesn't exist, insert it
 		data.Venue3UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		`, data.Venue3UUID, data.Owner2UUID, "DEMO: Beit Midrash", "https://placehold.co/600x200?text=Beit+Midrash",
 			"28 Jaffa Road, Jerusalem", "31.7820,35.2180", "Study hall and prayer space.",
-			"Asia/Jerusalem", "public", now, now)
+			"Asia/Jerusalem", now, now)
 		if err != nil {
 			return nil, err
 		}
@@ -158,11 +159,11 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		// Venue doesn't exist, insert it
 		data.Venue4UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		`, data.Venue4UUID, data.Owner2UUID, "DEMO: Chagat House", "https://placehold.co/600x200?text=Chagat+House",
 			"12 Rechov Agron, Jerusalem", "31.7750,35.2200", "Warm and welcoming Chagat center.",
-			"Asia/Jerusalem", "public", now, now)
+			"Asia/Jerusalem", now, now)
 		if err != nil {
 			return nil, err
 		}
@@ -201,6 +202,24 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		`, data.EventList2UUID, data.Venue1UUID, "Shabbat Services", "2025-12-26",
 			"Friday evening and Saturday morning services", "public", 1, now, now)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Event List for Venue 2 (Community Center): public so the venue appears in the public venues list
+	err = db.QueryRowContext(ctx, `
+		SELECT event_list_uuid FROM event_lists WHERE venue_uuid = $1 AND name = $2
+	`, data.Venue2UUID, "Community Events").Scan(&data.EventList4UUID)
+	if err == sql.ErrNoRows {
+		data.EventList4UUID = uuid.New()
+		_, err = db.ExecContext(ctx, `
+			INSERT INTO event_lists (event_list_uuid, venue_uuid, name, date, comment, visibility, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`, data.EventList4UUID, data.Venue2UUID, "Community Events", "2025-12-25",
+			"Open community events", "public", 0, now, now)
 		if err != nil {
 			return nil, err
 		}

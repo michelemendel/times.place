@@ -139,13 +139,12 @@ func TestIntegration_AuthAndVenueCRUD_MinimalFlow(t *testing.T) {
 
 	// Create venue
 	createVenue := doJSONRequest(t, s.E, http.MethodPost, "/api/venues", map[string]any{
-		"name":              "Test Venue",
-		"banner_image":      "",
-		"address":           "",
-		"geolocation":       "",
-		"comment":           "",
-		"timezone":          "UTC",
-		"visibility":        "public",
+		"name":               "Test Venue",
+		"banner_image":       "",
+		"address":            "",
+		"geolocation":        "",
+		"comment":            "",
+		"timezone":           "UTC",
 		"private_link_token": "",
 	}, authz, nil)
 	if createVenue.Code != http.StatusCreated {
@@ -232,7 +231,6 @@ func TestIntegration_TokenBasedAccessControl(t *testing.T) {
 		"geolocation":        "",
 		"comment":            "",
 		"timezone":           "UTC",
-		"visibility":         "public",
 		"private_link_token": "",
 	}, authzA, nil)
 	if createVenue.Code != http.StatusCreated {

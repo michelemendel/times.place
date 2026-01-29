@@ -2,21 +2,21 @@
 </script>
 
 <svelte:head>
-  <title>Prototype - times.place</title>
+  <title>Demo - times.place</title>
 </svelte:head>
 
 <div class="bg-white rounded-xl shadow-lg p-8 md:p-12">
   <h1 class="text-4xl font-bold mb-8 text-gray-900 text-center">
-    Prototype Information
+    Demo
   </h1>
 
   <div class="space-y-6 text-gray-700 leading-relaxed max-w-3xl mx-auto">
-    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-      <p class="text-lg font-semibold text-yellow-800 mb-2">
-        This is a prototype application
+    <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+      <p class="text-lg font-semibold text-amber-800 mb-2">
+        Fully functional — currently in test mode
       </p>
-      <p class="text-yellow-700">
-        This version of times.place is a working prototype. Data is stored in a backend database and persists across sessions.
+      <p class="text-amber-700">
+        times.place is fully functional. All features work end-to-end: registration, login, venue management, event lists, and public browsing. The site is currently running in test mode. Data is stored in a backend database and persists across sessions.
       </p>
     </div>
 

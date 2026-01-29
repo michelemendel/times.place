@@ -54,7 +54,6 @@ type Venue struct {
 	Geolocation      string             `json:"geolocation"`
 	Comment          pgtype.Text        `json:"comment"`
 	Timezone         string             `json:"timezone"`
-	Visibility       string             `json:"visibility"`
 	PrivateLinkToken pgtype.UUID        `json:"private_link_token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`

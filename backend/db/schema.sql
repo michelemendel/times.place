@@ -25,7 +25,6 @@ CREATE TABLE venues (
     geolocation text NOT NULL DEFAULT '',
     comment text,
     timezone text NOT NULL DEFAULT '',
-    visibility text NOT NULL CHECK (visibility IN ('public', 'private')),
     private_link_token uuid UNIQUE,
     created_at timestamptz NOT NULL DEFAULT now(),
     modified_at timestamptz NOT NULL DEFAULT now()
@@ -73,7 +72,6 @@ CREATE TABLE refresh_tokens (
 
 -- Indexes for venues
 CREATE INDEX venues_owner_uuid_idx ON venues(owner_uuid);
-CREATE INDEX venues_visibility_idx ON venues(visibility);
 CREATE INDEX venues_private_link_token_idx ON venues(private_link_token) WHERE private_link_token IS NOT NULL;
 
 -- Indexes for event_lists

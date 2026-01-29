@@ -29,19 +29,23 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 	auth.GET("/me", authHandler.Me, JWTAuthMiddleware(authService))
 
 	// Owner-scoped routes (protected)
+	// Register more specific paths before :venue_uuid so /venues/:id/event-lists is matched correctly
 	venues := api.Group("/venues", JWTAuthMiddleware(authService))
 	venueHandler := NewVenueHandler(store)
+	eventListHandler := NewEventListHandler(store)
 	venues.GET("", venueHandler.List)
 	venues.POST("", venueHandler.Create)
+	venues.GET("/:venue_uuid/event-lists", eventListHandler.ListByVenue)
+	venues.POST("/:venue_uuid/event-lists", eventListHandler.Create)
 	venues.GET("/:venue_uuid", venueHandler.Get)
 	venues.PATCH("/:venue_uuid", venueHandler.Update)
 	venues.DELETE("/:venue_uuid", venueHandler.Delete)
 
-	// Event lists (nested under venues + direct access)
-	eventListHandler := NewEventListHandler(store)
-	venues.GET("/:venue_uuid/event-lists", eventListHandler.ListByVenue)
-	venues.POST("/:venue_uuid/event-lists", eventListHandler.Create)
+	// Owner-scoped: list event lists by venue (unique path to avoid any router ambiguity)
+	owner := api.Group("/owner", JWTAuthMiddleware(authService))
+	owner.GET("/venues/:venue_uuid/event-lists", eventListHandler.ListByVenue)
 
+	// Event lists: direct access by UUID
 	eventLists := api.Group("/event-lists", JWTAuthMiddleware(authService))
 	eventLists.GET("/:event_list_uuid", eventListHandler.Get)
 	eventLists.PATCH("/:event_list_uuid", eventListHandler.Update)

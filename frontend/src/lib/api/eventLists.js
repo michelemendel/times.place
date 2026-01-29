@@ -4,7 +4,7 @@ import { api } from './client.js';
  * Event Lists API client
  *
  * Endpoints:
- * - GET    /api/venues/:venue_uuid/event-lists
+ * - GET    /api/owner/venues/:venue_uuid/event-lists  (list by venue)
  * - POST   /api/venues/:venue_uuid/event-lists
  * - GET    /api/event-lists/:event_list_uuid
  * - PATCH  /api/event-lists/:event_list_uuid
@@ -13,13 +13,14 @@ import { api } from './client.js';
 
 /**
  * List event lists for a venue (owned by current owner).
+ * Uses GET /api/owner/venues/:venue_uuid/event-lists (unique path).
  * @param {string} venueUuid
  * @returns {Promise<import('../types').EventList[]>}
  */
 export async function listEventListsForVenue(venueUuid) {
-  return /** @type {Promise<import('../types').EventList[]>} */ (
-    api.getJSON(`/api/venues/${encodeURIComponent(venueUuid)}/event-lists`)
-  );
+  const url = `/api/owner/venues/${encodeURIComponent(venueUuid)}/event-lists`;
+  const res = await api.getJSON(url);
+  return Array.isArray(res) ? /** @type {import('../types').EventList[]} */ (res) : [];
 }
 
 /**

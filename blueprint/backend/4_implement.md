@@ -355,3 +355,26 @@ This file will track backend implementation work sessions, decisions made during
   - **Success logging**: On successful setup, server logs `Serving frontend from <absolute-path>` so operators can confirm which build is served.
 - **Routing** (`backend/internal/http/routes.go`):
   - When frontend routes fail to setup, warning message now suggests setting `FRONTEND_BUILD_DIR` to the `frontend/build` path if needed.
+
+### Summary
+
+- **Venue visibility removed**: Dropped `venues.visibility` column and related index via migration. Visibility is only meaningful at event-list level (the only level controllable in the GUI); public venue listing is determined by "at least one public event list" per venue.
+
+### Notes
+
+- **Migrations** (`backend/db/migrations/00005_drop_venues_visibility.sql`):
+  - **Up**: Drop index `venues_visibility_idx` and column `venues.visibility`.
+  - **Down**: Restore column with default `'public'` and CHECK constraint, and recreate index.
+- **Schema** (`backend/db/schema.sql`):
+  - Removed `visibility` from `venues` table definition and removed `venues_visibility_idx` index.
+- **sqlc / queries**:
+  - **venues.sql**: Removed `visibility` from `CreateVenue` INSERT and from `UpdateVenue` SET clause; parameter counts adjusted ($8 for create, $9 for update).
+  - **public.sql**: Removed `visibility` from `ListPublicVenues`, `SearchPublicVenues`, `GetVenueByToken`, and `GetVenueWithEventListsByToken` SELECT lists.
+  - Ran `sqlc generate`; generated Go types no longer include `Visibility` on venue row/params structs.
+- **API** (`backend/internal/http/venue_handlers.go`, `backend/internal/http/public_handlers.go`):
+  - Removed `Visibility` from `CreateVenueRequest`, `UpdateVenueRequest`, and `VenueResponse`; removed from `venueToResponse` and from public row-to-response helpers (`venueRowToResponse`, `searchVenueRowToResponse`, `venueTokenRowToResponse`).
+  - Create/Update venue handlers no longer pass or read visibility; raw SQL in `GetEventListByToken` (venue by `venue_uuid`) no longer selects or scans `visibility`.
+- **Test data** (`backend/internal/testdata/seed.go`):
+  - Removed `visibility` column and value from all four venue INSERTs.
+- **Integration tests** (`backend/internal/http/integration_test.go`):
+  - Removed `"visibility": "public"` from venue create payloads in `TestIntegration_AuthAndVenueCRUD_MinimalFlow` and `TestIntegration_TokenBasedAccessControl`.

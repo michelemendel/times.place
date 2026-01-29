@@ -84,9 +84,9 @@
       <!-- Desktop Navigation -->
       <div class="hidden md:flex items-center gap-2">
         <a
-          href="/prototype"
+          href="/demo"
           class="text-red-600 hover:text-red-700 font-medium text-base transition-colors"
-          >Prototype</a
+          >Demo</a
         >
         <span class="text-gray-400">|</span>
         <a
@@ -177,10 +177,10 @@
         <div class="absolute top-20 left-0 right-0 bg-gray-100 border-t border-gray-200 shadow-lg md:hidden z-50">
           <div class="container mx-auto py-4 flex flex-col gap-2">
             <a
-              href="/prototype"
+              href="/demo"
               class="text-red-600 hover:text-red-700 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
               on:click={closeMobileMenu}
-              >Prototype</a
+              >Demo</a
             >
             <a
               href="/"

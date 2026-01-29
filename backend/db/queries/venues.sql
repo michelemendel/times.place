@@ -16,10 +16,9 @@ INSERT INTO venues (
     geolocation,
     comment,
     timezone,
-    visibility,
     private_link_token
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8
 )
 RETURNING *;
 
@@ -32,8 +31,7 @@ SET
     geolocation = COALESCE($6, geolocation),
     comment = $7,
     timezone = COALESCE($8, timezone),
-    visibility = COALESCE($9, visibility),
-    private_link_token = $10
+    private_link_token = $9
 WHERE venue_uuid = $1 AND owner_uuid = $2
 RETURNING *;
 

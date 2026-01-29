@@ -45,6 +45,8 @@ help:
 	@echo "Backend Test Data:"
 	@echo "  make dbseed       - Seed test data into database"
 	@echo "  make dbseedclear  - Clear existing data and seed test data"
+	@echo "  make dbseedrc     - Seed Render.com DB from local machine (DATABASE_URL_RENDER_COM)"
+	@echo "  make dbseedrcclear - Clear and seed Render.com DB from local machine (DATABASE_URL_RENDER_COM)"
 	@echo ""
 	@echo "Backend Testing:"
 	@echo "  make btest        - Run backend tests"
@@ -91,9 +93,20 @@ finstall-clean:
 
 
 # Backend targets
+# When run from host, build inside backend container so the binary matches container arch (avoids Exec format error)
 
 bbuild:
-	cd backend && mkdir -p bin && go build -o bin/api ./cmd/api
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		cd backend && mkdir -p bin && go build -buildvcs=false -o bin/api ./cmd/api; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Run from inside the devcontainer or start it with: make devcontainerup"; \
+			exit 1; \
+		fi; \
+		echo "Building backend inside container..."; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && mkdir -p bin && go build -buildvcs=false -o bin/api ./cmd/api"; \
+	fi
 
 bstart: bbuild
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
@@ -365,6 +378,34 @@ dbseedclear:
 		echo "Clearing and seeding test data (from host via docker exec)..."; \
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear"; \
 	fi
+
+# Seed Render.com database from local machine only; uses DATABASE_URL_RENDER_COM from backend/.env
+# Requires Go on the host (no container).
+dbseedrc:
+	@if [ ! -f backend/.env ]; then \
+		echo "Error: backend/.env not found. Add DATABASE_URL_RENDER_COM with your Render external Postgres URL."; \
+		exit 1; \
+	fi; \
+	set -a && . backend/.env && set +a && \
+	if [ -z "$$DATABASE_URL_RENDER_COM" ]; then \
+		echo "Error: DATABASE_URL_RENDER_COM not set in backend/.env"; \
+		exit 1; \
+	fi && \
+	echo "Seeding Render.com database..."; \
+	cd backend && DATABASE_URL="$$DATABASE_URL_RENDER_COM" go run ./cmd/cli/seed/main.go
+
+dbseedrcclear:
+	@if [ ! -f backend/.env ]; then \
+		echo "Error: backend/.env not found. Add DATABASE_URL_RENDER_COM with your Render external Postgres URL."; \
+		exit 1; \
+	fi; \
+	set -a && . backend/.env && set +a && \
+	if [ -z "$$DATABASE_URL_RENDER_COM" ]; then \
+		echo "Error: DATABASE_URL_RENDER_COM not set in backend/.env"; \
+		exit 1; \
+	fi && \
+	echo "Clearing and seeding Render.com database..."; \
+	cd backend && DATABASE_URL="$$DATABASE_URL_RENDER_COM" go run ./cmd/cli/seed/main.go -clear
 
 # Backend Database access targets
 # These work both from host (via docker exec) and inside the devcontainer (direct execution)

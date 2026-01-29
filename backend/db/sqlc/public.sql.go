@@ -102,7 +102,6 @@ SELECT
     geolocation,
     comment,
     timezone,
-    visibility,
     private_link_token,
     created_at,
     modified_at
@@ -118,7 +117,6 @@ type GetVenueByTokenRow struct {
 	Geolocation      string             `json:"geolocation"`
 	Comment          pgtype.Text        `json:"comment"`
 	Timezone         string             `json:"timezone"`
-	Visibility       string             `json:"visibility"`
 	PrivateLinkToken pgtype.UUID        `json:"private_link_token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
@@ -135,7 +133,6 @@ func (q *Queries) GetVenueByToken(ctx context.Context, privateLinkToken pgtype.U
 		&i.Geolocation,
 		&i.Comment,
 		&i.Timezone,
-		&i.Visibility,
 		&i.PrivateLinkToken,
 		&i.CreatedAt,
 		&i.ModifiedAt,
@@ -152,7 +149,6 @@ SELECT
     v.geolocation,
     v.comment,
     v.timezone,
-    v.visibility,
     v.private_link_token,
     v.created_at,
     v.modified_at,
@@ -180,7 +176,6 @@ type GetVenueWithEventListsByTokenRow struct {
 	Geolocation               string             `json:"geolocation"`
 	Comment                   pgtype.Text        `json:"comment"`
 	Timezone                  string             `json:"timezone"`
-	Visibility                string             `json:"visibility"`
 	PrivateLinkToken          pgtype.UUID        `json:"private_link_token"`
 	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt                pgtype.Timestamptz `json:"modified_at"`
@@ -213,7 +208,6 @@ func (q *Queries) GetVenueWithEventListsByToken(ctx context.Context, privateLink
 			&i.Geolocation,
 			&i.Comment,
 			&i.Timezone,
-			&i.Visibility,
 			&i.PrivateLinkToken,
 			&i.CreatedAt,
 			&i.ModifiedAt,
@@ -246,13 +240,11 @@ SELECT
     geolocation,
     comment,
     timezone,
-    visibility,
     private_link_token,
     created_at,
     modified_at
 FROM venues
-WHERE visibility = 'public'
-  AND EXISTS (
+WHERE EXISTS (
     SELECT 1 FROM event_lists
     WHERE event_lists.venue_uuid = venues.venue_uuid
       AND event_lists.visibility = 'public'
@@ -268,12 +260,12 @@ type ListPublicVenuesRow struct {
 	Geolocation      string             `json:"geolocation"`
 	Comment          pgtype.Text        `json:"comment"`
 	Timezone         string             `json:"timezone"`
-	Visibility       string             `json:"visibility"`
 	PrivateLinkToken pgtype.UUID        `json:"private_link_token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
 }
 
+// Show any venue that has at least one public event list.
 func (q *Queries) ListPublicVenues(ctx context.Context) ([]ListPublicVenuesRow, error) {
 	rows, err := q.db.Query(ctx, listPublicVenues)
 	if err != nil {
@@ -291,7 +283,6 @@ func (q *Queries) ListPublicVenues(ctx context.Context) ([]ListPublicVenuesRow, 
 			&i.Geolocation,
 			&i.Comment,
 			&i.Timezone,
-			&i.Visibility,
 			&i.PrivateLinkToken,
 			&i.CreatedAt,
 			&i.ModifiedAt,
@@ -315,13 +306,11 @@ SELECT DISTINCT
     v.geolocation,
     v.comment,
     v.timezone,
-    v.visibility,
     v.private_link_token,
     v.created_at,
     v.modified_at
 FROM venues v
-WHERE v.visibility = 'public'
-  AND EXISTS (
+WHERE EXISTS (
     SELECT 1 FROM event_lists el
     WHERE el.venue_uuid = v.venue_uuid
       AND el.visibility = 'public'
@@ -353,7 +342,6 @@ type SearchPublicVenuesRow struct {
 	Geolocation      string             `json:"geolocation"`
 	Comment          pgtype.Text        `json:"comment"`
 	Timezone         string             `json:"timezone"`
-	Visibility       string             `json:"visibility"`
 	PrivateLinkToken pgtype.UUID        `json:"private_link_token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
@@ -376,7 +364,6 @@ func (q *Queries) SearchPublicVenues(ctx context.Context, dollar_1 pgtype.Text) 
 			&i.Geolocation,
 			&i.Comment,
 			&i.Timezone,
-			&i.Visibility,
 			&i.PrivateLinkToken,
 			&i.CreatedAt,
 			&i.ModifiedAt,

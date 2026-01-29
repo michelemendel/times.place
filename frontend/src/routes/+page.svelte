@@ -1,5 +1,6 @@
 <script>
   import { onMount, afterUpdate, onDestroy } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import { page } from '$app/stores';
   import { dev, browser } from '$app/environment';
   import { formatEventTime } from '$lib/utils/datetime.js';
@@ -187,6 +188,21 @@
     }
   }
 
+  /** Refetch venues when page becomes visible (e.g. user returns from adding a venue). */
+  function handleVisibilityChange() {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      loadVenues(venueSearchQuery || undefined);
+    }
+  }
+
+  // Refetch venues whenever user navigates to home (e.g. after adding a venue and clicking Home)
+  afterNavigate(({ to }) => {
+    const path = to?.url?.pathname ?? '';
+    if (browser && path === '/') {
+      loadVenues(venueSearchQuery || undefined);
+    }
+  });
+
   onMount(async () => {
     // Initial venues load (no search)
     await loadVenues();
@@ -194,6 +210,11 @@
     // If a token is present, resolve it and update selection.
     if (privateLinkToken) {
       await resolveTokenIfPresent();
+    }
+
+    // Refetch venues when user returns to this tab so new venues show in dropdown
+    if (browser && typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
     }
 
     // Load Leaflet.js dynamically
@@ -229,8 +250,9 @@
   });
 
   onDestroy(() => {
-    if (browser) {
+    if (browser && typeof document !== 'undefined') {
       document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     }
   });
 
@@ -571,8 +593,8 @@
 
   <div class="bg-white rounded-xl shadow-lg p-2 md:p-12 md:pt-4">
   <!-- Venue Searchable Dropdown -->
-  <div class="mb-2 md:mb-2 relative no-print-venue-dropdown" bind:this={venueDropdownRef}>
-    <div class="relative">
+  <div class="mb-2 md:mb-2 relative no-print-venue-dropdown flex gap-2 items-center" bind:this={venueDropdownRef}>
+    <div class="relative flex-1">
       <input
         type="text"
         id="venue-search"
@@ -605,26 +627,48 @@
           </svg>
         </button>
       {/if}
+      {#if showVenueDropdown && filteredVenues.length > 0}
+        <div class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto left-0">
+          {#each filteredVenues as venue, index}
+            <button
+              type="button"
+              on:click={() => selectVenue(venue.venue_uuid)}
+              on:mouseenter={() => highlightedVenueIndex = index}
+              class="w-full text-left px-4 py-2 focus:outline-none {highlightedVenueIndex === index ? 'bg-blue-100' : selectedVenueId === venue.venue_uuid ? 'bg-blue-50' : 'hover:bg-gray-100'}"
+            >
+              {venue.name}
+            </button>
+          {/each}
+        </div>
+      {/if}
+      {#if showVenueDropdown && filteredVenues.length === 0 && venueSearchQuery}
+        <div class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg left-0">
+          <div class="px-4 py-2 text-gray-500 text-sm">No venues found</div>
+        </div>
+      {/if}
     </div>
-    {#if showVenueDropdown && filteredVenues.length > 0}
-      <div class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-        {#each filteredVenues as venue, index}
-          <button
-            type="button"
-            on:click={() => selectVenue(venue.venue_uuid)}
-            on:mouseenter={() => highlightedVenueIndex = index}
-            class="w-full text-left px-4 py-2 focus:outline-none {highlightedVenueIndex === index ? 'bg-blue-100' : selectedVenueId === venue.venue_uuid ? 'bg-blue-50' : 'hover:bg-gray-100'}"
-          >
-            {venue.name}
-          </button>
-        {/each}
-      </div>
-    {/if}
-    {#if showVenueDropdown && filteredVenues.length === 0 && venueSearchQuery}
-      <div class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-        <div class="px-4 py-2 text-gray-500 text-sm">No venues found</div>
-      </div>
-    {/if}
+    <button
+      type="button"
+      on:click={() => loadVenues(venueSearchQuery || undefined)}
+      disabled={isLoadingVenues}
+      class="shrink-0 p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
+      title="Refresh venue list"
+      aria-label="Refresh venue list"
+    >
+      <svg
+        class="w-5 h-5 {isLoadingVenues ? 'animate-spin' : ''}"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+        />
+      </svg>
+    </button>
   </div>
 
   {#if selectedVenue}

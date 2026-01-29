@@ -20,12 +20,11 @@ INSERT INTO venues (
     geolocation,
     comment,
     timezone,
-    visibility,
     private_link_token
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8
 )
-RETURNING venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, private_link_token, created_at, modified_at
+RETURNING venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, private_link_token, created_at, modified_at
 `
 
 type CreateVenueParams struct {
@@ -36,7 +35,6 @@ type CreateVenueParams struct {
 	Geolocation      string      `json:"geolocation"`
 	Comment          pgtype.Text `json:"comment"`
 	Timezone         string      `json:"timezone"`
-	Visibility       string      `json:"visibility"`
 	PrivateLinkToken pgtype.UUID `json:"private_link_token"`
 }
 
@@ -49,7 +47,6 @@ func (q *Queries) CreateVenue(ctx context.Context, arg CreateVenueParams) (Venue
 		arg.Geolocation,
 		arg.Comment,
 		arg.Timezone,
-		arg.Visibility,
 		arg.PrivateLinkToken,
 	)
 	var i Venue
@@ -62,7 +59,6 @@ func (q *Queries) CreateVenue(ctx context.Context, arg CreateVenueParams) (Venue
 		&i.Geolocation,
 		&i.Comment,
 		&i.Timezone,
-		&i.Visibility,
 		&i.PrivateLinkToken,
 		&i.CreatedAt,
 		&i.ModifiedAt,
@@ -86,7 +82,7 @@ func (q *Queries) DeleteVenue(ctx context.Context, arg DeleteVenueParams) error 
 }
 
 const getVenueByIDAndOwner = `-- name: GetVenueByIDAndOwner :one
-SELECT venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, private_link_token, created_at, modified_at FROM venues
+SELECT venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, private_link_token, created_at, modified_at FROM venues
 WHERE venue_uuid = $1 AND owner_uuid = $2
 `
 
@@ -107,7 +103,6 @@ func (q *Queries) GetVenueByIDAndOwner(ctx context.Context, arg GetVenueByIDAndO
 		&i.Geolocation,
 		&i.Comment,
 		&i.Timezone,
-		&i.Visibility,
 		&i.PrivateLinkToken,
 		&i.CreatedAt,
 		&i.ModifiedAt,
@@ -116,7 +111,7 @@ func (q *Queries) GetVenueByIDAndOwner(ctx context.Context, arg GetVenueByIDAndO
 }
 
 const listVenuesByOwner = `-- name: ListVenuesByOwner :many
-SELECT venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, private_link_token, created_at, modified_at FROM venues
+SELECT venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, private_link_token, created_at, modified_at FROM venues
 WHERE owner_uuid = $1
 ORDER BY created_at DESC
 `
@@ -139,7 +134,6 @@ func (q *Queries) ListVenuesByOwner(ctx context.Context, ownerUuid pgtype.UUID) 
 			&i.Geolocation,
 			&i.Comment,
 			&i.Timezone,
-			&i.Visibility,
 			&i.PrivateLinkToken,
 			&i.CreatedAt,
 			&i.ModifiedAt,
@@ -163,10 +157,9 @@ SET
     geolocation = COALESCE($6, geolocation),
     comment = $7,
     timezone = COALESCE($8, timezone),
-    visibility = COALESCE($9, visibility),
-    private_link_token = $10
+    private_link_token = $9
 WHERE venue_uuid = $1 AND owner_uuid = $2
-RETURNING venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, private_link_token, created_at, modified_at
+RETURNING venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, private_link_token, created_at, modified_at
 `
 
 type UpdateVenueParams struct {
@@ -178,7 +171,6 @@ type UpdateVenueParams struct {
 	Geolocation      string      `json:"geolocation"`
 	Comment          pgtype.Text `json:"comment"`
 	Timezone         string      `json:"timezone"`
-	Visibility       string      `json:"visibility"`
 	PrivateLinkToken pgtype.UUID `json:"private_link_token"`
 }
 
@@ -192,7 +184,6 @@ func (q *Queries) UpdateVenue(ctx context.Context, arg UpdateVenueParams) (Venue
 		arg.Geolocation,
 		arg.Comment,
 		arg.Timezone,
-		arg.Visibility,
 		arg.PrivateLinkToken,
 	)
 	var i Venue
@@ -205,7 +196,6 @@ func (q *Queries) UpdateVenue(ctx context.Context, arg UpdateVenueParams) (Venue
 		&i.Geolocation,
 		&i.Comment,
 		&i.Timezone,
-		&i.Visibility,
 		&i.PrivateLinkToken,
 		&i.CreatedAt,
 		&i.ModifiedAt,

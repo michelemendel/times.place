@@ -32,7 +32,6 @@ type CreateVenueRequest struct {
 	Geolocation      string `json:"geolocation"`
 	Comment          string `json:"comment"`
 	Timezone         string `json:"timezone"`
-	Visibility       string `json:"visibility" validate:"required,oneof=public private"`
 	PrivateLinkToken string `json:"private_link_token"` // Optional UUID string
 }
 
@@ -43,7 +42,6 @@ type UpdateVenueRequest struct {
 	Geolocation      *string `json:"geolocation"`
 	Comment          *string `json:"comment"`
 	Timezone         *string `json:"timezone"`
-	Visibility       *string `json:"visibility" validate:"omitempty,oneof=public private"`
 	PrivateLinkToken *string `json:"private_link_token"` // Optional UUID string
 }
 
@@ -56,10 +54,15 @@ type VenueResponse struct {
 	Geolocation      string `json:"geolocation"`
 	Comment          string `json:"comment"`
 	Timezone         string `json:"timezone"`
-	Visibility       string `json:"visibility"`
 	PrivateLinkToken string `json:"private_link_token"`
-	CreatedAt         string `json:"created_at"`
+	CreatedAt        string `json:"created_at"`
 	ModifiedAt       string `json:"modified_at"`
+}
+
+// OwnerVenueWithEventListsResponse is returned by List so the frontend gets event lists in one call.
+type OwnerVenueWithEventListsResponse struct {
+	VenueResponse
+	EventLists []EventListResponse `json:"event_lists"`
 }
 
 // Helper functions
@@ -83,7 +86,6 @@ func venueToResponse(venue sqlc.Venue) VenueResponse {
 		Geolocation:      venue.Geolocation,
 		Comment:          textToString(venue.Comment),
 		Timezone:         venue.Timezone,
-		Visibility:       venue.Visibility,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
 		CreatedAt:        timestamptzToString(venue.CreatedAt),
 		ModifiedAt:       timestamptzToString(venue.ModifiedAt),
@@ -125,10 +127,23 @@ func (h *VenueHandler) List(c echo.Context) error {
 		return InternalError(c, "Failed to list venues")
 	}
 
-	// Convert to response format
-	response := make([]VenueResponse, len(venues))
+	// Build response with event lists for each venue (one round-trip, no separate per-venue calls)
+	response := make([]OwnerVenueWithEventListsResponse, len(venues))
 	for i, venue := range venues {
-		response[i] = venueToResponse(venue)
+		response[i] = OwnerVenueWithEventListsResponse{
+			VenueResponse: venueToResponse(venue),
+			EventLists:   []EventListResponse{},
+		}
+		eventLists, err := h.store.Queries.ListEventListsByVenueAndOwner(ctx, sqlc.ListEventListsByVenueAndOwnerParams{
+			VenueUuid: venue.VenueUuid,
+			OwnerUuid: ownerUUID,
+		})
+		if err != nil {
+			return InternalError(c, "Failed to list event lists for venue")
+		}
+		for _, el := range eventLists {
+			response[i].EventLists = append(response[i].EventLists, EventListToResponse(el))
+		}
 	}
 
 	return c.JSON(http.StatusOK, response)
@@ -184,7 +199,6 @@ func (h *VenueHandler) Create(c echo.Context) error {
 		Geolocation:      req.Geolocation,
 		Comment:          comment,
 		Timezone:         req.Timezone,
-		Visibility:       req.Visibility,
 		PrivateLinkToken: privateLinkToken,
 	})
 	if err != nil {
@@ -323,11 +337,6 @@ func (h *VenueHandler) Update(c echo.Context) error {
 		timezone = *req.Timezone
 	}
 
-	visibility := existingVenue.Visibility
-	if req.Visibility != nil {
-		visibility = *req.Visibility
-	}
-
 	privateLinkToken := existingVenue.PrivateLinkToken
 	if req.PrivateLinkToken != nil {
 		if *req.PrivateLinkToken != "" {
@@ -352,7 +361,6 @@ func (h *VenueHandler) Update(c echo.Context) error {
 		Geolocation:      geolocation,
 		Comment:          comment,
 		Timezone:         timezone,
-		Visibility:       visibility,
 		PrivateLinkToken: privateLinkToken,
 	})
 	if err != nil {

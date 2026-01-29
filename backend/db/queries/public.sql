@@ -1,4 +1,5 @@
 -- name: ListPublicVenues :many
+-- Show any venue that has at least one public event list.
 SELECT 
     venue_uuid,
     name,
@@ -7,13 +8,11 @@ SELECT
     geolocation,
     comment,
     timezone,
-    visibility,
     private_link_token,
     created_at,
     modified_at
 FROM venues
-WHERE visibility = 'public'
-  AND EXISTS (
+WHERE EXISTS (
     SELECT 1 FROM event_lists
     WHERE event_lists.venue_uuid = venues.venue_uuid
       AND event_lists.visibility = 'public'
@@ -29,13 +28,11 @@ SELECT DISTINCT
     v.geolocation,
     v.comment,
     v.timezone,
-    v.visibility,
     v.private_link_token,
     v.created_at,
     v.modified_at
 FROM venues v
-WHERE v.visibility = 'public'
-  AND EXISTS (
+WHERE EXISTS (
     SELECT 1 FROM event_lists el
     WHERE el.venue_uuid = v.venue_uuid
       AND el.visibility = 'public'
@@ -83,7 +80,6 @@ SELECT
     geolocation,
     comment,
     timezone,
-    visibility,
     private_link_token,
     created_at,
     modified_at
@@ -115,7 +111,6 @@ SELECT
     v.geolocation,
     v.comment,
     v.timezone,
-    v.visibility,
     v.private_link_token,
     v.created_at,
     v.modified_at,

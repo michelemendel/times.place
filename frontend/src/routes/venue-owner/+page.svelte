@@ -3,8 +3,8 @@
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
   import { currentOwnerStore } from '$lib/stores';
+  import { getCurrentOwner } from '$lib/api/auth.js';
   import { listVenues, deleteVenue } from '$lib/api/venues.js';
-  import { listEventListsForVenue } from '$lib/api/eventLists.js';
 
   /** @type {import('$lib/types').VenueOwner | null} */
   let owner = null;
@@ -23,28 +23,14 @@
     isLoading = true;
     loadError = '';
     try {
+      // GET /api/venues returns venues with event_lists embedded (one call, no per-venue requests)
       const venues = await listVenues();
       ownerVenues = venues.sort((a, b) => a.name.localeCompare(b.name));
 
-      // Load event lists for each venue in parallel
-      const entries = await Promise.all(
-        ownerVenues.map(async (venue) => {
-          try {
-            const lists = await listEventListsForVenue(venue.venue_uuid);
-            return [venue.venue_uuid, lists];
-          } catch (err) {
-            console.error('Failed to load event lists for venue', venue.venue_uuid, err);
-            return [venue.venue_uuid, []];
-          }
-        })
-      );
-
       /** @type {Record<string, import('$lib/types').EventList[]>} */
       const map = {};
-      for (const [id, lists] of entries) {
-        map[/** @type {string} */ (id)] = /** @type {import('$lib/types').EventList[]} */ (
-          lists
-        );
+      for (const venue of ownerVenues) {
+        map[venue.venue_uuid] = Array.isArray(venue.event_lists) ? venue.event_lists : [];
       }
       eventListsByVenue = map;
     } catch (err) {
@@ -56,6 +42,13 @@
   }
 
   onMount(async () => {
+    // Ensure auth and token are set before any API calls (avoids race with layout)
+    try {
+      await getCurrentOwner();
+    } catch {
+      goto('/login');
+      return;
+    }
     owner = get(currentOwnerStore);
     if (!owner) {
       goto('/login');
@@ -309,7 +302,7 @@
                           <button
                             on:click={() => copyPrivateLink(eventList)}
                             class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors duration-200"
-                            title="Get Private Link"
+                            title="Copy shareable direct link"
                           >
                             {#if copiedLinkToken === eventList.event_list_uuid}
                               <span class="flex items-center gap-1">

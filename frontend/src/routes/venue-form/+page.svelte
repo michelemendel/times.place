@@ -100,6 +100,8 @@
   // Preview pane state
   /** @type {string | null} */
   let previewEventListId = null;
+  /** @type {string | null} */
+  let copiedShareLinkEventListUuid = null;
 
   // Track if venue data has been loaded
   let dataLoaded = false;
@@ -357,7 +359,7 @@
       name: 'New Event List',
       date: '',
       comment: '',
-      visibility: 'private',
+      visibility: 'public', // Default to public so venue appears in main page dropdown
       event_uuids: [],
       events: [],
       sort_order: eventListsData.length,
@@ -722,6 +724,21 @@
   }
 
   /**
+   * Copy share link for an event list to clipboard (no need to select text).
+   * @param {{ event_list_uuid: string, private_link_token?: string | null }} listData
+   */
+  function copyShareLink(listData) {
+    if (!listData?.private_link_token || typeof window === 'undefined') return;
+    const url = `${window.location.origin}/?token=${listData.private_link_token}`;
+    navigator.clipboard.writeText(url).then(() => {
+      copiedShareLinkEventListUuid = listData.event_list_uuid;
+      setTimeout(() => {
+        copiedShareLinkEventListUuid = null;
+      }, 2000);
+    }).catch(() => {});
+  }
+
+  /**
    * Save venue and all related data via API
    */
   async function saveVenue() {
@@ -779,8 +796,7 @@
           address: sanitizeInput(venueAddress.trim()),
           geolocation: sanitizeInput(venueGeolocation.trim()),
           comment: sanitizeInput(venueComment.trim()),
-          timezone: venueTimezone,
-          visibility: 'private' // Default to private for new venues
+          timezone: venueTimezone
         });
       } else if (venue) {
         venue = await updateVenue(venue.venue_uuid, {
@@ -1661,13 +1677,34 @@
                   <span>Private</span>
                 </label>
               </div>
-              {#if listData.visibility === 'private' && listData.private_link_token}
+              {#if listData.private_link_token}
                 <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
-                  <p class="text-gray-600 mb-1">Private Link:</p>
-                  <code class="text-blue-600 break-all">
-                    {typeof window !== 'undefined' ? `${window.location.origin}/?token=${listData.private_link_token}` : ''}
-                  </code>
+                  <p class="text-gray-600 mb-1">Share link (works for public and private):</p>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <code class="text-blue-600 break-all flex-1 min-w-0">
+                      {typeof window !== 'undefined' ? `${window.location.origin}/?token=${listData.private_link_token}` : ''}
+                    </code>
+                    <button
+                      type="button"
+                      on:click={() => copyShareLink(listData)}
+                      class="shrink-0 p-1.5 rounded text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
+                      title="Copy share link"
+                      aria-label="Copy share link"
+                    >
+                      {#if copiedShareLinkEventListUuid === listData.event_list_uuid}
+                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                      {:else}
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      {/if}
+                    </button>
+                  </div>
                 </div>
+              {:else}
+                <p class="mt-2 text-xs text-gray-500">Save the venue to get a shareable direct link for this event list.</p>
               {/if}
             </div>
 

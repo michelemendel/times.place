@@ -963,3 +963,30 @@
 - **Routes/Pages** (`frontend/src/routes/venue-form/+page.svelte`):
   - All reads of `list.event_uuids` now use `(list.event_uuids || [])` so optional field is safe when API returns event lists without the array (e.g. after load from API).
   - Updated when appending a new event, when removing an event, and when copying for reorder/update (multiple call sites).
+
+### Summary
+
+- **Demo page**: Renamed route "Prototype" to "Demo" and updated copy to state that the site is fully functional and currently in test mode.
+
+### Notes
+
+- **Routes/Pages**:
+  - Added `frontend/src/routes/demo/+page.svelte`: New Demo page with title "Demo - times.place", heading "Demo", and an info block stating the site is fully functional (registration, login, venue management, event lists, public browsing) and currently running in test mode; kept Test User Accounts and Report Bugs sections.
+  - Removed `frontend/src/routes/prototype/+page.svelte` and the empty `prototype/` route directory.
+- **Layout** (`frontend/src/routes/+layout.svelte`):
+  - Desktop and mobile nav links updated from `/prototype` and label "Prototype" to `/demo` and label "Demo".
+
+### Summary
+
+- **Venue visibility removed**: Removed venue-level visibility from types, API client, and venue-form so visibility is controlled only at event-list level (the only level exposed in the GUI). Public listing is determined by "at least one public event list" per venue.
+
+### Notes
+
+- **Types** (`frontend/src/lib/types.ts`):
+  - Removed `visibility: 'public' | 'private'` from `Venue` interface; venues no longer have a visibility field from the API.
+- **API Client** (`frontend/src/lib/api/venues.js`):
+  - Removed `visibility` from `createVenue()` payload and JSDoc; removed `visibility` from `updateVenue()` payload and JSDoc.
+- **Routes/Pages** (`frontend/src/routes/venue-form/+page.svelte`):
+  - Removed `visibility: 'public'` from the `createVenue()` call when saving a new venue (no longer sent to backend).
+- **Routes/Pages** (`frontend/src/routes/about/+page.svelte`):
+  - Updated Visibility & Security copy to state that only event lists have visibility; a venue appears in the public list if it has at least one public event list.

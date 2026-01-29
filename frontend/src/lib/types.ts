@@ -22,8 +22,9 @@ export interface Venue {
   comment?: string;
   /** Client-side only; API does not return this. Derived from listing event-lists. */
   event_list_uuids?: string[];
+  /** Returned by GET /api/venues (owner list) so My Venues can show event lists without extra calls. */
+  event_lists?: EventList[];
   timezone: string;
-  visibility: 'public' | 'private';
   private_link_token?: string;
   created_at: string;
   modified_at: string;

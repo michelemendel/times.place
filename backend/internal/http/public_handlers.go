@@ -48,7 +48,6 @@ func venueRowToResponse(venue sqlc.ListPublicVenuesRow) VenueResponse {
 		Geolocation:      venue.Geolocation,
 		Comment:          textToString(venue.Comment),
 		Timezone:         venue.Timezone,
-		Visibility:       venue.Visibility,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
 		CreatedAt:        timestamptzToString(venue.CreatedAt),
 		ModifiedAt:       timestamptzToString(venue.ModifiedAt),
@@ -66,7 +65,6 @@ func searchVenueRowToResponse(venue sqlc.SearchPublicVenuesRow) VenueResponse {
 		Geolocation:      venue.Geolocation,
 		Comment:          textToString(venue.Comment),
 		Timezone:         venue.Timezone,
-		Visibility:       venue.Visibility,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
 		CreatedAt:        timestamptzToString(venue.CreatedAt),
 		ModifiedAt:       timestamptzToString(venue.ModifiedAt),
@@ -84,7 +82,6 @@ func venueTokenRowToResponse(venue sqlc.GetVenueByTokenRow) VenueResponse {
 		Geolocation:      venue.Geolocation,
 		Comment:          textToString(venue.Comment),
 		Timezone:         venue.Timezone,
-		Visibility:       venue.Visibility,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
 		CreatedAt:        timestamptzToString(venue.CreatedAt),
 		ModifiedAt:       timestamptzToString(venue.ModifiedAt),
@@ -95,6 +92,7 @@ func venueTokenRowToResponse(venue sqlc.GetVenueByTokenRow) VenueResponse {
 
 // ListVenues handles GET /api/public/venues
 func (h *PublicHandler) ListVenues(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 	ctx := c.Request().Context()
 
 	// Check for search query parameter
@@ -134,6 +132,7 @@ func (h *PublicHandler) ListVenues(c echo.Context) error {
 
 // GetEventListsByVenue handles GET /api/public/venues/:venue_uuid/event-lists
 func (h *PublicHandler) GetEventListsByVenue(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 	venueUUIDStr := c.Param("venue_uuid")
 	if venueUUIDStr == "" {
 		return ValidationError(c, "venue_uuid is required")
@@ -164,6 +163,7 @@ func (h *PublicHandler) GetEventListsByVenue(c echo.Context) error {
 
 // GetVenueByToken handles GET /api/public/venues/by-token/:token
 func (h *PublicHandler) GetVenueByToken(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 	tokenStr := c.Param("token")
 	if tokenStr == "" {
 		return ValidationError(c, "token is required")
@@ -200,7 +200,6 @@ func (h *PublicHandler) GetVenueByToken(c echo.Context) error {
 		Geolocation:      firstRow.Geolocation,
 		Comment:          firstRow.Comment,
 		Timezone:         firstRow.Timezone,
-		Visibility:       firstRow.Visibility,
 		PrivateLinkToken: firstRow.PrivateLinkToken,
 		CreatedAt:        firstRow.CreatedAt,
 		ModifiedAt:       firstRow.ModifiedAt,
@@ -237,6 +236,7 @@ func (h *PublicHandler) GetVenueByToken(c echo.Context) error {
 
 // GetEventListByToken handles GET /api/public/event-lists/by-token/:token
 func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 	tokenStr := c.Param("token")
 	if tokenStr == "" {
 		return ValidationError(c, "token is required")
@@ -267,7 +267,7 @@ func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
 
 	// Query venue directly using raw SQL (no owner check needed for public endpoint)
 	row := h.store.DB().QueryRow(ctx,
-		"SELECT venue_uuid, name, banner_image, address, geolocation, comment, timezone, visibility, private_link_token, created_at, modified_at FROM venues WHERE venue_uuid = $1",
+		"SELECT venue_uuid, name, banner_image, address, geolocation, comment, timezone, private_link_token, created_at, modified_at FROM venues WHERE venue_uuid = $1",
 		venueUUID)
 	
 	var v sqlc.GetVenueByTokenRow
@@ -279,7 +279,6 @@ func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
 		&v.Geolocation,
 		&v.Comment,
 		&v.Timezone,
-		&v.Visibility,
 		&v.PrivateLinkToken,
 		&v.CreatedAt,
 		&v.ModifiedAt,
@@ -335,6 +334,7 @@ func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
 // GetEventsByEventList handles GET /api/public/event-lists/:event_list_uuid/events
 // Only returns events if the event list is public
 func (h *PublicHandler) GetEventsByEventList(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 	eventListUUIDStr := c.Param("event_list_uuid")
 	if eventListUUIDStr == "" {
 		return ValidationError(c, "event_list_uuid is required")

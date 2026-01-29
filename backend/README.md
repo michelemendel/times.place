@@ -426,6 +426,28 @@ Check:
      - If you need containerd for k8s, you can use `make bdevcontainerup` but won't be able to use "Reopen in Container"
    - **Common issue**: If you see warnings about Docker CLI plugin symlinks pointing to Docker Desktop instead of Rancher Desktop, see troubleshooting section #1 above
 
+## GitHub Actions & Render Deploy Hook
+
+The CI workflow (`.github/workflows/ci.yml`) runs build and tests on every push and PR. On **push to `main`**, it also triggers a Render deploy via a deploy hook.
+
+### 1. GitHub repository settings
+
+1. Go to **https://github.com/michelemendel/times.place/settings/actions** (or: repo → **Settings** → **Actions** → **General**).
+2. Under **Actions permissions**, ensure **"Allow all actions and reusable workflows"** (or at least allow the actions used in `ci.yml`).
+3. Under **Workflow permissions**, choose **"Read and write permissions"** if you need artifacts; **"Read repository contents"** is enough for this workflow.
+4. Save if you changed anything.
+
+### 2. Add the Render deploy hook secret
+
+1. In Render: open your **Web Service** → **Settings** → **Deploy Hook**.
+2. Copy the deploy hook URL (e.g. `https://api.render.com/deploy/srv-xxxxx?key=yyyy`).
+3. In GitHub: repo → **Settings** → **Secrets and variables** → **Actions**.
+4. Click **New repository secret**.
+5. Name: `RENDER_DEPLOY_HOOK_URL`, Value: paste the full deploy hook URL.
+6. Save.
+
+After that, every push to `main` that passes CI will run the **Deploy to Render** job and trigger a new deploy. The workflow does **not** trigger the deploy on pull requests, only on pushes to `main`.
+
 ## Production Environment Variables (Render.com)
 
 When deploying to Render.com, configure the following environment variables in the Render Web Service dashboard:

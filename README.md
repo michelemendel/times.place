@@ -21,13 +21,13 @@ A high-level overview of the codebase:
 ```bash
 times.place/
 ├── blueprint/       # SDD documentation (Single Source of Truth)
-├── cmd/             # Go application entry points (planned)
+├── cmd/             # Go application entry points
 ├── docs/            # General project documentation
 ├── domain/          # Domain logic and entities
 ├── minyanim/        # Examples of how synagogues are presenting the prayer times. These are the documents that triggered the idea of times.place.
 ├── frontend/        # SvelteKit frontend source code
 ├── static/          # Static assets
-└── utils/           # Backend (Go) utility functions (planned)
+└── utils/           # Backend (Go) utility functions
 ```
 
 ## Spec-Driven Development (SDD) Methodology
@@ -61,8 +61,8 @@ The `blueprint/` folder contains the core SDD documentation that guides all deve
 
 - **Frontend**: SvelteKit
 - **Styling**: Tailwind CSS
-- **Data Storage**: LocalStorage (prototype), PostgreSQL (planned)
-- **Backend**: Go (planned)
+- **Data Storage**: LocalStorage (prototype), PostgreSQL
+- **Backend**: Go
 - **Hosting**: Render.com
 
 ## Development prerequisites

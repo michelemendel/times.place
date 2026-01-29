@@ -88,3 +88,15 @@ jobs:
 
       - name: Frontend build
         run: cd frontend && npm run build
+
+  # Deploy to Render only on push to main (after CI passes).
+  # Requires RENDER_DEPLOY_HOOK_URL repository secret (from Render Web Service → Deploy Hook).
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger Render deploy hook
+        run: |
+          curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"

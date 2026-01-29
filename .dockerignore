@@ -3,8 +3,9 @@
 .gitignore
 .gitattributes
 
-# Frontend (not needed for backend container)
-frontend/
+# Frontend (node_modules and build are installed/generated in container; root Dockerfile needs frontend source)
+frontend/node_modules/
+frontend/build/
 node_modules/
 npm-debug.log
 yarn-error.log

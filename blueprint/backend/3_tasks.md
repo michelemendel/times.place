@@ -81,12 +81,12 @@
 
 ## Deployment & production (Render.com + GitHub Actions)
 
-- [ ] Create Render Postgres instance and store connection details securely
-- [ ] Create Render Web Service for Go backend (Option B: serves `/` + `/api`)
-- [ ] Configure production environment variables in Render (DB URL, JWT secret, cookie settings)
 - [ ] Add GitHub Actions workflow:
   - [ ] Run backend build + tests on PRs
   - [ ] On merge to `main`, trigger Render Deploy Hook
+- [ ] Create Render Postgres instance and store connection details securely
+- [ ] Create Render Web Service for Go backend (Option B: serves `/` + `/api`)
+- [ ] Configure production environment variables in Render (DB URL, JWT secret, cookie settings)
 - [ ] Ensure database migrations run on deploy:
   - [ ] Choose deployment migration strategy (Render deploy command vs GitHub Actions step)
   - [ ] Run `goose up` against production DB as part of deploy

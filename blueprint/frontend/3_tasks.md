@@ -307,6 +307,12 @@
 
 - [ ] Test support for Hebrew
 
+## Misc
+
+- [ ] Fix image to fit in banner space
+- [ ] Rename page Prototype to Demo with information about the site being fully functional but currently in test modus
+- [ ] Search/filter: add "Search near me"
+
 ## Deployment
 
 See 3_tasks.md under backend

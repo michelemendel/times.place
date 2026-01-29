@@ -92,12 +92,12 @@ finstall-clean:
 # Backend targets
 
 bbuild:
-	cd backend && go build ./...
+	cd backend && mkdir -p bin && go build -o bin/api ./cmd/api
 
 bstart: bbuild
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Starting backend server..."; \
-		cd /workspace/backend && go run ./cmd/api/main.go; \
+		cd /workspace/backend && ./bin/api; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
 		if [ -z "$$CONTAINER_NAME" ]; then \
@@ -107,7 +107,7 @@ bstart: bbuild
 			exit 1; \
 		fi; \
 		echo "Starting backend server..."; \
-		docker exec -it $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/api/main.go"; \
+		docker exec -it $$CONTAINER_NAME bash -c "cd /workspace/backend && ./bin/api"; \
 	fi
 
 # Production mode: backend serves frontend
@@ -118,7 +118,7 @@ pstart: bbuild
 	fi
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Starting backend server (serving built frontend)..."; \
-		cd /workspace/backend && go run ./cmd/api/main.go; \
+		cd /workspace/backend && ./bin/api; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
 		if [ -z "$$CONTAINER_NAME" ]; then \
@@ -128,7 +128,7 @@ pstart: bbuild
 			exit 1; \
 		fi; \
 		echo "Starting backend server (serving built frontend)..."; \
-		docker exec -it $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/api/main.go"; \
+		docker exec -it $$CONTAINER_NAME bash -c "cd /workspace/backend && ./bin/api"; \
 	fi
 
 binstall:
@@ -137,7 +137,7 @@ binstall:
 bstop:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Stopping backend server (inside devcontainer)..."; \
-		pkill -f "go run ./cmd/api/main.go" || pkill -f "times.place" || echo "No running server process found."; \
+		pkill -f "backend/bin/api" || pkill -f "times.place" || echo "No running server process found."; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
 		if [ -z "$$CONTAINER_NAME" ]; then \
@@ -145,7 +145,7 @@ bstop:
 			exit 1; \
 		fi; \
 		echo "Stopping backend server (from host via docker exec)..."; \
-		docker exec $$CONTAINER_NAME pkill -f "go run ./cmd/api/main.go" || docker exec $$CONTAINER_NAME pkill -f "times.place" || echo "No running server process found."; \
+		docker exec $$CONTAINER_NAME pkill -f "backend/bin/api" || docker exec $$CONTAINER_NAME pkill -f "times.place" || echo "No running server process found."; \
 	fi
 
 brestart:

@@ -314,6 +314,7 @@ Operational guidance:
 - Prefer a single migration runner per deploy (avoid every replica running migrations concurrently).
 - Keep migrations backwards-compatible for rolling deployments when possible.
 
+## Quotas & limits
 
 ### Free tier: venue limit
 

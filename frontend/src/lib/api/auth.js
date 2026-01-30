@@ -79,30 +79,33 @@ export async function logout() {
 }
 
 /**
- * Get current authenticated owner
- * Attempts to refresh token if no access token is available but refresh token cookie exists
- * @returns {Promise<VenueOwner>}
+ * Get full /api/auth/me response (owner, venue_count, venue_limit).
+ * Use when you need venue limit info (e.g. to grey out "Add Venue").
+ * @returns {Promise<{owner: import('$lib/types').VenueOwner, venue_count?: number, venue_limit?: number}>}
  */
-export async function getCurrentOwner() {
+export async function getAuthMe() {
   const { getAccessToken, setAccessToken } = await import('./client.js');
-  
-  // If no access token but we might have a refresh token cookie, try to refresh first
+
   if (!getAccessToken()) {
     try {
-      // Try to refresh the token using the refresh token cookie
-      // The refresh endpoint will use the HttpOnly cookie automatically
       const refreshResponse = await api.postJSON('/api/auth/refresh', {});
       setAccessToken(refreshResponse.access_token);
     } catch (refreshError) {
-      // Refresh failed - user is not authenticated, re-throw to be handled by caller
       throw refreshError;
     }
   }
-  
-  const response = await api.getJSON('/api/auth/me');
-  
-  // Update owner data in store
-  currentOwnerStore.set(response.owner);
 
+  const response = await api.getJSON('/api/auth/me');
+  currentOwnerStore.set(response.owner);
+  return response;
+}
+
+/**
+ * Get current authenticated owner
+ * Attempts to refresh token if no access token is available but refresh token cookie exists
+ * @returns {Promise<import('$lib/types').VenueOwner>}
+ */
+export async function getCurrentOwner() {
+  const response = await getAuthMe();
   return response.owner;
 }

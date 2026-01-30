@@ -1,3 +1,7 @@
+-- name: CountVenuesByOwner :one
+SELECT COUNT(*) FROM venues
+WHERE owner_uuid = $1;
+
 -- name: ListVenuesByOwner :many
 SELECT * FROM venues
 WHERE owner_uuid = $1

@@ -11,6 +11,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countVenuesByOwner = `-- name: CountVenuesByOwner :one
+SELECT COUNT(*) FROM venues
+WHERE owner_uuid = $1
+`
+
+func (q *Queries) CountVenuesByOwner(ctx context.Context, ownerUuid pgtype.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countVenuesByOwner, ownerUuid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createVenue = `-- name: CreateVenue :one
 INSERT INTO venues (
     owner_uuid,

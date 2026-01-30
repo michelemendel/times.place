@@ -378,3 +378,24 @@ This file will track backend implementation work sessions, decisions made during
   - Removed `visibility` column and value from all four venue INSERTs.
 - **Integration tests** (`backend/internal/http/integration_test.go`):
   - Removed `"visibility": "public"` from venue create payloads in `TestIntegration_AuthAndVenueCRUD_MinimalFlow` and `TestIntegration_TokenBasedAccessControl`.
+
+## 2026-01-30
+
+### Summary
+
+- **Free-tier venue limit**: Enforced a maximum of 2 venues per owner for the free tier. Limit is configurable via `FREE_TIER_MAX_VENUES`; venue create returns 403 with a clear message when at limit. `GET /api/auth/me` now exposes `venue_count` and `venue_limit` so the frontend can show an upgrade prompt.
+
+### Notes
+
+- **Config** (`backend/internal/http/config.go`):
+  - Added `FreeTierMaxVenues()` helper that reads `FREE_TIER_MAX_VENUES` from env (default 2); invalid or missing value falls back to 2.
+- **Environment** (`backend/.env.example`):
+  - Documented `FREE_TIER_MAX_VENUES=2` (free-tier max venues per owner).
+- **sqlc** (`backend/db/queries/venues.sql`):
+  - Added `CountVenuesByOwner :one` query; ran `sqlc generate` (new function in `backend/db/sqlc/venues.sql.go`).
+- **API (venue create)** (`backend/internal/http/venue_handlers.go`):
+  - Before creating a venue, handler calls `CountVenuesByOwner` and compares to `FreeTierMaxVenues()`; if count ≥ limit, returns `403 Forbidden` with message: "Free tier allows at most N venues. Upgrade to add more."
+- **API (auth/me)** (`backend/internal/http/auth_handlers.go`):
+  - `GET /api/auth/me` response now includes top-level `venue_count` (int64) and `venue_limit` (int64) in addition to `owner`, so the frontend can show upgrade prompts when at limit.
+- **Integration test** (`backend/internal/http/integration_test.go`):
+  - Added `TestIntegration_FreeTierVenueLimit`: sets `FREE_TIER_MAX_VENUES=2`, creates 2 venues (201), then 3rd create returns 403; verifies `/api/auth/me` returns `venue_count: 2` and `venue_limit: 2`.

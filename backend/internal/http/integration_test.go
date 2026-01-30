@@ -260,3 +260,92 @@ func TestIntegration_TokenBasedAccessControl(t *testing.T) {
 	}
 }
 
+func TestIntegration_FreeTierVenueLimit(t *testing.T) {
+	s := setupIntegrationServer(t)
+	defer s.Cleanup()
+
+	t.Setenv("FREE_TIER_MAX_VENUES", "2")
+
+	// Register and get token
+	reg := doJSONRequest(t, s.E, http.MethodPost, "/api/auth/register", map[string]any{
+		"name":     "Owner",
+		"email":    "limit@example.com",
+		"mobile":   "555-0000",
+		"password": "password123",
+	}, nil, nil)
+	if reg.Code != http.StatusCreated {
+		t.Fatalf("expected register 201, got %d: %s", reg.Code, reg.Body.String())
+	}
+	var ar authResp
+	if err := json.Unmarshal(reg.Body.Bytes(), &ar); err != nil {
+		t.Fatalf("failed to unmarshal register response: %v", err)
+	}
+	authz := map[string]string{"Authorization": "Bearer " + ar.AccessToken}
+
+	// Create 2 venues (allowed)
+	for i := 1; i <= 2; i++ {
+		create := doJSONRequest(t, s.E, http.MethodPost, "/api/venues", map[string]any{
+			"name":               "Venue " + string(rune('0'+i)),
+			"banner_image":       "",
+			"address":            "",
+			"geolocation":        "",
+			"comment":            "",
+			"timezone":           "UTC",
+			"private_link_token": "",
+		}, authz, nil)
+		if create.Code != http.StatusCreated {
+			t.Fatalf("expected create venue %d to get 201, got %d: %s", i, create.Code, create.Body.String())
+		}
+	}
+
+	// 3rd venue must return 403
+	create3 := doJSONRequest(t, s.E, http.MethodPost, "/api/venues", map[string]any{
+		"name":               "Venue 3",
+		"banner_image":       "",
+		"address":            "",
+		"geolocation":        "",
+		"comment":            "",
+		"timezone":           "UTC",
+		"private_link_token": "",
+	}, authz, nil)
+	if create3.Code != http.StatusForbidden {
+		t.Fatalf("expected create 3rd venue 403, got %d: %s", create3.Code, create3.Body.String())
+	}
+	var errBody struct {
+		Error struct {
+			Code    string `json:"code"`
+			Message string `json:"message"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(create3.Body.Bytes(), &errBody); err != nil {
+		t.Fatalf("failed to unmarshal error response: %v", err)
+	}
+	if errBody.Error.Code != "forbidden" {
+		t.Fatalf("expected error code forbidden, got %q", errBody.Error.Code)
+	}
+	if errBody.Error.Message == "" || (errBody.Error.Message != "Free tier allows at most 2 venues. Upgrade to add more." && errBody.Error.Message != "Forbidden") {
+		// Allow generic "Forbidden" or our custom message
+		t.Logf("error message: %s", errBody.Error.Message)
+	}
+
+	// GET /api/auth/me exposes venue_count and venue_limit
+	me := doJSONRequest(t, s.E, http.MethodGet, "/api/auth/me", nil, authz, nil)
+	if me.Code != http.StatusOK {
+		t.Fatalf("expected me 200, got %d: %s", me.Code, me.Body.String())
+	}
+	var meBody struct {
+		Owner       json.RawMessage `json:"owner"`
+		VenueCount  int64          `json:"venue_count"`
+		VenueLimit  int64          `json:"venue_limit"`
+	}
+	if err := json.Unmarshal(me.Body.Bytes(), &meBody); err != nil {
+		t.Fatalf("failed to unmarshal me response: %v", err)
+	}
+	if meBody.VenueCount != 2 {
+		t.Fatalf("expected venue_count 2, got %d", meBody.VenueCount)
+	}
+	if meBody.VenueLimit != 2 {
+		t.Fatalf("expected venue_limit 2, got %d", meBody.VenueLimit)
+	}
+}
+

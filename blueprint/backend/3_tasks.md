@@ -97,13 +97,16 @@
     - **Local:** `curl -s http://localhost:8080/api/public/venues` → JSON array (e.g. `[]`). Or `make bverify-api`.
     - **Production:** `curl -s https://<your-render-url>/api/public/venues` → same. If you get HTML, the `/api` prefix is not routed to the API.
 
+## Quotas & limits
 
-- [ ] Enforce free-tier venue limit (2 venues per owner):
-  - [ ] Define limit (constant or config e.g. `FREE_TIER_MAX_VENUES=2`)
-  - [ ] Add or use sqlc query: count venues by owner
-  - [ ] In venue create path: check count before insert; if count ≥ limit, return error (e.g. 403 with clear message)
-  - [ ] (Optional) Expose limit and current count in `GET /api/auth/me` or similar so frontend can show upgrade prompt
+- [x] Enforce free-tier venue limit (2 venues per owner):
+  - [x] Define limit (constant or config e.g. `FREE_TIER_MAX_VENUES=2`)
+  - [x] Add or use sqlc query: count venues by owner
+  - [x] In venue create path: check count before insert; if count ≥ limit, return error (e.g. 403 with clear message)
+  - [x] (Optional) Expose limit and current count in `GET /api/auth/me` or similar so frontend can show upgrade prompt
 - [ ] **Future (not now):** Paid option for more venues:
   - [ ] Design/store owner plan or tier (e.g. free vs paid) when ready
   - [ ] Use plan when enforcing venue limit (e.g. paid = higher cap or unlimited)
   - [ ] Integrate with payment/billing when implemented
+
+- [ ] Add my page with anon user icon in the menu, with a dropdown with login, logout, account links. We need this for future account and billing.

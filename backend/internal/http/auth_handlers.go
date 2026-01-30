@@ -456,8 +456,14 @@ func (h *AuthHandler) Me(c echo.Context) error {
 		return NotFoundError(c, "Owner not found")
 	}
 
+	// Venue count and limit (for frontend upgrade prompt)
+	venueCount, _ := h.store.Queries.CountVenuesByOwner(ctx, ownerUUID)
+	venueLimit := FreeTierMaxVenues()
+
 	// Return response
-	return c.JSON(http.StatusOK, map[string]OwnerResponse{
-		"owner": ownerToResponse(owner),
+	return c.JSON(http.StatusOK, map[string]any{
+		"owner":        ownerToResponse(owner),
+		"venue_count": venueCount,
+		"venue_limit": venueLimit,
 	})
 }

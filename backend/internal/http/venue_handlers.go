@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -173,6 +174,16 @@ func (h *VenueHandler) Create(c echo.Context) error {
 	ownerUUID, err := stringToUUID(ownerUUIDStr)
 	if err != nil {
 		return ValidationError(c, "Invalid owner UUID")
+	}
+
+	// Enforce free-tier venue limit
+	limit := FreeTierMaxVenues()
+	count, err := h.store.Queries.CountVenuesByOwner(ctx, ownerUUID)
+	if err != nil {
+		return InternalError(c, "Failed to check venue count")
+	}
+	if count >= limit {
+		return ForbiddenError(c, "Free tier allows at most "+strconv.FormatInt(limit, 10)+" venues. Upgrade to add more.")
 	}
 
 	// Parse private link token (generate if not provided)

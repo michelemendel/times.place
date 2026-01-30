@@ -1458,7 +1458,7 @@
 </svelte:head>
 
 <div
-  class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4 md:pt-4 md:pb-8 lg:pt-0 lg:pb-8 lg:-mt-6 w-full overflow-x-hidden"
+  class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-4 md:pt-6 md:pb-8 lg:pt-6 lg:pb-8 w-full overflow-x-hidden"
 >
   {#if isLoading}
   <div class="mb-4 md:mb-6 flex flex-col gap-2 md:gap-4 px-4 md:px-6">

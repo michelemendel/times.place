@@ -1,9 +1,7 @@
 <script>
   import { onMount } from 'svelte';
-  import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
-  import { currentOwnerStore } from '$lib/stores';
-  import { getCurrentOwner } from '$lib/api/auth.js';
+  import { getAuthMe } from '$lib/api/auth.js';
   import { listVenues, deleteVenue } from '$lib/api/venues.js';
   import BannerImage from '$lib/BannerImage.svelte';
 
@@ -19,6 +17,12 @@
   let copiedLinkToken = null;
   let isLoading = false;
   let loadError = '';
+  /** Max venues allowed (from API). Default 2. */
+  let venueLimit = 2;
+  let showLimitPopup = false;
+
+  $: venueCount = ownerVenues.length;
+  $: atVenueLimit = venueCount >= venueLimit;
 
   async function loadVenuesAndLists() {
     isLoading = true;
@@ -43,14 +47,14 @@
   }
 
   onMount(async () => {
-    // Ensure auth and token are set before any API calls (avoids race with layout)
     try {
-      await getCurrentOwner();
+      const me = await getAuthMe();
+      owner = me.owner;
+      venueLimit = me.venue_limit ?? 2;
     } catch {
       goto('/login');
       return;
     }
-    owner = get(currentOwnerStore);
     if (!owner) {
       goto('/login');
       return;
@@ -69,7 +73,15 @@
   }
 
   function handleAddVenue() {
+    if (atVenueLimit) {
+      showLimitPopup = true;
+      return;
+    }
     goto('/venue-form');
+  }
+
+  function closeLimitPopup() {
+    showLimitPopup = false;
   }
 
   /**
@@ -209,7 +221,9 @@
     <div class="mb-6 flex justify-center md:justify-end">
       <button
         on:click={handleAddVenue}
-        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1.5 px-3 text-sm rounded-lg shadow-md transition-colors duration-200 flex items-center gap-1.5 md:py-3 md:px-6 md:text-base md:gap-2"
+        class="font-semibold py-1.5 px-3 text-sm rounded-lg shadow-md transition-colors duration-200 flex items-center gap-1.5 md:py-3 md:px-6 md:text-base md:gap-2 {atVenueLimit
+          ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+          : 'bg-blue-600 hover:bg-blue-700 text-white'}"
       >
         <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -217,6 +231,40 @@
         <span>Add Venue</span>
       </button>
     </div>
+
+    <!-- Venue limit reached popup -->
+    {#if showLimitPopup}
+      <!-- svelte-ignore a11y_no_static_element_interactions - backdrop click to close -->
+      <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        aria-modal="true"
+        on:click={closeLimitPopup}
+        on:keydown={(e) => e.key === 'Escape' && closeLimitPopup()}
+      >
+        <div
+          class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6"
+          role="dialog"
+          aria-labelledby="limit-popup-title"
+          tabindex="-1"
+          on:click|stopPropagation
+          on:keydown|stopPropagation
+        >
+          <h2 id="limit-popup-title" class="text-lg font-semibold text-gray-900 mb-3">
+            Venue limit reached
+          </h2>
+          <p class="text-gray-600 mb-5">
+            Free tier allows at most {venueLimit} venues. Upgrade to add more.
+          </p>
+          <button
+            type="button"
+            on:click={closeLimitPopup}
+            class="w-full py-2 px-4 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition-colors"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    {/if}
 
     {#if ownerVenues.length === 0}
       <div class="bg-white rounded-xl shadow-lg p-8 md:p-12 text-center">

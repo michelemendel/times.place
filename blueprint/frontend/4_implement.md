@@ -1036,3 +1036,17 @@
 - **Routes/Pages**: All banner usages (venue-owner grid, home selected venue, venue-form upload preview and right panel, event-list print view) use `<BannerImage>`.
 - **Styling** (`frontend/src/app.css`): Print rule for `.banner-img` so banners scale to fit when printing.
 - **Routes/Pages** (`frontend/src/routes/venue-form/+page.svelte`): Label "Banner Image (optional)" now includes "— preferred ratio 16:9".
+
+### Summary (My page and user menu)
+
+- **My page**: New account page at `/my` for future account and billing; shows profile (name, email, mobile) and account links (My Venues, placeholder for billing) when logged in; when anonymous, prompts to log in or register.
+- **User menu in nav**: Replaced inline Login/Register and My Venues/Logout with a single user icon and dropdown: anonymous users see user silhouette icon and dropdown (Login, Register, My account); logged-in users see initial-in-circle and dropdown (Account, My Venues, Logout). Dropdown closes on outside click; same account links available in mobile hamburger menu.
+
+### Notes (My page and user menu)
+
+- **Routes/Pages** (`frontend/src/routes/my/+page.svelte`):
+  - New route `/my`; uses `getAuthMe()` for venue_count/venue_limit when logged in; shows profile section and account section with My Venues link and billing placeholder.
+- **Routes/Pages** (`frontend/src/routes/+layout.svelte`):
+  - Desktop nav: user icon (anon = person icon, logged in = initial in circle) with dropdown; dropdown items: Account (/my), My Venues, Logout when logged in; Login, Register, My account when anon. Click-outside closes dropdown.
+  - Mobile nav: added "My account" link; kept Login/Register or My Venues/Logout as before.
+  - `userMenuOpen`, `userMenuEl`, `toggleUserMenu`, `closeUserMenu`, `handleClickOutside` for dropdown behavior.

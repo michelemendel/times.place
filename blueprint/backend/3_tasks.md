@@ -109,4 +109,4 @@
   - [ ] Use plan when enforcing venue limit (e.g. paid = higher cap or unlimited)
   - [ ] Integrate with payment/billing when implemented
 
-- [ ] Add my page with anon user icon in the menu, with a dropdown with login, logout, account links. We need this for future account and billing.
+- [x] Add my page with anon user icon in the menu, with a dropdown with login, logout, account links. We need this for future account and billing.

@@ -12,9 +12,14 @@
   $: isVenueOwner = $page.url.pathname === '/venue-owner';
 
   let mobileMenuOpen = false;
+  let userMenuOpen = false;
+  /** @type {HTMLElement | undefined} */
+  let userMenuEl;
   let isOnline = true;
-  
+
+  /** @type {() => void} */
   let handleOnline;
+  /** @type {() => void} */
   let handleOffline;
 
   function toggleMobileMenu() {
@@ -23,6 +28,21 @@
 
   function closeMobileMenu() {
     mobileMenuOpen = false;
+  }
+
+  function toggleUserMenu() {
+    userMenuOpen = !userMenuOpen;
+  }
+
+  function closeUserMenu() {
+    userMenuOpen = false;
+  }
+
+  /** @param {MouseEvent} e */
+  function handleClickOutside(e) {
+    if (userMenuEl && !userMenuEl.contains(/** @type {Node} */ (e.target))) {
+      closeUserMenu();
+    }
   }
 
   onMount(async () => {
@@ -42,13 +62,17 @@
       handleOffline = () => { isOnline = false; };
       window.addEventListener('online', handleOnline);
       window.addEventListener('offline', handleOffline);
+      document.addEventListener('click', handleClickOutside);
     }
   });
-  
+
   onDestroy(() => {
     if (browser && handleOnline && handleOffline) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+    }
+    if (browser) {
+      document.removeEventListener('click', handleClickOutside);
     }
   });
 
@@ -56,6 +80,7 @@
     const { logout: logoutApi } = await import('$lib/api/auth.js');
     await logoutApi();
     closeMobileMenu();
+    closeUserMenu();
     goto('/');
   }
 
@@ -110,35 +135,83 @@
           class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
           >Price</a
         >
-        {#if $currentOwnerStore}
-          <span class="text-gray-400">|</span>
-          <a
-            href="/venue-owner"
-            class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
-            >My Venues</a
-          >
-          <span class="text-gray-400">|</span>
+        <span class="text-gray-400">|</span>
+        <!-- User menu: icon + dropdown (login, logout, account links) -->
+        <div class="relative" bind:this={userMenuEl}>
           <button
             type="button"
-            class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
-            on:click={logout}
+            class="flex items-center justify-center w-10 h-10 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500"
+            on:click|stopPropagation={toggleUserMenu}
+            aria-label="Account menu"
+            aria-expanded={userMenuOpen}
+            aria-haspopup="true"
           >
-            Logout
+            {#if $currentOwnerStore}
+              <span
+                class="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700 font-semibold text-sm"
+                title={$currentOwnerStore.name}
+              >
+                {$currentOwnerStore.name?.charAt(0)?.toUpperCase() ?? '?'}
+              </span>
+            {:else}
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            {/if}
           </button>
-        {:else}
-          <span class="text-gray-400">|</span>
-          <a
-            href="/login"
-            class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
-            >Login</a
-          >
-          <span class="text-gray-400">|</span>
-          <a
-            href="/registration"
-            class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
-            >Register</a
-          >
-        {/if}
+          {#if userMenuOpen}
+            <div
+              class="absolute right-0 mt-2 w-52 py-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+              role="menu"
+            >
+              {#if $currentOwnerStore}
+                <a
+                  href="/venue-owner"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem"
+                  on:click={closeUserMenu}
+                >My Venues</a
+                >
+                <a
+                  href="/my"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem"
+                  on:click={closeUserMenu}
+                >Account</a
+                >
+                <button
+                  type="button"
+                  class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem"
+                  on:click={logout}
+                >Logout</button
+                >
+              {:else}
+                <a
+                  href="/login"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem"
+                  on:click={closeUserMenu}
+                >Login</a
+                >
+                <a
+                  href="/registration"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  role="menuitem"
+                  on:click={closeUserMenu}
+                >Register</a
+                >
+                <a
+                  href="/my"
+                  class="block px-4 py-2 text-sm text-gray-500 hover:bg-gray-100"
+                  role="menuitem"
+                  on:click={closeUserMenu}
+                >Account</a
+                >
+              {/if}
+            </div>
+          {/if}
+        </div>
       </div>
 
       <!-- Mobile Hamburger Button -->
@@ -217,6 +290,12 @@
                 on:click={closeMobileMenu}
                 >My Venues</a
               >
+              <a
+                href="/my"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                on:click={closeMobileMenu}
+                >Account</a
+              >
               <button
                 type="button"
                 class="text-left text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
@@ -225,6 +304,12 @@
                 Logout
               </button>
             {:else}
+              <a
+                href="/my"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                on:click={closeMobileMenu}
+                >Account</a
+              >
               <a
                 href="/login"
                 class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"

@@ -318,7 +318,7 @@
   - [x] "My Venues": smaller font. Move it up. Remove "Manage your venues and event schedules.".
   - [x] "Signed in as ...": Remove border and background. Move it closer to "My Venues" and center it.
   - [x] Make banner (the image) shorter (reduce height)
-- [ ] Fix image to fit in banner space
+- [x] Fix image to fit in banner space
 - [ ] New Feature: Main Page: Add the possibility to search near me. The distance can be hardcoded. Set it to a radius of 500 meter.
 
 ## Deployment

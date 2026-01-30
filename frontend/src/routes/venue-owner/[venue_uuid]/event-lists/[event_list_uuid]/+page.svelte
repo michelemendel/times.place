@@ -8,6 +8,7 @@
   import { getEventList } from '$lib/api/eventLists.js';
   import { listEventsForEventList } from '$lib/api/events.js';
   import { formatEventListDate, formatEventTime } from '$lib/utils/datetime.js';
+  import BannerImage from '$lib/BannerImage.svelte';
 
   /**
    * Format event time from RFC3339 string
@@ -145,13 +146,12 @@
     <div class="bg-white rounded-xl shadow-lg p-6 md:p-12">
       <!-- Banner Image -->
       {#if venue.banner_image}
-        <div class="mb-6">
-          <img
-            src={venue.banner_image}
-            alt={venue.name}
-            class="w-full h-48 object-cover rounded-lg"
-          />
-        </div>
+        <BannerImage
+          src={venue.banner_image}
+          alt={venue.name}
+          size="lg"
+          wrapperClass="mb-6"
+        />
       {/if}
 
       <!-- Venue Header -->

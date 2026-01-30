@@ -4,6 +4,7 @@
   import { page } from '$app/stores';
   import { dev, browser } from '$app/environment';
   import { formatEventTime } from '$lib/utils/datetime.js';
+  import BannerImage from '$lib/BannerImage.svelte';
   import {
     listPublicVenues,
     getPublicEventListsForVenue,
@@ -636,13 +637,12 @@
     <div class="pt-0 md:pt-2 md:mt-0">
       <!-- Banner Image -->
       {#if selectedVenue.banner_image}
-        <div class="mb-4 w-full h-32 sm:h-40 overflow-hidden rounded-lg bg-gray-100">
-          <img
-            src={selectedVenue.banner_image}
-            alt={selectedVenue.name}
-            class="w-full h-full object-cover object-center"
-          />
-        </div>
+        <BannerImage
+          src={selectedVenue.banner_image}
+          alt={selectedVenue.name}
+          size="md"
+          wrapperClass="mb-4"
+        />
       {/if}
 
       <!-- Venue Name -->

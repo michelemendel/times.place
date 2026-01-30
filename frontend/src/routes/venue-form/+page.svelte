@@ -21,6 +21,7 @@
   import { parseISODate } from '$lib/utils/datetime.js';
   import { formatEventTime } from '$lib/utils/datetime.js';
   import { ApiError } from '$lib/api/client.js';
+  import BannerImage from '$lib/BannerImage.svelte';
 
   // Common timezones organized by region
   /** @type {any} */
@@ -1806,7 +1807,7 @@
             <label
               for="venue-banner"
               class="block text-sm font-medium text-gray-700 mb-1"
-              >Banner Image (optional)</label
+              >Banner Image (optional) — preferred ratio 16:9</label
             >
             <input
               type="file"
@@ -1816,13 +1817,12 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             {#if venueBannerImage}
-              <div class="mt-2">
-                <img
-                  src={venueBannerImage}
-                  alt="Banner preview"
-                  class="max-w-full h-32 object-cover rounded"
-                />
-              </div>
+              <BannerImage
+                src={venueBannerImage}
+                alt="Banner preview"
+                size="sm"
+                wrapperClass="mt-2"
+              />
             {/if}
           </div>
         </div>
@@ -2253,15 +2253,12 @@
         {#if venueName || previewEventList}
           <div>
             {#if venueBannerImage}
-              <div
-                class="mb-4 w-full h-28 sm:h-36 overflow-hidden rounded-lg bg-gray-100"
-              >
-                <img
-                  src={venueBannerImage}
-                  alt={venueName || 'Venue'}
-                  class="w-full h-full object-cover object-center"
-                />
-              </div>
+              <BannerImage
+                src={venueBannerImage}
+                alt={venueName || 'Venue'}
+                size="sm"
+                wrapperClass="mb-4"
+              />
             {/if}
 
             <h2 class="text-3xl font-bold mb-3 text-gray-900">

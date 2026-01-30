@@ -1025,3 +1025,14 @@
   - Event list items: `space-y-1` on mobile, smaller item padding; Edit and Delete buttons always in a row (`flex-row`).
 - **Makefile**:
   - Comment above `fbuild` explaining rollup optional-deps issue and suggesting `make finstall-clean && make fbuild`.
+
+### Summary (banner images)
+
+- **Banner images fixed**: Same image now fits consistently in every banner; images scale to fit without cropping; letterboxing is white; edit form shows preferred ratio 16:9.
+
+### Notes (banner images)
+
+- **Components** (`frontend/src/lib/BannerImage.svelte`): New shared component with size variants (sm/md/lg), `object-contain`, white background for areas outside the image.
+- **Routes/Pages**: All banner usages (venue-owner grid, home selected venue, venue-form upload preview and right panel, event-list print view) use `<BannerImage>`.
+- **Styling** (`frontend/src/app.css`): Print rule for `.banner-img` so banners scale to fit when printing.
+- **Routes/Pages** (`frontend/src/routes/venue-form/+page.svelte`): Label "Banner Image (optional)" now includes "— preferred ratio 16:9".

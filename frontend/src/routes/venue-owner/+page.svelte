@@ -5,6 +5,7 @@
   import { currentOwnerStore } from '$lib/stores';
   import { getCurrentOwner } from '$lib/api/auth.js';
   import { listVenues, deleteVenue } from '$lib/api/venues.js';
+  import BannerImage from '$lib/BannerImage.svelte';
 
   /** @type {import('$lib/types').VenueOwner | null} */
   let owner = null;
@@ -239,13 +240,12 @@
           {@const venueEventLists = getVenueEventLists(venue)}
           <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col h-full">
             {#if venue.banner_image}
-              <div class="w-full h-28 sm:h-36 bg-gray-200 overflow-hidden">
-                <img
-                  src={venue.banner_image}
-                  alt={venue.name}
-                  class="w-full h-full object-cover object-center"
-                />
-              </div>
+              <BannerImage
+                src={venue.banner_image}
+                alt={venue.name}
+                size="sm"
+                wrapperClass="rounded-t-xl rounded-b-none bg-gray-200"
+              />
             {/if}
             <div class="p-4 sm:p-6 flex flex-col flex-grow">
               <h3 class="text-xl font-bold text-gray-900 mb-2">{venue.name}</h3>

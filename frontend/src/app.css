@@ -64,6 +64,13 @@ body {
     height: auto !important;
   }
 
+  /* Banner images scale to fit (no crop) when printing */
+  .banner-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+
   /* Remove container padding/margins for full-width printing */
   .container {
     max-width: 100% !important;

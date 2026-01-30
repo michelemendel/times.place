@@ -1457,12 +1457,12 @@
 </svelte:head>
 
 <div
-  class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-4 md:pt-4 md:pb-8 lg:pt-0 lg:pb-8 lg:-mt-6 w-full overflow-x-hidden"
+  class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4 md:pt-4 md:pb-8 lg:pt-0 lg:pb-8 lg:-mt-6 w-full overflow-x-hidden"
 >
   {#if isLoading}
-  <div class="mb-4 md:mb-6 flex flex-col gap-3 md:gap-4 px-4 md:px-6">
+  <div class="mb-4 md:mb-6 flex flex-col gap-2 md:gap-4 px-4 md:px-6">
     <div>
-      <h1 class="text-3xl font-bold text-gray-900">
+      <h1 class="text-[24px] md:text-3xl font-bold text-gray-900">
         {isNewVenue ? 'Create' : 'Edit'} Venue
       </h1>
     </div>
@@ -1470,7 +1470,7 @@
       {#if undoStack.length > 0}
         <button
           on:click={handleUndo}
-          class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors md:py-2 md:px-4 md:text-base"
           title="Undo last change"
         >
           Undo
@@ -1478,14 +1478,14 @@
       {/if}
       <button
         on:click={cancelEdit}
-        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm sm:text-base transition-colors duration-200"
+        class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors duration-200 md:py-2 md:px-4 md:text-base"
       >
         Cancel
       </button>
       <button
         on:click={saveVenue}
         disabled={isSaving || isLoading}
-        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm sm:text-base transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="py-1.5 px-3 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-4 md:text-base"
       >
         {isSaving ? 'Saving...' : 'Save'}
       </button>
@@ -1517,9 +1517,9 @@
     >
       <!-- Left column on desktop: single flex container so header stays at top and form scrolls beneath (same as mobile) -->
       <div class="flex flex-col gap-4 lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:min-h-0 lg:overflow-hidden">
-        <div class="mb-4 md:mb-0 flex flex-col gap-3 md:gap-4 px-4 md:px-6 flex-shrink-0 lg:pt-0 lg:gap-2">
+        <div class="mb-4 md:mb-0 flex flex-col gap-2 md:gap-4 px-4 md:px-6 flex-shrink-0 lg:pt-0 lg:gap-2">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900">
+            <h1 class="text-[24px] md:text-3xl font-bold text-gray-900">
               {isNewVenue ? 'Create' : 'Edit'} Venue
             </h1>
           </div>
@@ -1527,7 +1527,7 @@
             {#if undoStack.length > 0}
               <button
                 on:click={handleUndo}
-                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors md:py-2 md:px-4 md:text-base"
                 title="Undo last change"
               >
                 Undo
@@ -1535,14 +1535,14 @@
             {/if}
             <button
               on:click={cancelEdit}
-              class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium text-sm sm:text-base transition-colors duration-200"
+              class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors duration-200 md:py-2 md:px-4 md:text-base"
             >
               Cancel
             </button>
             <button
               on:click={saveVenue}
               disabled={isSaving || isLoading}
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm sm:text-base transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="py-1.5 px-3 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-4 md:text-base"
             >
               {isSaving ? 'Saving...' : 'Save'}
             </button>

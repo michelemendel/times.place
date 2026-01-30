@@ -96,3 +96,14 @@
     **How to check:** Call a public API endpoint (no auth). Expect 200 + JSON, not HTML.
     - **Local:** `curl -s http://localhost:8080/api/public/venues` → JSON array (e.g. `[]`). Or `make bverify-api`.
     - **Production:** `curl -s https://<your-render-url>/api/public/venues` → same. If you get HTML, the `/api` prefix is not routed to the API.
+
+
+- [ ] Enforce free-tier venue limit (2 venues per owner):
+  - [ ] Define limit (constant or config e.g. `FREE_TIER_MAX_VENUES=2`)
+  - [ ] Add or use sqlc query: count venues by owner
+  - [ ] In venue create path: check count before insert; if count ≥ limit, return error (e.g. 403 with clear message)
+  - [ ] (Optional) Expose limit and current count in `GET /api/auth/me` or similar so frontend can show upgrade prompt
+- [ ] **Future (not now):** Paid option for more venues:
+  - [ ] Design/store owner plan or tier (e.g. free vs paid) when ready
+  - [ ] Use plan when enforcing venue limit (e.g. paid = higher cap or unlimited)
+  - [ ] Integrate with payment/billing when implemented

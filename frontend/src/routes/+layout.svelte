@@ -104,6 +104,12 @@
           class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
           >About</a
         >
+        <span class="text-gray-400">|</span>
+        <a
+          href="/price"
+          class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
+          >Price</a
+        >
         {#if $currentOwnerStore}
           <span class="text-gray-400">|</span>
           <a
@@ -197,6 +203,12 @@
               class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
               on:click={closeMobileMenu}
               >About</a
+            >
+            <a
+              href="/price"
+              class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+              on:click={closeMobileMenu}
+              >Price</a
             >
             {#if $currentOwnerStore}
               <a

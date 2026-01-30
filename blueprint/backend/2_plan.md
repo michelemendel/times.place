@@ -314,3 +314,18 @@ Operational guidance:
 - Prefer a single migration runner per deploy (avoid every replica running migrations concurrently).
 - Keep migrations backwards-compatible for rolling deployments when possible.
 
+
+### Free tier: venue limit
+
+- **Limit**: Free-tier owners may have at most **2 venues**.
+- **Enforcement**: Before creating a new venue, the service layer checks the owner’s current venue count; if it is already 2, the API returns an error (e.g. `403` or `429` with a clear message) and does not create the venue.
+- **Source of limit**: The value `2` can be a constant in code or a config/env variable (e.g. `FREE_TIER_MAX_VENUES=2`) so it can be changed without code changes.
+- **No schema change required for now**: The limit is derived by counting existing venues per owner; no new columns or plan field on `venue_owners` are required for the free tier only.
+
+### Future: paid option for more venues
+
+We will **defer** implementing the ability to pay for more venues. When we add it later, the plan will include:
+
+- A way to associate an owner with a “plan” or “tier” (e.g. free vs paid), and optionally a per-plan venue cap or “unlimited.”
+- Backend support for reading that plan (from DB or a billing provider) and using it when enforcing the venue limit (e.g. free = 2, paid = higher or unlimited).
+- No implementation detail is committed here; this is a placeholder for future work.

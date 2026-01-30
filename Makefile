@@ -73,6 +73,8 @@ help:
 
 
 # Frontend targets
+# If fbuild fails with "Cannot find module @rollup/rollup-*" (npm optional deps bug),
+# run: make finstall-clean && make fbuild
 
 fbuild:
 	cd frontend && npm run build

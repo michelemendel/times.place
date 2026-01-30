@@ -281,26 +281,8 @@
   // Sorted venues
   $: sortedVenues = [...visibleVenues].sort((a, b) => a.name.localeCompare(b.name));
 
-  /**
-   * Filter venues by search query across venue name/address/comment.
-   * (Owner and event fields are handled by backend search endpoint.)
-   * @param {import('$lib/types').Venue} venue
-   * @param {string} query
-   * @returns {boolean}
-   */
-  function venueMatchesSearch(venue, query) {
-    if (!query) return true;
-    const lower = query.toLowerCase();
-    if (venue.name?.toLowerCase().includes(lower)) return true;
-    if (venue.address?.toLowerCase().includes(lower)) return true;
-    if (venue.comment?.toLowerCase().includes(lower)) return true;
-    return false;
-  }
-
-  // Filtered venues based on search
-  $: filteredVenues = venueSearchQuery
-    ? sortedVenues.filter((v) => venueMatchesSearch(v, venueSearchQuery))
-    : sortedVenues;
+  // When user searches, the backend returns venues matching query across venue name, address, comment, event list names, and event names. We use that list as-is.
+  $: filteredVenues = sortedVenues;
 
   // Get selected venue
   $: selectedVenue = selectedVenueId
@@ -593,8 +575,8 @@
 
   <div class="bg-white rounded-xl shadow-lg p-2 md:p-12 md:pt-4">
   <!-- Venue Searchable Dropdown -->
-  <div class="mb-2 md:mb-2 relative no-print-venue-dropdown flex gap-2 items-center" bind:this={venueDropdownRef}>
-    <div class="relative flex-1">
+  <div class="mb-2 md:mb-2 relative no-print-venue-dropdown" bind:this={venueDropdownRef}>
+    <div class="relative">
       <input
         type="text"
         id="venue-search"
@@ -647,28 +629,6 @@
         </div>
       {/if}
     </div>
-    <button
-      type="button"
-      on:click={() => loadVenues(venueSearchQuery || undefined)}
-      disabled={isLoadingVenues}
-      class="shrink-0 p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500"
-      title="Refresh venue list"
-      aria-label="Refresh venue list"
-    >
-      <svg
-        class="w-5 h-5 {isLoadingVenues ? 'animate-spin' : ''}"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-        />
-      </svg>
-    </button>
   </div>
 
   {#if selectedVenue}
@@ -676,11 +636,11 @@
     <div class="pt-0 md:pt-2 md:mt-0">
       <!-- Banner Image -->
       {#if selectedVenue.banner_image}
-        <div class="mb-4">
+        <div class="mb-4 w-full h-32 sm:h-40 overflow-hidden rounded-lg bg-gray-100">
           <img
             src={selectedVenue.banner_image}
             alt={selectedVenue.name}
-            class="w-full h-48 object-cover rounded-lg"
+            class="w-full h-full object-cover object-center"
           />
         </div>
       {/if}

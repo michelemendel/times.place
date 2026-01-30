@@ -92,7 +92,7 @@
   - [x] Run `goose up` against production DB as part of deploy
 - [ ] Verify production routing:
   - [x] `/` serves frontend `index.html` (SPA fallback)
-  - [ ] `/api/...` serves API  
-    **How to check:** Call a public API endpoint (no auth). Expect 200 + JSON, not HTML.  
-    - **Local:** `curl -s http://localhost:8080/api/public/venues` → JSON array (e.g. `[]`). Or `make bverify-api`.  
+  - [x] `/api/...` serves API
+    **How to check:** Call a public API endpoint (no auth). Expect 200 + JSON, not HTML.
+    - **Local:** `curl -s http://localhost:8080/api/public/venues` → JSON array (e.g. `[]`). Or `make bverify-api`.
     - **Production:** `curl -s https://<your-render-url>/api/public/venues` → same. If you get HTML, the `/api` prefix is not routed to the API.

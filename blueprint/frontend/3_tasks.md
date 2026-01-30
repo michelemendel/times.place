@@ -309,9 +309,17 @@
 
 ## Misc
 
-- [ ] Fix image to fit in banner space
 - [x] Rename page Prototype to Demo with information about the site being fully functional but currently in test modus
-- [ ] Search/filter: add "Search near me"
+- [x] Add disclaimer
+- [x] Remove Reload button
+- [x] Edit mode: Move Cancel and Save buttons to the left (aligned with the actual edit column), and also add them to the bottom, so the user doesn't have to scroll to the top if he is editing something closer to the bottom of the page.
+- [x] Search: It doesn't filter on event list names or event names
+- [x] UI:Mobile:Edit mode: The UI has to take up less space. There is to much white space.
+  - [x] "My Venues": smaller font. Move it up. Remove "Manage your venues and event schedules.".
+  - [x] "Signed in as ...": Remove border and background. Move it closer to "My Venues" and center it.
+  - [x] Make banner (the image) shorter (reduce height)
+- [ ] Fix image to fit in banner space
+- [ ] New Feature: Main Page: Add the possibility to search near me. The distance can be hardcoded. Set it to a radius of 500 meter.
 
 ## Deployment
 

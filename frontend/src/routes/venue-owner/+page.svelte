@@ -191,26 +191,26 @@
   <title>My Venues - times.place</title>
 </svelte:head>
 
-<div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
-  <div class="mb-8 text-center">
-    <h1 class="text-4xl font-bold mb-4 text-gray-900">My Venues</h1>
-    <p class="text-lg text-gray-600">Manage your venues and event schedules.</p>
+<div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 pt-1 pb-2 md:pt-6 md:pb-8">
+  <div class="mb-1 md:mb-0 text-center">
+    <h1 class="text-2xl md:text-4xl font-bold mb-1 md:mb-0.5 text-gray-900">My Venues</h1>
+    <p class="text-base text-gray-600 hidden md:block">Manage your venues and event schedules.</p>
   </div>
 
   {#if owner}
-    <div class="mb-6 rounded-md border border-gray-200 bg-gray-50 px-4 py-3">
+    <div class="mb-3 md:mb-3 text-center">
       <div class="text-sm text-gray-700">
         Signed in as <span class="font-semibold">{owner.name}</span>
         <span class="text-gray-500">({owner.email})</span>
       </div>
     </div>
 
-    <div class="mb-6 flex justify-end">
+    <div class="mb-6 flex justify-center md:justify-end">
       <button
         on:click={handleAddVenue}
-        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 sm:py-3 sm:px-6 rounded-lg shadow-md transition-colors duration-200 flex items-center gap-2"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1.5 px-3 text-sm rounded-lg shadow-md transition-colors duration-200 flex items-center gap-1.5 md:py-3 md:px-6 md:text-base md:gap-2"
       >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         <span>Add Venue</span>
@@ -239,11 +239,11 @@
           {@const venueEventLists = getVenueEventLists(venue)}
           <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden flex flex-col h-full">
             {#if venue.banner_image}
-              <div class="w-full h-32 sm:h-40 bg-gray-200 overflow-hidden">
+              <div class="w-full h-28 sm:h-36 bg-gray-200 overflow-hidden">
                 <img
                   src={venue.banner_image}
                   alt={venue.name}
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-cover object-center"
                 />
               </div>
             {/if}
@@ -271,10 +271,10 @@
               <!-- Event Lists -->
               {#if venueEventLists.length > 0}
                 <div class="mb-4 pt-4 border-t border-gray-200">
-                  <p class="text-sm font-medium text-gray-700 mb-3">Event Lists:</p>
-                  <div class="space-y-2">
+                  <p class="text-sm font-medium text-gray-700 mb-2 md:mb-3">Event Lists:</p>
+                  <div class="space-y-1 md:space-y-2">
                     {#each venueEventLists as eventList (eventList.event_list_uuid)}
-                      <div class="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded-lg">
+                      <div class="flex items-center justify-between gap-2 py-1.5 px-2 md:p-2 bg-gray-50 rounded-lg">
                         <div class="flex items-center gap-2 flex-1 min-w-0">
                           {#if eventList.visibility === 'private'}
                             <div title="Private" class="shrink-0">
@@ -322,7 +322,7 @@
                 </div>
               {/if}
 
-              <div class="flex flex-col sm:flex-row gap-2 mt-auto">
+              <div class="flex flex-row gap-2 mt-auto">
                 <button
                   on:click={() => handleEditVenue(venue)}
                   class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base"

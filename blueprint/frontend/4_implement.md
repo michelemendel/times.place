@@ -990,3 +990,38 @@
   - Removed `visibility: 'public'` from the `createVenue()` call when saving a new venue (no longer sent to backend).
 - **Routes/Pages** (`frontend/src/routes/about/+page.svelte`):
   - Updated Visibility & Security copy to state that only event lists have visibility; a venue appears in the public list if it has at least one public event list.
+
+## 2026-01-30
+
+### Summary
+
+- **Disclaimer and UX polish**: Added Disclaimer page and footer link; removed Reload button from main page; fixed search to use backend results as-is so event list and event name matches show correctly; banner image constrained with object-cover/object-center.
+- **Edit Mode (venue-form)**: Title and Cancel/Save left-aligned with form (matching padding); desktop layout uses single flex column so header stays at top and form scrolls beneath; grid fixed height on desktop so page doesn't scroll; bottom duplicate Cancel/Save removed; "Save Venue" renamed to "Save"; event list/event delete buttons labeled "Delete Event List" and "Delete Event"; duplicate "Edit Venue" h2 removed; layout uses reduced top padding on /venue-form and /venue-owner so titles sit higher.
+- **My Venues (venue-owner)**: Desktop/mobile spacing tightened (title further up, less space to subtitle and "Signed in as"); Add Venue right on desktop, centered and smaller on mobile; event list items tighter spacing; Edit/Delete side by side.
+- **Layout**: Footer link to Disclaimer; main content uses `md:pt-0 md:pb-12` when path is `/venue-form` or `/venue-owner` for tighter top spacing on those pages.
+
+### Notes
+
+- **Routes/Pages** (`frontend/src/routes/disclaimer/+page.svelte`):
+  - New Disclaimer page with sections: Accuracy of Information (venue owners responsible for data), No Warranty, Limitation of Liability, Third-Party Content and Links, Contact.
+- **Routes/Pages** (`frontend/src/routes/+layout.svelte`):
+  - Footer: added "Disclaimer" link next to copyright.
+  - Main content container: `isVenueForm` and `isVenueOwner` derived from `$page.url.pathname`; when true, use `md:pt-0 md:pb-12` instead of `md:py-12` so Edit Venue and My Venues content sits higher on desktop.
+- **Routes/Pages** (`frontend/src/routes/+page.svelte`):
+  - Removed Reload (refresh) button next to venue search so the main page no longer exposes an unclear control.
+  - Search: `filteredVenues` now equals `sortedVenues`; backend already filters by venue, event list, and event names, so client-side `venueMatchesSearch` filter was removed to avoid dropping venues that matched only on event list/event name.
+  - Banner: fixed-height container with `object-cover object-center` so images fit the banner area.
+- **Routes/Pages** (`frontend/src/routes/venue-form/+page.svelte`):
+  - Header block (title + Cancel/Save) given same horizontal padding as form (`px-4 md:px-6`) for left alignment; loading-state header uses same padding.
+  - Desktop: left column is single flex container (`lg:col-start-1 lg:row-span-2`) with header (flex-shrink-0) and editing pane (flex-1 min-h-0 overflow-y-auto); grid has `lg:h-[calc(100vh-6rem)]` so the page doesn't scroll and only the form scrolls; preview pane has `lg:min-h-0` and scrolls within the grid.
+  - Bottom duplicate Cancel/Save/Undo block removed (header is fixed at top on desktop, single set on mobile).
+  - "Save Venue" button label changed to "Save" (both action bars).
+  - Event list delete button label: "Delete Event List"; event delete button label: "Delete Event".
+  - Duplicate "Edit Venue" h2 removed from editing pane; page title remains in header.
+  - Desktop: outer page container uses `lg:pt-0`, `lg:-mt-6` for title/buttons further up.
+- **Routes/Pages** (`frontend/src/routes/venue-owner/+page.svelte`):
+  - Desktop: page container `md:pt-0 md:pb-8`, `md:-mt-4`; header block and h1 margins reduced (e.g. `md:mb-0`, `md:mb-0.5`) for tighter spacing between title, subtitle, and "Signed in as".
+  - Add Venue: `justify-end` on desktop; on mobile `justify-center`, smaller button (`py-1.5 px-3 text-sm`, icon `w-4 h-4`).
+  - Event list items: `space-y-1` on mobile, smaller item padding; Edit and Delete buttons always in a row (`flex-row`).
+- **Makefile**:
+  - Comment above `fbuild` explaining rollup optional-deps issue and suggesting `make finstall-clean && make fbuild`.

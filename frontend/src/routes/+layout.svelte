@@ -1,11 +1,15 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { page } from '$app/stores';
   import '../app.css';
   import { dev } from '$app/environment';
   import { currentOwnerStore } from '$lib/stores';
   import { goto } from '$app/navigation';
   import { getCurrentOwner } from '$lib/api/auth.js';
   import { browser } from '$app/environment';
+
+  $: isVenueForm = $page.url.pathname === '/venue-form';
+  $: isVenueOwner = $page.url.pathname === '/venue-owner';
 
   let mobileMenuOpen = false;
   let isOnline = true;
@@ -229,7 +233,7 @@
   </header>
 
   <main class="flex-1 bg-white w-full">
-    <div class="container mx-auto py-4 md:py-12">
+    <div class="container mx-auto py-4 {(isVenueForm || isVenueOwner) ? 'md:pt-0 md:pb-12' : 'md:py-12'}">
       <slot />
     </div>
   </main>
@@ -239,6 +243,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
         <p class="text-gray-600 text-sm">
           &copy; 2024 times.place. All rights reserved.
+          <a href="/disclaimer" class="text-blue-600 hover:text-blue-800 font-medium transition-colors ml-2">Disclaimer</a>
         </p>
         <p class="text-gray-600 text-sm">
           Contact: <a

@@ -184,7 +184,7 @@
         <h1 class="text-3xl font-bold mb-3 text-gray-900">{venue.name}</h1>
         {#if owner?.name}
           <p class="text-sm text-gray-600 mb-1">
-            <span class="font-medium text-gray-700">Owner:</span>
+            <span class="font-medium text-gray-700">Admin:</span>
             {owner.name}
           </p>
         {/if}

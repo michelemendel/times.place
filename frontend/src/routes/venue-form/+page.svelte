@@ -2647,7 +2647,7 @@
 
                   {#if previewVenueOwner}
                     <p class="text-sm text-gray-600 mb-2">
-                      <span class="font-medium text-gray-700">Contact:</span>
+                      <span class="font-medium text-gray-700">Admin:</span>
                       {#if previewVenueOwner.name}
                         <span class="ml-2">{previewVenueOwner.name}</span>
                       {/if}

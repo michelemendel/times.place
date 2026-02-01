@@ -22,32 +22,6 @@
 
     <div class="border-t border-gray-200 pt-6">
       <h2 class="text-2xl font-semibold mb-4 text-gray-900">
-        Test User Accounts
-      </h2>
-      <p class="mb-4">
-        Use these test accounts to try the application:
-      </p>
-      <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-        <div class="space-y-3">
-          <div>
-            <p class="font-semibold text-gray-900">User 1:</p>
-            <p class="text-gray-700">Email: <code class="bg-white px-2 py-1 rounded text-sm">abe@demo.org</code></p>
-            <p class="text-gray-700">Password: <code class="bg-white px-2 py-1 rounded text-sm">demo</code></p>
-          </div>
-          <div>
-            <p class="font-semibold text-gray-900">User 2:</p>
-            <p class="text-gray-700">Email: <code class="bg-white px-2 py-1 rounded text-sm">ben@demo.org</code></p>
-            <p class="text-gray-700">Password: <code class="bg-white px-2 py-1 rounded text-sm">demo</code></p>
-          </div>
-        </div>
-      </div>
-      <p class="text-sm text-gray-600 mb-4">
-        These accounts are created when test data is seeded in the backend database.
-      </p>
-    </div>
-
-    <div class="border-t border-gray-200 pt-6">
-      <h2 class="text-2xl font-semibold mb-4 text-gray-900">
         Report Bugs & Suggestions
       </h2>
       <p class="mb-4">

@@ -654,7 +654,7 @@
           <div class="flex flex-col justify-start">
             {#if selectedVenue.owner_name}
               <p class="text-sm text-gray-600 mb-1">
-                <span class="font-medium text-gray-700">Owner:</span> {selectedVenue.owner_name}
+                <span class="font-medium text-gray-700">Admin:</span> {selectedVenue.owner_name}
               </p>
             {/if}
             {#if selectedVenue.owner_email}
@@ -685,7 +685,7 @@
               </p>
             {/if}
             {#if selectedVenue.geolocation}
-              <p class="text-sm text-gray-600 mb-2 no-print-geolocation">
+              <p class="hidden md:block text-sm text-gray-600 mb-2 no-print-geolocation">
                 <span class="font-medium text-gray-700">Geolocation:</span> {selectedVenue.geolocation}
               </p>
             {/if}

@@ -1536,22 +1536,22 @@
 </svelte:head>
 
 <div
-  class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-4 md:pt-6 md:pb-8 lg:pt-6 lg:pb-8 w-full overflow-x-hidden"
+  class="w-full min-w-0 max-w-full lg:max-w-7xl lg:mx-auto overflow-x-hidden"
 >
   {#if isLoading}
     <div
-      class="mb-4 md:mb-6 flex flex-col gap-2 md:gap-4 px-4 md:px-6 lg:sticky lg:top-20 lg:z-10 lg:bg-white lg:pb-4 lg:border-b lg:border-gray-200 lg:shadow-sm"
+      class="mb-2 md:mb-6 flex flex-col gap-1 md:gap-4 px-2 md:px-6 lg:sticky lg:top-20 lg:z-10 lg:bg-white lg:pb-4 lg:border-b lg:border-gray-200 lg:shadow-sm"
     >
       <div>
-        <h1 class="text-[24px] md:text-3xl font-bold text-gray-900">
+        <h1 class="text-[16px] md:text-3xl font-bold text-gray-900">
           {isNewVenue ? 'Create' : 'Edit'} Venue
         </h1>
       </div>
-      <div class="flex gap-2 justify-start">
+      <div class="flex gap-1 md:gap-2 justify-start">
         {#if undoStack.length > 0}
           <button
             on:click={handleUndo}
-            class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors md:py-2 md:px-4 md:text-base"
+            class="py-1 px-2 text-[10px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors md:py-2 md:px-4 md:text-base"
             title="Undo last change"
           >
             Undo
@@ -1559,14 +1559,14 @@
         {/if}
         <button
           on:click={cancelEdit}
-          class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors duration-200 md:py-2 md:px-4 md:text-base"
+          class="py-1 px-2 text-[10px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors duration-200 md:py-2 md:px-4 md:text-base"
         >
           Cancel
         </button>
         <button
           on:click={saveVenue}
           disabled={isSaving || isLoading}
-          class="py-1.5 px-3 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-4 md:text-base"
+          class="py-1 px-2 text-[10px] rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-4 md:text-base"
         >
           {isSaving ? 'Saving...' : 'Save'}
         </button>
@@ -1576,7 +1576,7 @@
 
   {#if loadError}
     <div
-      class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+      class="mb-2 md:mb-4 rounded-md border border-red-200 bg-red-50 px-2 md:px-4 py-2 md:py-3 text-[10px] md:text-sm text-red-800"
     >
       {loadError}
     </div>
@@ -1584,35 +1584,35 @@
 
   {#if saveError}
     <div
-      class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+      class="mb-2 md:mb-4 rounded-md border border-red-200 bg-red-50 px-2 md:px-4 py-2 md:py-3 text-[10px] md:text-sm text-red-800"
     >
       {saveError}
     </div>
   {/if}
 
   {#if isLoading}
-    <div class="mb-4 text-center text-gray-600">Loading venue data...</div>
+    <div class="mb-2 md:mb-4 text-center text-[10px] md:text-base text-gray-600">Loading venue data...</div>
   {:else if dataLoaded}
     <div
-      class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full overflow-x-hidden max-w-full lg:h-[calc(100vh-6rem)] lg:min-h-0"
+      class="grid grid-cols-1 lg:grid-cols-2 gap-2 md:gap-6 w-full overflow-x-hidden max-w-full lg:h-[calc(100vh-6rem)] lg:min-h-0"
     >
       <!-- Left column on desktop: single flex container so header stays at top and form scrolls beneath (same as mobile) -->
       <div
-        class="flex flex-col gap-4 lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:min-h-0 lg:overflow-hidden"
+        class="flex flex-col gap-2 md:gap-4 lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:min-h-0 lg:overflow-hidden"
       >
         <div
-          class="mb-4 md:mb-0 flex flex-col gap-2 md:gap-4 px-4 md:px-6 flex-shrink-0 lg:pt-0 lg:gap-2 lg:sticky lg:top-20 lg:z-10 lg:bg-white lg:pb-4 lg:border-b lg:border-gray-200 lg:shadow-sm"
+          class="mb-2 md:mb-0 flex flex-col gap-1 md:gap-4 px-2 md:px-6 flex-shrink-0 lg:pt-0 lg:gap-2 lg:sticky lg:top-20 lg:z-10 lg:bg-white lg:pb-4 lg:border-b lg:border-gray-200 lg:shadow-sm"
         >
           <div>
-            <h1 class="text-[24px] md:text-3xl font-bold text-gray-900">
+            <h1 class="text-[16px] md:text-3xl font-bold text-gray-900">
               {isNewVenue ? 'Create' : 'Edit'} Venue
             </h1>
           </div>
-          <div class="flex gap-2 justify-start">
+          <div class="flex gap-1 md:gap-2 justify-start">
             {#if undoStack.length > 0}
               <button
                 on:click={handleUndo}
-                class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors md:py-2 md:px-4 md:text-base"
+                class="py-1 px-2 text-[10px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors md:py-2 md:px-4 md:text-base"
                 title="Undo last change"
               >
                 Undo
@@ -1620,14 +1620,14 @@
             {/if}
             <button
               on:click={cancelEdit}
-              class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors duration-200 md:py-2 md:px-4 md:text-base"
+              class="py-1 px-2 text-[10px] rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors duration-200 md:py-2 md:px-4 md:text-base"
             >
               Cancel
             </button>
             <button
               on:click={saveVenue}
               disabled={isSaving || isLoading}
-              class="py-1.5 px-3 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-4 md:text-base"
+              class="py-1 px-2 text-[10px] rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-4 md:text-base"
             >
               {isSaving ? 'Saving...' : 'Save'}
             </button>
@@ -1635,16 +1635,16 @@
         </div>
         <!-- Editing Pane (scrolls beneath header on desktop, same as mobile) -->
         <div
-          class="bg-white rounded-xl shadow-lg p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto overflow-x-hidden flex-1 min-h-0 w-full max-h-[calc(100vh-200px)] lg:max-h-none"
+          class="bg-white rounded-xl shadow-lg p-2 md:p-6 space-y-2 md:space-y-6 overflow-y-auto overflow-x-hidden flex-1 min-h-0 w-full max-h-[calc(100vh-200px)] lg:max-h-none"
         >
           <!-- Basic Venue Information -->
-          <div class="space-y-4">
-            <h3 class="text-lg font-medium text-gray-800">Basic Information</h3>
+          <div class="space-y-2 md:space-y-4">
+            <h3 class="text-[14px] md:text-lg font-medium text-gray-800">Basic Information</h3>
 
             <div>
               <label
                 for="venue-name"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
                 >Venue Name *</label
               >
               <div class="relative">
@@ -1653,7 +1653,7 @@
                   id="venue-name"
                   bind:value={venueName}
                   on:blur={validateVenueNameBlur}
-                  class="w-full px-3 py-2 pr-9 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {venueNameError
+                  class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {venueNameError
                     ? 'border-red-500'
                     : 'border-gray-300'}"
                   placeholder="Enter venue name"
@@ -1688,7 +1688,7 @@
             <div>
               <label
                 for="venue-address"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
                 >Address (optional)</label
               >
               <div class="flex gap-2">
@@ -1697,7 +1697,7 @@
                     type="text"
                     id="venue-address"
                     bind:value={venueAddress}
-                    class="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter address"
                     on:keydown={(/** @type {KeyboardEvent} */ e) =>
                       e.key === 'Enter' && handleFindOnMap()}
@@ -1764,7 +1764,7 @@
             <div>
               <label
                 for="venue-geolocation"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
                 >Geolocation (optional)</label
               >
               <p class="text-xs text-gray-500 mb-2">
@@ -1782,7 +1782,7 @@
               <div class="mb-2">
                 <label
                   for="venue-geolocation"
-                  class="block text-xs font-medium text-gray-700 mb-1"
+                  class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
                   >Coordinates (latitude,longitude)</label
                 >
                 <div class="relative">
@@ -1826,7 +1826,7 @@
             <div>
               <label
                 for="venue-comment"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
                 >Comment (optional)</label
               >
               <div class="relative">
@@ -1834,7 +1834,7 @@
                   id="venue-comment"
                   bind:value={venueComment}
                   rows="3"
-                  class="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Optional comment about the venue"
                 ></textarea>
                 <button
@@ -1862,10 +1862,10 @@
             </div>
 
             <div>
-              <div class="flex items-center gap-2 mb-1">
+              <div class="flex items-center gap-1 md:gap-2 mb-0.5 md:mb-1">
                 <label
                   for="venue-timezone"
-                  class="block text-sm font-medium text-gray-700"
+                  class="block text-[10px] md:text-sm font-medium text-gray-700"
                   >Timezone (optional, leave empty for your current timezone)</label
                 >
                 <div class="relative">
@@ -1889,7 +1889,7 @@
                     aria-haspopup="true"
                   >
                     <svg
-                      class="w-5 h-5"
+                      class="w-3.5 h-3.5 md:w-5 md:h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1966,11 +1966,11 @@
                   {/if}
                 </div>
               </div>
-              <div class="relative flex gap-2 items-center">
+              <div class="relative flex gap-1 md:gap-2 items-center">
                 <select
                   id="venue-timezone"
                   bind:value={venueTimezone}
-                  class="flex-1 min-w-0 pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23666%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpolyline%20points=%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-no-repeat bg-[length:1.25em] bg-[position:right_0.75rem_center]"
+                  class="flex-1 min-w-0 pl-2 md:pl-3 pr-8 md:pr-10 py-1.5 md:py-2 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23666%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpolyline%20points=%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-no-repeat bg-[length:1.25em] bg-[position:right_0.5rem_center] md:bg-[position:right_0.75rem_center]"
                 >
                   {#each timezones as tz}
                     {#if tz.group}
@@ -1987,12 +1987,12 @@
                 <button
                   type="button"
                   on:click={() => (venueTimezone = '')}
-                  class="shrink-0 p-2 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  class="shrink-0 p-1.5 md:p-2 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                   title="Clear timezone"
                   aria-label="Clear timezone"
                 >
                   <svg
-                    class="w-4 h-4"
+                    class="w-3.5 h-3.5 md:w-4 md:h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -2011,7 +2011,7 @@
             <div>
               <label
                 for="venue-banner"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
                 >Banner Image (optional) — max {BANNER_MAX_MB} MB, preferred ratio 16:9</label
               >
               <input
@@ -2020,7 +2020,7 @@
                 id="venue-banner"
                 accept="image/*"
                 on:change={handleImageUpload}
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               {#if venueBannerImage}
                 <div class="mt-2 flex items-start gap-2">
@@ -2044,20 +2044,20 @@
           </div>
 
           <!-- Event Lists -->
-          <div class="space-y-4">
+          <div class="space-y-2 md:space-y-4">
             <div>
-              <h3 class="text-lg font-medium text-gray-800">Event Lists</h3>
+              <h3 class="text-[14px] md:text-lg font-medium text-gray-800">Event Lists</h3>
             </div>
 
             {#if eventListsData.length === 0}
-              <p class="text-sm text-gray-500 py-4 text-center">
+              <p class="text-[10px] md:text-sm text-gray-500 py-2 md:py-4 text-center">
                 No event lists yet. Click "+ Add Event List" to create one.
               </p>
             {/if}
 
             {#each eventListsData as listData, listIndex (listData.event_list_uuid)}
               <div
-                class="border-2 border-gray-300 rounded-lg p-4 space-y-3 w-full min-w-0 overflow-x-hidden"
+                class="border-2 border-gray-300 rounded-lg p-2 md:p-4 space-y-2 md:space-y-3 w-full min-w-0 overflow-x-hidden"
               >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
@@ -2080,7 +2080,7 @@
                   </div>
                   <button
                     on:click={() => deleteEventList(listData.event_list_uuid)}
-                    class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                    class="px-1.5 md:px-2 py-0.5 md:py-1 bg-red-600 hover:bg-red-700 text-white text-[9px] md:text-sm rounded transition-colors"
                   >
                     Delete Event List
                   </button>
@@ -2089,7 +2089,7 @@
                 <div>
                   <label
                     for="event-list-name-{listData.event_list_uuid}"
-                    class="block text-sm font-medium text-gray-700 mb-1"
+                    class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
                     >Event List Name (optional)</label
                   >
                   <div class="relative">
@@ -2097,7 +2097,7 @@
                       type="text"
                       id="event-list-name-{listData.event_list_uuid}"
                       bind:value={listData.name}
-                      class="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="e.g. Week of Dec 2"
                     />
                     <button
@@ -2127,7 +2127,7 @@
                 <div>
                   <label
                     for="event-list-date-{listData.event_list_uuid}"
-                    class="block text-sm font-medium text-gray-700 mb-1"
+                    class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
                     >Date (optional)</label
                   >
                   <div class="flex gap-2">
@@ -2150,7 +2150,7 @@
                           );
                         });
                       }}
-                      class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      class="flex-1 px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     {#if listData.date && listData.date.trim()}
                       <button
@@ -2172,7 +2172,7 @@
                 <div>
                   <label
                     for="event-list-comment-{listData.event_list_uuid}"
-                    class="block text-sm font-medium text-gray-700 mb-1"
+                    class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
                     >Comment (optional)</label
                   >
                   <div class="relative">
@@ -2180,7 +2180,7 @@
                       id="event-list-comment-{listData.event_list_uuid}"
                       bind:value={listData.comment}
                       rows="2"
-                      class="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Optional comment"
                     ></textarea>
                     <button
@@ -2208,11 +2208,11 @@
                 </div>
 
                 <div>
-                  <div class="block text-sm font-medium text-gray-700 mb-2">
+                  <div class="block text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
                     Visibility
                   </div>
-                  <div class="flex gap-4">
-                    <label class="flex items-center">
+                  <div class="flex gap-2 md:gap-4">
+                    <label class="flex items-center text-[10px] md:text-base">
                       <input
                         type="radio"
                         value="public"
@@ -2222,11 +2222,11 @@
                             listData.event_list_uuid,
                             'public',
                           )}
-                        class="mr-2"
+                        class="mr-1 md:mr-2 w-3 h-3 md:w-4 md:h-4"
                       />
                       <span>Public</span>
                     </label>
-                    <label class="flex items-center">
+                    <label class="flex items-center text-[10px] md:text-base">
                       <input
                         type="radio"
                         value="private"
@@ -2236,13 +2236,13 @@
                             listData.event_list_uuid,
                             'private',
                           )}
-                        class="mr-2"
+                        class="mr-1 md:mr-2 w-3 h-3 md:w-4 md:h-4"
                       />
                       <span>Private</span>
                     </label>
                   </div>
                   {#if listData.private_link_token}
-                    <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
+                    <div class="mt-1 md:mt-2 p-1.5 md:p-2 bg-gray-50 rounded text-[9px] md:text-xs">
                       <p class="text-gray-600 mb-1">
                         Share link (works for public and private):
                       </p>
@@ -2292,7 +2292,7 @@
                       </div>
                     </div>
                   {:else}
-                    <p class="mt-2 text-xs text-gray-500">
+                    <p class="mt-1 md:mt-2 text-[9px] md:text-xs text-gray-500">
                       Save the venue to get a shareable direct link for this
                       event list.
                     </p>
@@ -2300,18 +2300,18 @@
                 </div>
 
                 <div>
-                  <div class="block text-sm font-medium text-gray-700 mb-2">
+                  <div class="block text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
                     Events
                   </div>
 
                   {#if !listData.events || listData.events.length === 0}
-                    <p class="text-sm text-gray-500 py-2">
+                    <p class="text-[10px] md:text-sm text-gray-500 py-1 md:py-2">
                       No events yet. Click "+ Add Event" to add one.
                     </p>
                   {/if}
                   {#each listData.events || [] as event, eventIndex (event.event_uuid)}
                     <div
-                      class="border border-gray-200 rounded p-3 mb-2 space-y-2 w-full overflow-x-hidden"
+                      class="border border-gray-200 rounded p-1.5 md:p-3 mb-1 md:mb-2 space-y-1 md:space-y-2 w-full overflow-x-hidden"
                     >
                       <div class="flex items-center justify-between">
                         <div class="flex items-center gap-1">
@@ -2319,7 +2319,7 @@
                             on:click={() =>
                               moveEventUp(listData.event_list_uuid, eventIndex)}
                             disabled={eventIndex === 0}
-                            class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-xs"
+                            class="p-0.5 md:p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-[9px] md:text-xs"
                             title="Move up"
                           >
                             ↑
@@ -2332,7 +2332,7 @@
                               )}
                             disabled={eventIndex ===
                               (listData.events || []).length - 1}
-                            class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-xs"
+                            class="p-0.5 md:p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-[9px] md:text-xs"
                             title="Move down"
                           >
                             ↓
@@ -2355,7 +2355,7 @@
                                 listData.event_list_uuid,
                                 event.event_uuid,
                               )}
-                            class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                            class="px-1.5 md:px-2 py-0.5 md:py-1 bg-red-600 hover:bg-red-700 text-white text-[9px] md:text-xs rounded transition-colors"
                           >
                             Delete Event
                           </button>
@@ -2365,7 +2365,7 @@
                       <div>
                         <label
                           for="event-name-{event.event_uuid}"
-                          class="block text-xs font-medium text-gray-700 mb-1"
+                          class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
                           >Event Name</label
                         >
                         <div class="relative">
@@ -2375,7 +2375,7 @@
                             bind:value={event.event_name}
                             on:blur={() =>
                               validateEventNameBlur(event.event_uuid)}
-                            class="w-full px-2 py-1 pr-8 text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {eventNameErrors[
+                            class="w-full px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[10px] md:text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {eventNameErrors[
                               event.event_uuid
                             ]
                               ? 'border-red-500'
@@ -2417,7 +2417,7 @@
                       >
                         <label
                           for="event-time-{event.event_uuid}"
-                          class="block text-xs font-medium text-gray-700 mb-1"
+                          class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
                           >Time (HH:MM)</label
                         >
                         <div class="relative flex gap-1">
@@ -2436,7 +2436,7 @@
                                 venueTimezone,
                               );
                             }}
-                            class="flex-1 min-w-0 px-2 py-1 pr-8 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="flex-1 min-w-0 px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[10px] md:text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             style="box-sizing: border-box; max-width: 100%; min-width: 0; -webkit-appearance: none; appearance: none;"
                           />
                           <button
@@ -2477,7 +2477,7 @@
                       <div>
                         <label
                           for="event-duration-{event.event_uuid}"
-                          class="block text-xs font-medium text-gray-700 mb-1"
+                          class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
                           >Duration (minutes) (optional)</label
                         >
                         <div class="flex gap-2">
@@ -2486,7 +2486,7 @@
                             id="event-duration-{event.event_uuid}"
                             bind:value={event.duration_minutes}
                             min="1"
-                            class="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="flex-1 min-w-0 px-1.5 md:px-2 py-0.5 md:py-1 text-[10px] md:text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="No duration"
                           />
                           {#if event.duration_minutes && event.duration_minutes !== '' && event.duration_minutes > 0}
@@ -2521,7 +2521,7 @@
                       <div>
                         <label
                           for="event-comment-{event.event_uuid}"
-                          class="block text-xs font-medium text-gray-700 mb-1"
+                          class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
                           >Comment (optional)</label
                         >
                         <div class="relative">
@@ -2529,7 +2529,7 @@
                             id="event-comment-{event.event_uuid}"
                             bind:value={event.comment}
                             rows="2"
-                            class="w-full px-2 py-1 pr-8 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="w-full px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[10px] md:text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Optional comment"
                           ></textarea>
                           <button
@@ -2559,7 +2559,7 @@
                   {/each}
                   <button
                     on:click={() => addEvent(listData.event_list_uuid)}
-                    class="mt-2 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+                    class="mt-1 md:mt-2 px-1.5 md:px-2 py-0.5 md:py-1 bg-green-600 hover:bg-green-700 text-white text-[10px] md:text-sm rounded transition-colors"
                   >
                     + Add Event
                   </button>
@@ -2568,7 +2568,7 @@
             {/each}
             <button
               on:click={addEventList}
-              class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+              class="px-2 md:px-3 py-0.5 md:py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] md:text-sm rounded-lg transition-colors"
             >
               + Add Event List
             </button>
@@ -2588,13 +2588,13 @@
           <div>
             <label
               for="preview-event-list"
-              class="block text-sm font-medium text-gray-700 mb-1"
+              class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
               >Select Event List</label
             >
             <select
               id="preview-event-list"
               bind:value={previewEventListId}
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               {#each eventListsData as listData}
                 <option value={listData.event_list_uuid}

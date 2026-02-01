@@ -102,36 +102,36 @@
   >
 </svelte:head>
 
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+<div class="w-full min-w-0 max-w-full lg:max-w-[60%] lg:mx-auto">
   {#if !owner}
-    <div class="text-center py-6">
-      <p class="text-sm text-gray-600">Please log in to view event lists.</p>
+    <div class="text-center py-4 md:py-6">
+      <p class="text-[12px] md:text-sm text-gray-600">Please log in to view event lists.</p>
     </div>
   {:else if loading}
-    <div class="text-center py-6">
-      <p class="text-sm text-gray-600">Loading...</p>
+    <div class="text-center py-4 md:py-6">
+      <p class="text-[12px] md:text-sm text-gray-600">Loading...</p>
     </div>
   {:else if !venue || !eventList}
-    <div class="text-center py-6">
-      <p class="text-sm text-gray-600">
+    <div class="text-center py-4 md:py-6">
+      <p class="text-[12px] md:text-sm text-gray-600">
         {loadError || 'Event list not found.'}
       </p>
       <button
         on:click={goBack}
-        class="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+        class="mt-2 md:mt-4 bg-blue-600 hover:bg-blue-700 text-white text-[12px] md:text-sm font-medium py-1 md:py-2 px-2 md:px-4 rounded-lg transition-colors duration-200"
       >
         Back to Venues
       </button>
     </div>
   {:else}
     <!-- Action Buttons (hidden when printing) -->
-    <div class="mb-4 flex gap-4 no-print">
+    <div class="mb-2 md:mb-4 flex gap-2 md:gap-4 no-print">
       <button
         on:click={goBack}
-        class="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200"
+        class="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-[10px] md:text-sm bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200"
       >
         <svg
-          class="w-4 h-4"
+          class="w-3 h-3 md:w-4 md:h-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -148,10 +148,10 @@
 
       <button
         on:click={printEventList}
-        class="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+        class="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 text-[10px] md:text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
       >
         <svg
-          class="w-4 h-4"
+          class="w-3 h-3 md:w-4 md:h-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -168,28 +168,28 @@
     </div>
 
     <!-- Event List Content -->
-    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+    <div class="bg-white rounded-xl shadow-lg p-2 md:p-6">
       <!-- Banner Image -->
       {#if venue.banner_image}
         <BannerImage
           src={venue.banner_image}
           alt={venue.name}
           size="md"
-          wrapperClass="mb-4"
+          wrapperClass="mb-2 md:mb-4"
         />
       {/if}
 
       <!-- Venue Header -->
-      <div class="mb-3 pb-2 border-b border-gray-200">
-        <h1 class="text-3xl font-bold mb-3 text-gray-900">{venue.name}</h1>
+      <div class="mb-2 md:mb-3 pb-1 md:pb-2 border-b border-gray-200">
+        <h1 class="text-[16px] md:text-3xl font-bold mb-1 md:mb-3 text-gray-900">{venue.name}</h1>
         {#if owner?.name}
-          <p class="text-sm text-gray-600 mb-1">
+          <p class="text-[10px] md:text-sm text-gray-600 mb-0.5 md:mb-1">
             <span class="font-medium text-gray-700">Admin:</span>
             {owner.name}
           </p>
         {/if}
         {#if owner?.email}
-          <p class="text-sm text-gray-600 mb-1">
+          <p class="text-[10px] md:text-sm text-gray-600 mb-0.5 md:mb-1">
             <a
               href="mailto:{owner.email}"
               class="text-blue-600 hover:text-blue-800 hover:underline"
@@ -199,19 +199,19 @@
           </p>
         {/if}
         {#if venue.address}
-          <p class="text-sm text-gray-600 mb-2">{venue.address}</p>
+          <p class="text-[10px] md:text-sm text-gray-600 mb-1 md:mb-2">{venue.address}</p>
         {/if}
       </div>
 
       <!-- Event List Header -->
-      <div class="mb-4">
-        <h2 class="text-2xl font-semibold mb-1 text-gray-900">
+      <div class="mb-2 md:mb-4">
+        <h2 class="text-[14px] md:text-2xl font-semibold mb-0.5 md:mb-1 text-gray-900">
           {eventList.name || 'Untitled Event List'}
         </h2>
         {#if eventList.date}
-          <p class="text-sm text-gray-600 mb-2">
+          <p class="text-[10px] md:text-sm text-gray-600 mb-1 md:mb-2">
             <svg
-              class="w-4 h-4 inline mr-1"
+              class="w-3 h-3 md:w-4 md:h-4 inline mr-0.5 md:mr-1"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -227,7 +227,7 @@
           </p>
         {/if}
         {#if eventList.comment}
-          <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">
+          <p class="text-[9px] md:text-xs text-gray-600 mb-2 md:mb-4 whitespace-pre-line">
             {eventList.comment}
           </p>
         {/if}
@@ -235,35 +235,35 @@
 
       <!-- Events -->
       {#if listEvents.length === 0}
-        <div class="py-4 text-center">
-          <p class="text-sm text-gray-500">
+        <div class="py-2 md:py-4 text-center">
+          <p class="text-[10px] md:text-sm text-gray-500">
             No events scheduled for this list.
           </p>
         </div>
       {:else}
-        <div class="space-y-1">
+        <div class="space-y-0.5 md:space-y-1">
           {#each listEvents as event}
             <div
-              class="flex items-center justify-between py-1 px-3 bg-gray-50 rounded-lg"
+              class="flex items-center justify-between py-0.5 md:py-1 px-2 md:px-3 bg-gray-50 rounded-lg"
             >
-              <div class="flex-1">
-                <p class="font-medium text-sm text-gray-900">
+              <div class="flex-1 min-w-0">
+                <p class="font-medium text-[12px] md:text-sm text-gray-900">
                   {event.event_name}
                 </p>
                 {#if event.comment}
                   <p
-                    class="text-sm md:text-xs text-gray-600 mt-0.5 whitespace-pre-line"
+                    class="text-[10px] md:text-xs text-gray-600 mt-0.5 whitespace-pre-line"
                   >
                     {event.comment}
                   </p>
                 {/if}
               </div>
-              <div class="text-right ml-4">
-                <p class="text-base font-semibold text-blue-600">
+              <div class="text-right ml-2 md:ml-4">
+                <p class="text-[14px] md:text-base font-semibold text-blue-600">
                   {formatEventTimeFromRFC3339(event.datetime, venue?.timezone)}
                 </p>
                 {#if event.duration_minutes}
-                  <p class="text-xs text-gray-500 mt-0.5">
+                  <p class="text-[9px] md:text-xs text-gray-500 mt-0.5">
                     {event.duration_minutes} min
                   </p>
                 {/if}

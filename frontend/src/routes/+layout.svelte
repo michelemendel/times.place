@@ -99,7 +99,7 @@
   {/if}
   <header class="bg-gray-100 shadow-sm min-w-0 w-full max-w-[100vw] overflow-x-clip">
     <nav
-      class="container mx-auto h-20 flex items-center justify-between relative min-w-0 max-w-full overflow-x-hidden"
+      class="container mx-auto h-20 flex items-center justify-between relative min-w-0 max-w-full overflow-visible"
     >
       <div class="flex items-center pl-4 md:pl-0">
         <a

@@ -277,120 +277,120 @@
   <title>Event Lists - {venue?.name || 'Venue'} - times.place</title>
 </svelte:head>
 
-<div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="w-full min-w-0 max-w-full lg:max-w-[60%] lg:mx-auto">
   {#if !owner}
-    <div class="text-center py-8">
-      <p class="text-gray-600">Please log in to view event lists.</p>
+    <div class="text-center py-4 md:py-8">
+      <p class="text-[12px] md:text-base text-gray-600">Please log in to view event lists.</p>
     </div>
   {:else if isLoading}
-    <div class="text-center py-8">
-      <p class="text-gray-600">Loading venue data...</p>
+    <div class="text-center py-4 md:py-8">
+      <p class="text-[12px] md:text-base text-gray-600">Loading venue data...</p>
     </div>
   {:else if loadError}
-    <div class="text-center py-8">
-      <p class="text-red-600 mb-4">{loadError}</p>
+    <div class="text-center py-4 md:py-8">
+      <p class="text-[12px] md:text-base text-red-600 mb-2 md:mb-4">{loadError}</p>
       <button
         on:click={() => loadData()}
-        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-1 md:py-2 px-2 md:px-4 rounded-lg transition-colors duration-200 text-[12px] md:text-base"
       >
         Retry
       </button>
       <button
         on:click={() => goto('/venue-owner')}
-        class="ml-2 bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+        class="ml-1 md:ml-2 bg-gray-600 hover:bg-gray-700 text-white font-medium py-1 md:py-2 px-2 md:px-4 rounded-lg transition-colors duration-200 text-[12px] md:text-base"
       >
         Back to Venues
       </button>
     </div>
   {:else if !venue}
-    <div class="text-center py-8">
-      <p class="text-gray-600">Venue not found.</p>
+    <div class="text-center py-4 md:py-8">
+      <p class="text-[12px] md:text-base text-gray-600">Venue not found.</p>
       <button
         on:click={() => goto('/venue-owner')}
-        class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+        class="mt-2 md:mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-1 md:py-2 px-2 md:px-4 rounded-lg transition-colors duration-200 text-[12px] md:text-base"
       >
         Back to Venues
       </button>
     </div>
   {:else}
     <!-- Header -->
-    <div class="mb-8">
+    <div class="mb-2 md:mb-8">
       <button
         on:click={() => goto('/venue-owner')}
-        class="mb-4 text-blue-600 hover:text-blue-800 flex items-center gap-2 transition-colors duration-200"
+        class="mb-2 md:mb-4 text-blue-600 hover:text-blue-800 flex items-center gap-1 md:gap-2 transition-colors duration-200 text-[12px] md:text-base"
       >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-3.5 h-3.5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
         <span>Back to Venues</span>
       </button>
       
-      <h1 class="text-4xl font-bold mb-2 text-gray-900">{venue.name}</h1>
+      <h1 class="text-[16px] md:text-4xl font-bold mb-0.5 md:mb-2 text-gray-900">{venue.name}</h1>
       {#if owner?.name}
-        <p class="text-lg text-gray-600 mb-1">Owner: {owner.name}</p>
+        <p class="text-[10px] md:text-lg text-gray-600 mb-0.5 md:mb-1">Owner: {owner.name}</p>
       {/if}
       {#if venue.address}
-        <p class="text-lg text-gray-600 mb-4">{venue.address}</p>
+        <p class="text-[10px] md:text-lg text-gray-600 mb-2 md:mb-4">{venue.address}</p>
       {/if}
     </div>
 
     <!-- Event Lists -->
     {#if venueEventLists.length === 0}
-      <div class="bg-white rounded-xl shadow-lg p-8 md:p-12 text-center">
-        <div class="mb-4">
-          <svg class="w-16 h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="bg-white rounded-xl shadow-lg p-2 md:p-12 text-center">
+        <div class="mb-2 md:mb-4">
+          <svg class="w-10 h-10 md:w-16 md:h-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <h2 class="text-2xl font-semibold text-gray-900 mb-2">No event lists yet</h2>
-        <p class="text-gray-600 mb-6">This venue doesn't have any event lists. Edit the venue to add event lists.</p>
+        <h2 class="text-[14px] md:text-2xl font-semibold text-gray-900 mb-1 md:mb-2">No event lists yet</h2>
+        <p class="text-[10px] md:text-base text-gray-600 mb-2 md:mb-6">This venue doesn't have any event lists. Edit the venue to add event lists.</p>
         <button
           on:click={() => venue && goto(`/venue-form?venue_uuid=${venue.venue_uuid}`)}
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors duration-200"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 md:py-2 px-3 md:px-6 rounded-lg shadow-md transition-colors duration-200 text-[12px] md:text-base"
         >
           Edit Venue
         </button>
       </div>
     {:else}
-      <div class="space-y-4">
+      <div class="space-y-2 md:space-y-4">
         {#each venueEventLists as eventList (eventList.event_list_uuid)}
           {@const listEvents = getEventsForList(eventList)}
           <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
-            <div class="p-4 sm:p-6">
-              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                <div class="flex-1">
-                  <h3 class="text-xl font-bold text-gray-900 mb-1">{eventList.name || 'Untitled Event List'}</h3>
+            <div class="p-2 md:p-6">
+              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 md:gap-4 mb-2 md:mb-4">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-[14px] md:text-xl font-bold text-gray-900 mb-0.5 md:mb-1">{eventList.name || 'Untitled Event List'}</h3>
                   {#if eventList.date}
-                    <p class="text-sm text-gray-600 mb-2">
-                      <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <p class="text-[10px] md:text-sm text-gray-600 mb-1 md:mb-2">
+                      <svg class="w-3 h-3 md:w-4 md:h-4 inline mr-0.5 md:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       {formatEventListDate(eventList.date)}
                     </p>
                   {/if}
                   {#if eventList.comment}
-                    <p class="text-sm text-gray-500 whitespace-pre-line">{eventList.comment}</p>
+                    <p class="text-[10px] md:text-sm text-gray-500 whitespace-pre-line">{eventList.comment}</p>
                   {/if}
                 </div>
                 
                 <!-- Action Buttons -->
-                <div class="flex gap-2 sm:flex-row">
+                <div class="flex gap-1 md:gap-2 sm:flex-row">
                   <button
                     on:click={() => {
                       // Ensure token exists before copying
                       const listWithToken = ensureEventListToken(eventList);
                       copyPrivateLink(listWithToken);
                     }}
-                    class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm sm:text-base"
+                    class="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1 md:py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 text-[10px] md:text-base"
                     title="Copy shareable direct link to clipboard"
                   >
                     {#if copiedLinkToken === eventList.event_list_uuid}
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3.5 h-3.5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                       </svg>
                       <span>Copied!</span>
                     {:else}
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3.5 h-3.5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                       <span>Copy link</span>
@@ -399,10 +399,10 @@
                   
                   <button
                     on:click={() => printEventList(eventList)}
-                    class="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm sm:text-base"
+                    class="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1 md:py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200 text-[10px] md:text-base"
                     title="Print this event list"
                   >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-3.5 h-3.5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                     <span>Print</span>
@@ -412,11 +412,11 @@
 
               <!-- Events Preview -->
               {#if listEvents.length > 0}
-                <div class="mt-4 pt-4 border-t border-gray-200">
-                  <p class="text-sm font-medium text-gray-700 mb-2">{listEvents.length} event{listEvents.length !== 1 ? 's' : ''}</p>
-                  <div class="space-y-2">
+                <div class="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-gray-200">
+                  <p class="text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2">{listEvents.length} event{listEvents.length !== 1 ? 's' : ''}</p>
+                  <div class="space-y-0.5 md:space-y-2">
                     {#each listEvents.slice(0, 3) as event}
-                      <div class="flex items-center justify-between text-sm">
+                      <div class="flex items-center justify-between text-[10px] md:text-sm">
                         <span class="text-gray-900">{event.event_name}</span>
                         <span class="text-gray-600 font-medium">
                           {formatEventTimeFromRFC3339(event.datetime, venue?.timezone)}
@@ -424,13 +424,13 @@
                       </div>
                     {/each}
                     {#if listEvents.length > 3}
-                      <p class="text-xs text-gray-500">... and {listEvents.length - 3} more</p>
+                      <p class="text-[9px] md:text-xs text-gray-500">... and {listEvents.length - 3} more</p>
                     {/if}
                   </div>
                 </div>
               {:else}
-                <div class="mt-4 pt-4 border-t border-gray-200">
-                  <p class="text-sm text-gray-500">No events in this list</p>
+                <div class="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-gray-200">
+                  <p class="text-[10px] md:text-sm text-gray-500">No events in this list</p>
                 </div>
               {/if}
             </div>
@@ -443,7 +443,7 @@
   <!-- Link Modal -->
   {#if linkModalEventList}
     <div
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="link-modal-title"
@@ -451,29 +451,29 @@
       on:click={(e) => e.target === e.currentTarget && closeLinkModal()}
       on:keydown={(e) => e.key === 'Escape' && closeLinkModal()}
     >
-      <article class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 id="link-modal-title" class="text-xl font-bold text-gray-900">Private Link</h3>
+      <article class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-3 md:p-6">
+        <div class="flex items-center justify-between mb-2 md:mb-4">
+          <h3 id="link-modal-title" class="text-[14px] md:text-xl font-bold text-gray-900">Private Link</h3>
           <button
             on:click={closeLinkModal}
             class="text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Close"
           >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        <p class="text-gray-700 mb-4">
+        <p class="text-[12px] md:text-base text-gray-700 mb-2 md:mb-4">
           Share this link to allow others to view the event list <strong>{linkModalEventList?.name || 'Untitled'}</strong>:
         </p>
-        <div class="flex gap-2 mb-4">
+        <div class="flex gap-1 md:gap-2 mb-2 md:mb-4">
           <input
             type="text"
             readonly
             value={linkModalEventList ? getPrivateLink(linkModalEventList) : ''}
             on:focus={selectLinkText}
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 font-mono text-sm"
+            class="flex-1 px-2 md:px-4 py-1.5 md:py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 font-mono text-[10px] md:text-sm"
           />
           <button
             on:click={() => {
@@ -491,21 +491,21 @@
                 });
               }
             }}
-            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+            class="px-2 md:px-4 py-1.5 md:py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
             title="Copy to clipboard"
           >
             {#if linkModalEventList && copiedLinkToken === linkModalEventList.event_list_uuid}
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             {:else}
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             {/if}
           </button>
         </div>
-        <p class="text-sm text-gray-500">
+        <p class="text-[10px] md:text-sm text-gray-500">
           Click the input field to select the link, or use the copy button.
         </p>
       </article>

@@ -13,8 +13,8 @@ import (
 )
 
 func main() {
-	clear := flag.Bool("clear", false, "Clear ALL data (then seed). Use with caution.")
-	clearDemoOnly := flag.Bool("clear-demo-only", false, "Clear only demo (seeded) data, then seed. Leaves real users' data intact.")
+	clear := flag.Bool("clear", false, "Clear ALL data. Use with caution. Does not seed.")
+	clearDemoOnly := flag.Bool("clear-demo-only", false, "Clear only demo data (is_demo=true). Leaves real users' data intact. Does not seed.")
 	flag.Parse()
 
 	// Get database URL from environment (required)
@@ -44,15 +44,18 @@ func main() {
 			log.Fatalf("Failed to clear test data: %v", err)
 		}
 		fmt.Println("All data cleared.")
-	} else if *clearDemoOnly {
+		return
+	}
+	if *clearDemoOnly {
 		fmt.Println("Clearing demo data only (real data preserved)...")
 		if err := testdata.ClearDemoDataOnly(ctx, db); err != nil {
 			log.Fatalf("Failed to clear demo data: %v", err)
 		}
 		fmt.Println("Demo data cleared.")
+		return
 	}
 
-	// Seed test data
+	// Seed test data (only when no clear flag)
 	fmt.Println("Seeding test data...")
 	testData, err := testdata.SeedTestData(ctx, db)
 	if err != nil {
@@ -66,8 +69,8 @@ func main() {
 	fmt.Printf("  Owner 2 (Ben): %s\n", testData.Owner2UUID)
 	fmt.Printf("  Venue 1 (Beth El Synagogue): %s\n", testData.Venue1UUID)
 	fmt.Printf("  Venue 2 (הדגמה: אוהל אברהם): %s\n", testData.Venue2UUID)
-	fmt.Printf("  Venue 3 (Beit Midrash): %s\n", testData.Venue3UUID)
-	fmt.Printf("  Venue 4 (Chagat House): %s\n", testData.Venue4UUID)
+	fmt.Printf("  Venue 3 (Ben's house): %s\n", testData.Venue3UUID)
+	fmt.Printf("  Venue 4 (After School Math): %s\n", testData.Venue4UUID)
 	fmt.Println()
 	fmt.Println("Test credentials:")
 	fmt.Println("  Owner 1: abe@demo.org / demo")

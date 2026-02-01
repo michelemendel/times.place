@@ -13,7 +13,6 @@ To prototype a simple, user-friendly web app (frontend-only) for listing venues 
 ## User Stories
 
 - As a visitor, I want to select a venue from a dropdown and see its upcoming event times, banner image, and contact details.
-- As a visitor, I want information presented clearly in both English and Hebrew.
 - As a visitor, I want to print an event list for a selected venue and event list, so I can have a physical copy of the schedule.
 - As a visitor, I want to get a shareable link for a specific event list, so I can share it with others or bookmark it for later.
 - As a venue owner, I want to register/log in and see a list of my venues
@@ -157,15 +156,12 @@ When a user performs a search, the system should match the query against all of 
 - App displays demo data with multiple venues and their times.
 - Venue owners can edit all info directly in the frontend; changes reflect immediately and persist locally in the browser (no server required)
 - Clean responsive design, working on mobile and desktop.
-- Demo supports both English and Hebrew for content/labelling.
 
 ## Constraints & Open Decisions
 
 - No backend for this prototype (frontend-only; local storage demo).
 - Multiple venue owners must be supported, with each owner having access only to venues they created
 - Venue owner authentication should be simple for demo purposes (no complex auth system)
-- No user registration for the general public (visitors don't need accounts)
-- UI should support Hebrew (RTL?) if demoed to native users
 - Hosting: Postpone domain registration until demo feedback is obtained
 
 ## Learning Goals

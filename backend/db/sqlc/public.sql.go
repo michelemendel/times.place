@@ -95,18 +95,20 @@ func (q *Queries) GetPublicEventListsByVenue(ctx context.Context, venueUuid pgty
 
 const getVenueByToken = `-- name: GetVenueByToken :one
 SELECT 
-    venue_uuid,
-    name,
-    banner_image,
-    address,
-    geolocation,
-    comment,
-    timezone,
-    private_link_token,
-    created_at,
-    modified_at
-FROM venues
-WHERE private_link_token = $1
+    v.venue_uuid,
+    v.name,
+    v.banner_image,
+    v.address,
+    v.geolocation,
+    v.comment,
+    v.timezone,
+    v.private_link_token,
+    v.created_at,
+    v.modified_at,
+    o.name AS owner_name
+FROM venues v
+INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
+WHERE v.private_link_token = $1
 `
 
 type GetVenueByTokenRow struct {
@@ -120,6 +122,7 @@ type GetVenueByTokenRow struct {
 	PrivateLinkToken pgtype.UUID        `json:"private_link_token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
+	OwnerName        string             `json:"owner_name"`
 }
 
 func (q *Queries) GetVenueByToken(ctx context.Context, privateLinkToken pgtype.UUID) (GetVenueByTokenRow, error) {
@@ -136,6 +139,7 @@ func (q *Queries) GetVenueByToken(ctx context.Context, privateLinkToken pgtype.U
 		&i.PrivateLinkToken,
 		&i.CreatedAt,
 		&i.ModifiedAt,
+		&i.OwnerName,
 	)
 	return i, err
 }
@@ -152,6 +156,7 @@ SELECT
     v.private_link_token,
     v.created_at,
     v.modified_at,
+    o.name AS owner_name,
     el.event_list_uuid,
     el.name as event_list_name,
     el.date as event_list_date,
@@ -162,6 +167,7 @@ SELECT
     el.created_at as event_list_created_at,
     el.modified_at as event_list_modified_at
 FROM venues v
+INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
 LEFT JOIN event_lists el ON el.venue_uuid = v.venue_uuid
 WHERE v.private_link_token = $1
   AND (el.visibility = 'public' OR el.venue_uuid = v.venue_uuid)
@@ -179,6 +185,7 @@ type GetVenueWithEventListsByTokenRow struct {
 	PrivateLinkToken          pgtype.UUID        `json:"private_link_token"`
 	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt                pgtype.Timestamptz `json:"modified_at"`
+	OwnerName                 string             `json:"owner_name"`
 	EventListUuid             pgtype.UUID        `json:"event_list_uuid"`
 	EventListName             pgtype.Text        `json:"event_list_name"`
 	EventListDate             pgtype.Date        `json:"event_list_date"`
@@ -211,6 +218,7 @@ func (q *Queries) GetVenueWithEventListsByToken(ctx context.Context, privateLink
 			&i.PrivateLinkToken,
 			&i.CreatedAt,
 			&i.ModifiedAt,
+			&i.OwnerName,
 			&i.EventListUuid,
 			&i.EventListName,
 			&i.EventListDate,
@@ -233,23 +241,25 @@ func (q *Queries) GetVenueWithEventListsByToken(ctx context.Context, privateLink
 
 const listPublicVenues = `-- name: ListPublicVenues :many
 SELECT 
-    venue_uuid,
-    name,
-    banner_image,
-    address,
-    geolocation,
-    comment,
-    timezone,
-    private_link_token,
-    created_at,
-    modified_at
-FROM venues
+    v.venue_uuid,
+    v.name,
+    v.banner_image,
+    v.address,
+    v.geolocation,
+    v.comment,
+    v.timezone,
+    v.private_link_token,
+    v.created_at,
+    v.modified_at,
+    o.name AS owner_name
+FROM venues v
+INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
 WHERE EXISTS (
     SELECT 1 FROM event_lists
-    WHERE event_lists.venue_uuid = venues.venue_uuid
+    WHERE event_lists.venue_uuid = v.venue_uuid
       AND event_lists.visibility = 'public'
   )
-ORDER BY created_at DESC
+ORDER BY v.created_at DESC
 `
 
 type ListPublicVenuesRow struct {
@@ -263,6 +273,7 @@ type ListPublicVenuesRow struct {
 	PrivateLinkToken pgtype.UUID        `json:"private_link_token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
+	OwnerName        string             `json:"owner_name"`
 }
 
 // Show any venue that has at least one public event list.
@@ -286,6 +297,7 @@ func (q *Queries) ListPublicVenues(ctx context.Context) ([]ListPublicVenuesRow, 
 			&i.PrivateLinkToken,
 			&i.CreatedAt,
 			&i.ModifiedAt,
+			&i.OwnerName,
 		); err != nil {
 			return nil, err
 		}
@@ -308,8 +320,10 @@ SELECT DISTINCT
     v.timezone,
     v.private_link_token,
     v.created_at,
-    v.modified_at
+    v.modified_at,
+    o.name AS owner_name
 FROM venues v
+INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
 WHERE EXISTS (
     SELECT 1 FROM event_lists el
     WHERE el.venue_uuid = v.venue_uuid
@@ -345,6 +359,7 @@ type SearchPublicVenuesRow struct {
 	PrivateLinkToken pgtype.UUID        `json:"private_link_token"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
+	OwnerName        string             `json:"owner_name"`
 }
 
 func (q *Queries) SearchPublicVenues(ctx context.Context, dollar_1 pgtype.Text) ([]SearchPublicVenuesRow, error) {
@@ -367,6 +382,7 @@ func (q *Queries) SearchPublicVenues(ctx context.Context, dollar_1 pgtype.Text) 
 			&i.PrivateLinkToken,
 			&i.CreatedAt,
 			&i.ModifiedAt,
+			&i.OwnerName,
 		); err != nil {
 			return nil, err
 		}

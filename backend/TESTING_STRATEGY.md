@@ -29,7 +29,7 @@ This package provides:
 Seeded data aligns with the frontend demo:
 
 - **Owner 1 (Abe):** 2 venues (Beth El Synagogue, Community Center)
-- **Owner 2 (Ben):** 2 venues (Beit Midrash, Chagat House)
+- **Owner 2 (Ben):** 2 venues (Ben's house, After School Math)
 - Event lists and events under those venues
 - All test owners use password `"demo"` (bcrypt hashed)
 
@@ -117,7 +117,7 @@ func TestMyFeature(t *testing.T) {
 # Add test data (on top of existing data)
 make dbseed
 
-# Wipe and reseed
+# Clear demo data only (does not seed; run make dbseed to re-seed)
 make dbseedclear
 ```
 
@@ -125,8 +125,8 @@ Or via CLI:
 
 ```bash
 cd backend
-go run ./cmd/cli/seed/main.go         # seed
-go run ./cmd/cli/seed/main.go -clear # clear and reseed
+go run ./cmd/cli/seed/main.go              # seed only
+go run ./cmd/cli/seed/main.go -clear-demo-only  # clear demo only (no seed)
 ```
 
 ### Running tests

@@ -173,10 +173,50 @@
   /** @type {HTMLElement | null} */
   let timezoneHelpPopup = null;
 
+  // Field-level validation (show on blur and on save failure)
+  let venueNameError = '';
+  /** @type {Record<string, string>} */
+  let eventNameErrors = {};
+
   // Subscribe to owner store only (for auth check)
   currentOwnerStore.subscribe((val) => {
     currentOwner = val;
   });
+
+  /** Validate venue name on blur and set field error */
+  function validateVenueNameBlur() {
+    venueNameError = !venueName.trim() ? 'Venue name is required' : '';
+  }
+
+  /** Validate event name on blur and set field error for that event
+   * @param {string} eventUuid
+   */
+  function validateEventNameBlur(eventUuid) {
+    const list = eventListsData.find((el) =>
+      (el.events || []).some(
+        (/** @type {any} */ e) => e.event_uuid === eventUuid,
+      ),
+    );
+    const event = list?.events?.find(
+      (/** @type {any} */ e) => e.event_uuid === eventUuid,
+    );
+    const msg = !event?.event_name?.trim() ? 'Event name is required' : '';
+    eventNameErrors = { ...eventNameErrors, [eventUuid]: msg };
+  }
+
+  /** Set all required-field errors (e.g. after failed save) so user sees which fields are missing */
+  function setRequiredFieldErrors() {
+    venueNameError = !venueName.trim() ? 'Venue name is required' : '';
+    const next = { ...eventNameErrors };
+    for (const list of eventListsData) {
+      for (const event of list.events || []) {
+        const msg = !event.event_name?.trim() ? 'Event name is required' : '';
+        if (msg) next[event.event_uuid] = msg;
+        else delete next[event.event_uuid];
+      }
+    }
+    eventNameErrors = next;
+  }
 
   /**
    * Save current state to undo stack
@@ -314,6 +354,8 @@
       venue.timezone !== undefined && venue.timezone !== null
         ? venue.timezone
         : '';
+    venueNameError = '';
+    eventNameErrors = {};
   }
 
   /**
@@ -415,7 +457,7 @@
     const newList = {
       event_list_uuid: tempId,
       venue_uuid: venue.venue_uuid,
-      name: 'New Event List',
+      name: '',
       date: '',
       comment: '',
       visibility: 'public', // Default to public so venue appears in main page dropdown
@@ -439,7 +481,7 @@
     if (!list) return;
     if (
       !confirm(
-        `Are you sure you want to delete the event list "${list.name}"? This will also delete all events in this list.`,
+        `Are you sure you want to delete the event list "${list.name || 'Untitled Event List'}"? This will also delete all events in this list.`,
       )
     ) {
       return;
@@ -569,7 +611,7 @@
     const newEvent = {
       event_uuid: tempEventId,
       event_list_uuid: listUuid,
-      event_name: 'New Event',
+      event_name: '',
       datetime: combineTimeAndDate('12:00', placeholderDate, venueTimezone),
       time: '12:00',
       comment: '',
@@ -618,6 +660,11 @@
       (/** @type {any} */ uuid) => uuid !== eventUuid,
     );
 
+    // Clear validation error for deleted event
+    eventNameErrors = { ...eventNameErrors };
+    delete eventNameErrors[eventUuid];
+    eventNameErrors = eventNameErrors;
+
     // Create new list object with new arrays
     const updatedList = {
       ...list,
@@ -654,7 +701,7 @@
     const newEvent = {
       ...originalEvent,
       event_uuid: tempEventId,
-      event_name: `${originalEvent.event_name} (Copy)`,
+      event_name: '',
       sort_order:
         originalEvent.sort_order !== undefined
           ? originalEvent.sort_order + 1
@@ -852,9 +899,10 @@
       return;
     }
 
-    // Validate required fields
+    // Validate required fields and show which fields are missing
     if (!venueName.trim()) {
-      saveError = 'Venue name is required';
+      setRequiredFieldErrors();
+      saveError = 'Please fix the required fields below.';
       return;
     }
 
@@ -862,7 +910,8 @@
     for (const list of eventListsData) {
       for (const event of list.events) {
         if (!event.event_name || !event.event_name.trim()) {
-          saveError = 'Event name is required for every event.';
+          setRequiredFieldErrors();
+          saveError = 'Please fix the required fields below.';
           return;
         }
       }
@@ -889,7 +938,7 @@
       for (const event of list.events) {
         const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
         if (!timeRegex.test(event.time)) {
-          saveError = `Invalid time format for event "${event.event_name}". Please use HH:MM format.`;
+          saveError = `Invalid time format for event "${event.event_name?.trim() || 'this event'}". Please use HH:MM format.`;
           return;
         }
         const dateToUse =
@@ -1471,37 +1520,39 @@
   class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-4 md:pt-6 md:pb-8 lg:pt-6 lg:pb-8 w-full overflow-x-hidden"
 >
   {#if isLoading}
-  <div class="mb-4 md:mb-6 flex flex-col gap-2 md:gap-4 px-4 md:px-6">
-    <div>
-      <h1 class="text-[24px] md:text-3xl font-bold text-gray-900">
-        {isNewVenue ? 'Create' : 'Edit'} Venue
-      </h1>
-    </div>
-    <div class="flex gap-2 justify-start">
-      {#if undoStack.length > 0}
+    <div
+      class="mb-4 md:mb-6 flex flex-col gap-2 md:gap-4 px-4 md:px-6 lg:sticky lg:top-20 lg:z-10 lg:bg-white lg:pb-4 lg:border-b lg:border-gray-200 lg:shadow-sm"
+    >
+      <div>
+        <h1 class="text-[24px] md:text-3xl font-bold text-gray-900">
+          {isNewVenue ? 'Create' : 'Edit'} Venue
+        </h1>
+      </div>
+      <div class="flex gap-2 justify-start">
+        {#if undoStack.length > 0}
+          <button
+            on:click={handleUndo}
+            class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors md:py-2 md:px-4 md:text-base"
+            title="Undo last change"
+          >
+            Undo
+          </button>
+        {/if}
         <button
-          on:click={handleUndo}
-          class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors md:py-2 md:px-4 md:text-base"
-          title="Undo last change"
+          on:click={cancelEdit}
+          class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors duration-200 md:py-2 md:px-4 md:text-base"
         >
-          Undo
+          Cancel
         </button>
-      {/if}
-      <button
-        on:click={cancelEdit}
-        class="py-1.5 px-3 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors duration-200 md:py-2 md:px-4 md:text-base"
-      >
-        Cancel
-      </button>
-      <button
-        on:click={saveVenue}
-        disabled={isSaving || isLoading}
-        class="py-1.5 px-3 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-4 md:text-base"
-      >
-        {isSaving ? 'Saving...' : 'Save'}
-      </button>
+        <button
+          on:click={saveVenue}
+          disabled={isSaving || isLoading}
+          class="py-1.5 px-3 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed md:py-2 md:px-4 md:text-base"
+        >
+          {isSaving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
     </div>
-  </div>
   {/if}
 
   {#if loadError}
@@ -1527,8 +1578,12 @@
       class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full overflow-x-hidden max-w-full lg:h-[calc(100vh-6rem)] lg:min-h-0"
     >
       <!-- Left column on desktop: single flex container so header stays at top and form scrolls beneath (same as mobile) -->
-      <div class="flex flex-col gap-4 lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:min-h-0 lg:overflow-hidden">
-        <div class="mb-4 md:mb-0 flex flex-col gap-2 md:gap-4 px-4 md:px-6 flex-shrink-0 lg:pt-0 lg:gap-2">
+      <div
+        class="flex flex-col gap-4 lg:col-start-1 lg:row-start-1 lg:row-span-2 lg:min-h-0 lg:overflow-hidden"
+      >
+        <div
+          class="mb-4 md:mb-0 flex flex-col gap-2 md:gap-4 px-4 md:px-6 flex-shrink-0 lg:pt-0 lg:gap-2 lg:sticky lg:top-20 lg:z-10 lg:bg-white lg:pb-4 lg:border-b lg:border-gray-200 lg:shadow-sm"
+        >
           <div>
             <h1 class="text-[24px] md:text-3xl font-bold text-gray-900">
               {isNewVenue ? 'Create' : 'Edit'} Venue
@@ -1559,626 +1614,636 @@
             </button>
           </div>
         </div>
-      <!-- Editing Pane (scrolls beneath header on desktop, same as mobile) -->
-      <div
-        class="bg-white rounded-xl shadow-lg p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto overflow-x-hidden flex-1 min-h-0 w-full max-h-[calc(100vh-200px)] lg:max-h-none"
-      >
-        <!-- Basic Venue Information -->
-        <div class="space-y-4">
-          <h3 class="text-lg font-medium text-gray-800">Basic Information</h3>
+        <!-- Editing Pane (scrolls beneath header on desktop, same as mobile) -->
+        <div
+          class="bg-white rounded-xl shadow-lg p-4 md:p-6 space-y-4 md:space-y-6 overflow-y-auto overflow-x-hidden flex-1 min-h-0 w-full max-h-[calc(100vh-200px)] lg:max-h-none"
+        >
+          <!-- Basic Venue Information -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-medium text-gray-800">Basic Information</h3>
 
-          <div>
-            <label
-              for="venue-name"
-              class="block text-sm font-medium text-gray-700 mb-1"
-              >Venue Name *</label
-            >
-            <input
-              type="text"
-              id="venue-name"
-              bind:value={venueName}
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter venue name"
-            />
-          </div>
-
-          <div>
-            <label
-              for="venue-address"
-              class="block text-sm font-medium text-gray-700 mb-1"
-              >Address (optional)</label
-            >
-            <div class="flex gap-2">
-              <input
-                type="text"
-                id="venue-address"
-                bind:value={venueAddress}
-                class="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter address"
-                on:keydown={(/** @type {KeyboardEvent} */ e) =>
-                  e.key === 'Enter' && handleFindOnMap()}
-              />
-              <button
-                type="button"
-                on:click={handleFindOnMap}
-                disabled={isGeocoding}
-                class="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                title="Find this address on the map below"
-              >
-                <span class="hidden sm:inline"
-                  >{isGeocoding ? 'Searching...' : 'Find on Map'}</span
-                >
-                <span class="sm:hidden"
-                  >{isGeocoding ? 'Searching...' : 'Find'}</span
-                >
-              </button>
-            </div>
-            {#if showGeocodingResults && geocodingResults.length > 0}
-              <div
-                class="mt-2 border border-gray-300 rounded-lg bg-white shadow-lg max-h-48 overflow-auto z-10 relative"
-              >
-                <div
-                  class="p-2 text-xs text-gray-600 font-medium border-b bg-gray-50"
-                >
-                  Multiple locations found. Select one:
-                </div>
-                {#each geocodingResults as result}
-                  <button
-                    type="button"
-                    on:click={() => selectGeocodingResult(result)}
-                    class="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 text-sm transition-colors"
-                  >
-                    {result.display_name}
-                  </button>
-                {/each}
-              </div>
-            {/if}
-          </div>
-
-          <div>
-            <label
-              for="venue-geolocation"
-              class="block text-sm font-medium text-gray-700 mb-1"
-              >Geolocation (optional)</label
-            >
-            <p class="text-xs text-gray-500 mb-2">
-              Click on the map to set location, or use "Find on Map" button
-              above to search by address. Drag the marker to adjust.
-            </p>
-
-            <div class="mb-2">
-              <div
-                bind:this={geolocationMapContainer}
-                class="w-full h-64 rounded-lg overflow-hidden border border-gray-300"
-              ></div>
-            </div>
-
-            <div class="mb-2">
+            <div>
               <label
-                for="venue-geolocation"
-                class="block text-xs font-medium text-gray-700 mb-1"
-                >Coordinates (latitude,longitude)</label
-              >
-              <input
-                type="text"
-                id="venue-geolocation"
-                bind:value={venueGeolocation}
-                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="latitude,longitude"
-                on:input={() => {
-                  if (venueGeolocation) {
-                    updateGeolocationMap();
-                  }
-                }}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label
-              for="venue-comment"
-              class="block text-sm font-medium text-gray-700 mb-1"
-              >Comment (optional)</label
-            >
-            <textarea
-              id="venue-comment"
-              bind:value={venueComment}
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Optional comment about the venue"
-            ></textarea>
-          </div>
-
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <label
-                for="venue-timezone"
-                class="block text-sm font-medium text-gray-700"
-                >Timezone (optional, leave empty for your current timezone)</label
+                for="venue-name"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >Venue Name *</label
               >
               <div class="relative">
+                <input
+                  type="text"
+                  id="venue-name"
+                  bind:value={venueName}
+                  on:blur={validateVenueNameBlur}
+                  class="w-full px-3 py-2 pr-9 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {venueNameError
+                    ? 'border-red-500'
+                    : 'border-gray-300'}"
+                  placeholder="Enter venue name"
+                />
                 <button
                   type="button"
-                  bind:this={timezoneHelpButton}
-                  on:click={() => (showTimezoneHelp = !showTimezoneHelp)}
-                  on:blur={() => {
-                    // Close on blur, but delay to allow click on popup
-                    setTimeout(() => {
-                      if (
-                        !timezoneHelpPopup?.contains(document.activeElement)
-                      ) {
-                        showTimezoneHelp = false;
-                      }
-                    }, 200);
-                  }}
-                  class="text-gray-400 hover:text-gray-600 focus:text-gray-600 focus:outline-none transition-colors"
-                  aria-label="Timezone help"
-                  aria-expanded={showTimezoneHelp}
-                  aria-haspopup="true"
+                  on:click={() => (venueName = '')}
+                  class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="Clear"
+                  aria-label="Clear"
                 >
                   <svg
-                    class="w-5 h-5"
+                    class="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+                    stroke-width="2"
                   >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    />
                     <path
-                      d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"
-                      stroke="currentColor"
-                      stroke-width="2"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                    />
-                    <line
-                      x1="12"
-                      y1="17"
-                      x2="12.01"
-                      y2="17"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
+                      d="M6 18L18 6M6 6l12 12"
                     />
                   </svg>
                 </button>
-                {#if showTimezoneHelp}
-                  <!-- Mobile: fixed positioning centered in viewport, Desktop: absolute positioning relative to button -->
-                  <div
-                    bind:this={timezoneHelpPopup}
-                    class="fixed md:absolute z-50 w-[calc(100vw-2rem)] md:w-80 max-w-sm p-4 bg-white border border-gray-300 rounded-lg shadow-lg text-sm text-gray-700 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 md:left-auto md:translate-x-0 md:right-0 md:mt-2"
-                    role="tooltip"
-                  >
-                    <div class="space-y-3">
-                      <div
-                        class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded"
-                      >
-                        <p class="font-semibold text-blue-900 mb-1">
-                          Timezone Set:
-                        </p>
-                        <p class="text-blue-800 text-xs">
-                          All visitors see event times in the venue's timezone,
-                          regardless of their location. For example, if you set
-                          14:00 in Jerusalem time, everyone sees 14:00
-                          (Jerusalem time).
-                        </p>
-                      </div>
-                      <div
-                        class="p-3 bg-green-50 border-l-4 border-green-500 rounded"
-                      >
-                        <p class="font-semibold text-green-900 mb-1">
-                          No Timezone:
-                        </p>
-                        <p class="text-green-800 text-xs">
-                          Each visitor sees event times converted to their own
-                          browser timezone. For example, 14:00 might show as
-                          09:00 in New York or 14:00 in London, depending on the
-                          visitor's location.
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      on:click={() => (showTimezoneHelp = false)}
-                      class="mt-3 text-xs text-blue-600 hover:text-blue-800 underline"
-                    >
-                      Close
-                    </button>
-                  </div>
-                {/if}
               </div>
+              {#if venueNameError}
+                <p class="mt-1 text-sm text-red-600">{venueNameError}</p>
+              {/if}
             </div>
-            <select
-              id="venue-timezone"
-              bind:value={venueTimezone}
-              class="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23666%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpolyline%20points=%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-no-repeat bg-[length:1.25em] bg-[position:right_0.75rem_center]"
-            >
-              {#each timezones as tz}
-                {#if tz.group}
-                  <optgroup label={tz.group}>
-                    {#each tz.zones as zone}
-                      <option value={zone.value}>{zone.label}</option>
-                    {/each}
-                  </optgroup>
-                {:else}
-                  <option value={tz.value}>{tz.label}</option>
-                {/if}
-              {/each}
-            </select>
-          </div>
 
-          <div>
-            <label
-              for="venue-banner"
-              class="block text-sm font-medium text-gray-700 mb-1"
-              >Banner Image (optional) — preferred ratio 16:9</label
-            >
-            <input
-              type="file"
-              id="venue-banner"
-              accept="image/*"
-              on:change={handleImageUpload}
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            {#if venueBannerImage}
-              <BannerImage
-                src={venueBannerImage}
-                alt="Banner preview"
-                size="sm"
-                wrapperClass="mt-2"
-              />
-            {/if}
-          </div>
-        </div>
-
-        <!-- Event Lists -->
-        <div class="space-y-4">
-          <div>
-            <h3 class="text-lg font-medium text-gray-800">Event Lists</h3>
-          </div>
-
-          {#if eventListsData.length === 0}
-            <p class="text-sm text-gray-500 py-4 text-center">
-              No event lists yet. Click "+ Add Event List" to create one.
-            </p>
-          {/if}
-
-          {#each eventListsData as listData, listIndex (listData.event_list_uuid)}
-            <div
-              class="border-2 border-gray-300 rounded-lg p-4 space-y-3 w-full min-w-0 overflow-x-hidden"
-            >
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
+            <div>
+              <label
+                for="venue-address"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >Address (optional)</label
+              >
+              <div class="flex gap-2">
+                <div class="relative flex-1 min-w-0">
+                  <input
+                    type="text"
+                    id="venue-address"
+                    bind:value={venueAddress}
+                    class="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter address"
+                    on:keydown={(/** @type {KeyboardEvent} */ e) =>
+                      e.key === 'Enter' && handleFindOnMap()}
+                  />
                   <button
-                    on:click={() => moveEventListUp(listIndex)}
-                    disabled={listIndex === 0}
-                    class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                    title="Move up"
+                    type="button"
+                    on:click={() => (venueAddress = '')}
+                    class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    title="Clear"
+                    aria-label="Clear"
                   >
-                    ↑
-                  </button>
-                  <button
-                    on:click={() => moveEventListDown(listIndex)}
-                    disabled={listIndex === eventListsData.length - 1}
-                    class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                    title="Move down"
-                  >
-                    ↓
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
                   </button>
                 </div>
                 <button
-                  on:click={() => deleteEventList(listData.event_list_uuid)}
-                  class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                  type="button"
+                  on:click={handleFindOnMap}
+                  disabled={isGeocoding}
+                  class="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  title="Find this address on the map below"
                 >
-                  Delete Event List
+                  <span class="hidden sm:inline"
+                    >{isGeocoding ? 'Searching...' : 'Find on Map'}</span
+                  >
+                  <span class="sm:hidden"
+                    >{isGeocoding ? 'Searching...' : 'Find'}</span
+                  >
                 </button>
               </div>
-
-              <div>
-                <label
-                  for="event-list-name-{listData.event_list_uuid}"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                  >Event List Name (optional)</label
+              {#if showGeocodingResults && geocodingResults.length > 0}
+                <div
+                  class="mt-2 border border-gray-300 rounded-lg bg-white shadow-lg max-h-48 overflow-auto z-10 relative"
                 >
-                <input
-                  type="text"
-                  id="event-list-name-{listData.event_list_uuid}"
-                  bind:value={listData.name}
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Event list name"
-                />
-              </div>
-
-              <div>
-                <label
-                  for="event-list-date-{listData.event_list_uuid}"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                  >Date (optional)</label
-                >
-                <div class="flex gap-2">
-                  <input
-                    type="date"
-                    id="event-list-date-{listData.event_list_uuid}"
-                    bind:value={listData.date}
-                    on:input={() => {
-                      // Update datetime for all events in this list when date changes
-                      // If no date is provided, use today's date as placeholder
-                      const dateToUse =
-                        listData.date && listData.date.trim()
-                          ? listData.date
-                          : new Date().toISOString().split('T')[0];
-                      listData.events.forEach((/** @type {any} */ event) => {
-                        event.datetime = combineTimeAndDate(
-                          event.time,
-                          dateToUse,
-                          venueTimezone,
-                        );
-                      });
-                    }}
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {#if listData.date && listData.date.trim()}
+                  <div
+                    class="p-2 text-xs text-gray-600 font-medium border-b bg-gray-50"
+                  >
+                    Multiple locations found. Select one:
+                  </div>
+                  {#each geocodingResults as result}
                     <button
                       type="button"
-                      on:click={() =>
-                        clearEventListDate(listData.event_list_uuid)}
-                      class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200"
-                      title="Clear date"
+                      on:click={() => selectGeocodingResult(result)}
+                      class="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 text-sm transition-colors"
                     >
-                      Clear
+                      {result.display_name}
                     </button>
-                  {/if}
+                  {/each}
                 </div>
-                <p class="mt-1 text-xs text-gray-500">
-                  Date is stored in ISO 8601 format (YYYY-MM-DD)
-                </p>
+              {/if}
+            </div>
+
+            <div>
+              <label
+                for="venue-geolocation"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >Geolocation (optional)</label
+              >
+              <p class="text-xs text-gray-500 mb-2">
+                Click on the map to set location, or use "Find on Map" button
+                above to search by address. Drag the marker to adjust.
+              </p>
+
+              <div class="mb-2">
+                <div
+                  bind:this={geolocationMapContainer}
+                  class="w-full h-64 rounded-lg overflow-hidden border border-gray-300"
+                ></div>
               </div>
 
-              <div>
+              <div class="mb-2">
                 <label
-                  for="event-list-comment-{listData.event_list_uuid}"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                  >Comment (optional)</label
+                  for="venue-geolocation"
+                  class="block text-xs font-medium text-gray-700 mb-1"
+                  >Coordinates (latitude,longitude)</label
                 >
-                <textarea
-                  id="event-list-comment-{listData.event_list_uuid}"
-                  bind:value={listData.comment}
-                  rows="2"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Optional comment"
-                ></textarea>
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="venue-geolocation"
+                    bind:value={venueGeolocation}
+                    class="w-full px-3 py-2 pr-9 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="latitude,longitude"
+                    on:input={() => {
+                      if (venueGeolocation) {
+                        updateGeolocationMap();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    on:click={() => (venueGeolocation = '')}
+                    class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    title="Clear"
+                    aria-label="Clear"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
+            </div>
 
-              <div>
-                <div class="block text-sm font-medium text-gray-700 mb-2">
-                  Visibility
-                </div>
-                <div class="flex gap-4">
-                  <label class="flex items-center">
-                    <input
-                      type="radio"
-                      value="public"
-                      checked={listData.visibility === 'public'}
-                      on:change={() =>
-                        handleEventListVisibilityChange(
-                          listData.event_list_uuid,
-                          'public',
-                        )}
-                      class="mr-2"
+            <div>
+              <label
+                for="venue-comment"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >Comment (optional)</label
+              >
+              <div class="relative">
+                <textarea
+                  id="venue-comment"
+                  bind:value={venueComment}
+                  rows="3"
+                  class="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Optional comment about the venue"
+                ></textarea>
+                <button
+                  type="button"
+                  on:click={() => (venueComment = '')}
+                  class="absolute right-2 top-2 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="Clear"
+                  aria-label="Clear"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
                     />
-                    <span>Public</span>
-                  </label>
-                  <label class="flex items-center">
-                    <input
-                      type="radio"
-                      value="private"
-                      checked={listData.visibility === 'private'}
-                      on:change={() =>
-                        handleEventListVisibilityChange(
-                          listData.event_list_uuid,
-                          'private',
-                        )}
-                      class="mr-2"
-                    />
-                    <span>Private</span>
-                  </label>
-                </div>
-                {#if listData.private_link_token}
-                  <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
-                    <p class="text-gray-600 mb-1">
-                      Share link (works for public and private):
-                    </p>
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <code class="text-blue-600 break-all flex-1 min-w-0">
-                        {typeof window !== 'undefined'
-                          ? `${window.location.origin}/?token=${listData.private_link_token}`
-                          : ''}
-                      </code>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <label
+                  for="venue-timezone"
+                  class="block text-sm font-medium text-gray-700"
+                  >Timezone (optional, leave empty for your current timezone)</label
+                >
+                <div class="relative">
+                  <button
+                    type="button"
+                    bind:this={timezoneHelpButton}
+                    on:click={() => (showTimezoneHelp = !showTimezoneHelp)}
+                    on:blur={() => {
+                      // Close on blur, but delay to allow click on popup
+                      setTimeout(() => {
+                        if (
+                          !timezoneHelpPopup?.contains(document.activeElement)
+                        ) {
+                          showTimezoneHelp = false;
+                        }
+                      }, 200);
+                    }}
+                    class="text-gray-400 hover:text-gray-600 focus:text-gray-600 focus:outline-none transition-colors"
+                    aria-label="Timezone help"
+                    aria-expanded={showTimezoneHelp}
+                    aria-haspopup="true"
+                  >
+                    <svg
+                      class="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      />
+                      <path
+                        d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                      <line
+                        x1="12"
+                        y1="17"
+                        x2="12.01"
+                        y2="17"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </button>
+                  {#if showTimezoneHelp}
+                    <!-- Mobile: fixed positioning centered in viewport, Desktop: absolute positioning relative to button -->
+                    <div
+                      bind:this={timezoneHelpPopup}
+                      class="fixed md:absolute z-50 w-[calc(100vw-2rem)] md:w-80 max-w-sm p-4 bg-white border border-gray-300 rounded-lg shadow-lg text-sm text-gray-700 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:top-auto md:translate-y-0 md:left-auto md:translate-x-0 md:right-0 md:mt-2"
+                      role="tooltip"
+                    >
+                      <div class="space-y-3">
+                        <div
+                          class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded"
+                        >
+                          <p class="font-semibold text-blue-900 mb-1">
+                            Timezone Set:
+                          </p>
+                          <p class="text-blue-800 text-xs">
+                            All visitors see event times in the venue's
+                            timezone, regardless of their location. For example,
+                            if you set 14:00 in Jerusalem time, everyone sees
+                            14:00 (Jerusalem time).
+                          </p>
+                        </div>
+                        <div
+                          class="p-3 bg-green-50 border-l-4 border-green-500 rounded"
+                        >
+                          <p class="font-semibold text-green-900 mb-1">
+                            No Timezone:
+                          </p>
+                          <p class="text-green-800 text-xs">
+                            Each visitor sees event times converted to their own
+                            browser timezone. For example, 14:00 might show as
+                            09:00 in New York or 14:00 in London, depending on
+                            the visitor's location.
+                          </p>
+                        </div>
+                      </div>
                       <button
                         type="button"
-                        on:click={() => copyShareLink(listData)}
-                        class="shrink-0 p-1.5 rounded text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
-                        title="Copy share link"
-                        aria-label="Copy share link"
+                        on:click={() => (showTimezoneHelp = false)}
+                        class="mt-3 text-xs text-blue-600 hover:text-blue-800 underline"
                       >
-                        {#if copiedShareLinkEventListUuid === listData.event_list_uuid}
-                          <svg
-                            class="w-4 h-4 text-green-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        {:else}
-                          <svg
-                            class="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                            />
-                          </svg>
-                        {/if}
+                        Close
                       </button>
                     </div>
-                  </div>
-                {:else}
-                  <p class="mt-2 text-xs text-gray-500">
-                    Save the venue to get a shareable direct link for this event
-                    list.
-                  </p>
-                {/if}
+                  {/if}
+                </div>
               </div>
+              <div class="relative flex gap-2 items-center">
+                <select
+                  id="venue-timezone"
+                  bind:value={venueTimezone}
+                  class="flex-1 min-w-0 pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23666%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpolyline%20points=%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-no-repeat bg-[length:1.25em] bg-[position:right_0.75rem_center]"
+                >
+                  {#each timezones as tz}
+                    {#if tz.group}
+                      <optgroup label={tz.group}>
+                        {#each tz.zones as zone}
+                          <option value={zone.value}>{zone.label}</option>
+                        {/each}
+                      </optgroup>
+                    {:else}
+                      <option value={tz.value}>{tz.label}</option>
+                    {/if}
+                  {/each}
+                </select>
+                <button
+                  type="button"
+                  on:click={() => (venueTimezone = '')}
+                  class="shrink-0 p-2 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  title="Clear timezone"
+                  aria-label="Clear timezone"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
-              <div>
-                <div class="block text-sm font-medium text-gray-700 mb-2">
-                  Events
+            <div>
+              <label
+                for="venue-banner"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >Banner Image (optional) — preferred ratio 16:9</label
+              >
+              <input
+                type="file"
+                id="venue-banner"
+                accept="image/*"
+                on:change={handleImageUpload}
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {#if venueBannerImage}
+                <BannerImage
+                  src={venueBannerImage}
+                  alt="Banner preview"
+                  size="sm"
+                  wrapperClass="mt-2"
+                />
+              {/if}
+            </div>
+          </div>
+
+          <!-- Event Lists -->
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-lg font-medium text-gray-800">Event Lists</h3>
+            </div>
+
+            {#if eventListsData.length === 0}
+              <p class="text-sm text-gray-500 py-4 text-center">
+                No event lists yet. Click "+ Add Event List" to create one.
+              </p>
+            {/if}
+
+            {#each eventListsData as listData, listIndex (listData.event_list_uuid)}
+              <div
+                class="border-2 border-gray-300 rounded-lg p-4 space-y-3 w-full min-w-0 overflow-x-hidden"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <button
+                      on:click={() => moveEventListUp(listIndex)}
+                      disabled={listIndex === 0}
+                      class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                      title="Move up"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      on:click={() => moveEventListDown(listIndex)}
+                      disabled={listIndex === eventListsData.length - 1}
+                      class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                      title="Move down"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                  <button
+                    on:click={() => deleteEventList(listData.event_list_uuid)}
+                    class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                  >
+                    Delete Event List
+                  </button>
                 </div>
 
-                {#if !listData.events || listData.events.length === 0}
-                  <p class="text-sm text-gray-500 py-2">
-                    No events yet. Click "+ Add Event" to add one.
-                  </p>
-                {/if}
-                {#each listData.events || [] as event, eventIndex (event.event_uuid)}
-                  <div
-                    class="border border-gray-200 rounded p-3 mb-2 space-y-2 w-full overflow-x-hidden"
+                <div>
+                  <label
+                    for="event-list-name-{listData.event_list_uuid}"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                    >Event List Name (optional)</label
                   >
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-1">
-                        <button
-                          on:click={() =>
-                            moveEventUp(listData.event_list_uuid, eventIndex)}
-                          disabled={eventIndex === 0}
-                          class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-xs"
-                          title="Move up"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          on:click={() =>
-                            moveEventDown(listData.event_list_uuid, eventIndex)}
-                          disabled={eventIndex ===
-                            (listData.events || []).length - 1}
-                          class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-xs"
-                          title="Move down"
-                        >
-                          ↓
-                        </button>
-                      </div>
-                      <div class="flex gap-1">
-                        <button
-                          on:click={() =>
-                            duplicateEvent(
-                              listData.event_list_uuid,
-                              event.event_uuid,
-                            )}
-                          class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors"
-                        >
-                          Duplicate
-                        </button>
-                        <button
-                          on:click={() =>
-                            deleteEvent(
-                              listData.event_list_uuid,
-                              event.event_uuid,
-                            )}
-                          class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
-                        >
-                          Delete Event
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label
-                        for="event-name-{event.event_uuid}"
-                        class="block text-xs font-medium text-gray-700 mb-1"
-                        >Event Name</label
-                      >
-                      <input
-                        type="text"
-                        id="event-name-{event.event_uuid}"
-                        bind:value={event.event_name}
-                        class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Event name"
-                      />
-                    </div>
-
-                    <div
-                      class="w-full min-w-0"
-                      style="max-width: 100%; overflow: hidden; box-sizing: border-box;"
+                  <div class="relative">
+                    <input
+                      type="text"
+                      id="event-list-name-{listData.event_list_uuid}"
+                      bind:value={listData.name}
+                      class="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="e.g. Week of Dec 2"
+                    />
+                    <button
+                      type="button"
+                      on:click={() => (listData.name = '')}
+                      class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                      title="Clear"
+                      aria-label="Clear"
                     >
-                      <label
-                        for="event-time-{event.event_uuid}"
-                        class="block text-xs font-medium text-gray-700 mb-1"
-                        >Time (HH:MM)</label
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="2"
                       >
-                      <input
-                        type="time"
-                        id="event-time-{event.event_uuid}"
-                        bind:value={event.time}
-                        on:input={() => {
-                          // Update datetime immediately when time changes
-                          // If no date is provided, use today's date as placeholder
-                          const dateToUse =
-                            listData.date && listData.date.trim()
-                              ? listData.date
-                              : new Date().toISOString().split('T')[0];
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    for="event-list-date-{listData.event_list_uuid}"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                    >Date (optional)</label
+                  >
+                  <div class="flex gap-2">
+                    <input
+                      type="date"
+                      id="event-list-date-{listData.event_list_uuid}"
+                      bind:value={listData.date}
+                      on:input={() => {
+                        // Update datetime for all events in this list when date changes
+                        // If no date is provided, use today's date as placeholder
+                        const dateToUse =
+                          listData.date && listData.date.trim()
+                            ? listData.date
+                            : new Date().toISOString().split('T')[0];
+                        listData.events.forEach((/** @type {any} */ event) => {
                           event.datetime = combineTimeAndDate(
                             event.time,
                             dateToUse,
                             venueTimezone,
                           );
-                        }}
-                        class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        style="box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; -webkit-appearance: none; appearance: none;"
-                      />
-                    </div>
-
-                    <div>
-                      <label
-                        for="event-duration-{event.event_uuid}"
-                        class="block text-xs font-medium text-gray-700 mb-1"
-                        >Duration (minutes) (optional)</label
+                        });
+                      }}
+                      class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {#if listData.date && listData.date.trim()}
+                      <button
+                        type="button"
+                        on:click={() =>
+                          clearEventListDate(listData.event_list_uuid)}
+                        class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200"
+                        title="Clear date"
                       >
-                      <div class="flex gap-2">
-                        <input
-                          type="number"
-                          id="event-duration-{event.event_uuid}"
-                          bind:value={event.duration_minutes}
-                          min="1"
-                          class="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="No duration"
+                        Clear
+                      </button>
+                    {/if}
+                  </div>
+                  <p class="mt-1 text-xs text-gray-500">
+                    Date is stored in ISO 8601 format (YYYY-MM-DD)
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    for="event-list-comment-{listData.event_list_uuid}"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                    >Comment (optional)</label
+                  >
+                  <div class="relative">
+                    <textarea
+                      id="event-list-comment-{listData.event_list_uuid}"
+                      bind:value={listData.comment}
+                      rows="2"
+                      class="w-full px-3 py-2 pr-9 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Optional comment"
+                    ></textarea>
+                    <button
+                      type="button"
+                      on:click={() => (listData.comment = '')}
+                      class="absolute right-2 top-2 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                      title="Clear"
+                      aria-label="Clear"
+                    >
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="2"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M6 18L18 6M6 6l12 12"
                         />
-                        {#if event.duration_minutes && event.duration_minutes !== '' && event.duration_minutes > 0}
-                          <button
-                            type="button"
-                            on:click={() =>
-                              clearEventDuration(
-                                listData.event_list_uuid,
-                                event.event_uuid,
-                              )}
-                            class="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded transition-colors duration-200 shrink-0"
-                            title="Clear duration"
-                          >
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="block text-sm font-medium text-gray-700 mb-2">
+                    Visibility
+                  </div>
+                  <div class="flex gap-4">
+                    <label class="flex items-center">
+                      <input
+                        type="radio"
+                        value="public"
+                        checked={listData.visibility === 'public'}
+                        on:change={() =>
+                          handleEventListVisibilityChange(
+                            listData.event_list_uuid,
+                            'public',
+                          )}
+                        class="mr-2"
+                      />
+                      <span>Public</span>
+                    </label>
+                    <label class="flex items-center">
+                      <input
+                        type="radio"
+                        value="private"
+                        checked={listData.visibility === 'private'}
+                        on:change={() =>
+                          handleEventListVisibilityChange(
+                            listData.event_list_uuid,
+                            'private',
+                          )}
+                        class="mr-2"
+                      />
+                      <span>Private</span>
+                    </label>
+                  </div>
+                  {#if listData.private_link_token}
+                    <div class="mt-2 p-2 bg-gray-50 rounded text-xs">
+                      <p class="text-gray-600 mb-1">
+                        Share link (works for public and private):
+                      </p>
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <code class="text-blue-600 break-all flex-1 min-w-0">
+                          {typeof window !== 'undefined'
+                            ? `${window.location.origin}/?token=${listData.private_link_token}`
+                            : ''}
+                        </code>
+                        <button
+                          type="button"
+                          on:click={() => copyShareLink(listData)}
+                          class="shrink-0 p-1.5 rounded text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors"
+                          title="Copy share link"
+                          aria-label="Copy share link"
+                        >
+                          {#if copiedShareLinkEventListUuid === listData.event_list_uuid}
+                            <svg
+                              class="w-4 h-4 text-green-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          {:else}
                             <svg
                               class="w-4 h-4"
                               fill="none"
@@ -2189,47 +2254,296 @@
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
                                 stroke-width="2"
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                              />
+                            </svg>
+                          {/if}
+                        </button>
+                      </div>
+                    </div>
+                  {:else}
+                    <p class="mt-2 text-xs text-gray-500">
+                      Save the venue to get a shareable direct link for this
+                      event list.
+                    </p>
+                  {/if}
+                </div>
+
+                <div>
+                  <div class="block text-sm font-medium text-gray-700 mb-2">
+                    Events
+                  </div>
+
+                  {#if !listData.events || listData.events.length === 0}
+                    <p class="text-sm text-gray-500 py-2">
+                      No events yet. Click "+ Add Event" to add one.
+                    </p>
+                  {/if}
+                  {#each listData.events || [] as event, eventIndex (event.event_uuid)}
+                    <div
+                      class="border border-gray-200 rounded p-3 mb-2 space-y-2 w-full overflow-x-hidden"
+                    >
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1">
+                          <button
+                            on:click={() =>
+                              moveEventUp(listData.event_list_uuid, eventIndex)}
+                            disabled={eventIndex === 0}
+                            class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-xs"
+                            title="Move up"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            on:click={() =>
+                              moveEventDown(
+                                listData.event_list_uuid,
+                                eventIndex,
+                              )}
+                            disabled={eventIndex ===
+                              (listData.events || []).length - 1}
+                            class="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-xs"
+                            title="Move down"
+                          >
+                            ↓
+                          </button>
+                        </div>
+                        <div class="flex gap-1">
+                          <button
+                            on:click={() =>
+                              duplicateEvent(
+                                listData.event_list_uuid,
+                                event.event_uuid,
+                              )}
+                            class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors"
+                          >
+                            Duplicate
+                          </button>
+                          <button
+                            on:click={() =>
+                              deleteEvent(
+                                listData.event_list_uuid,
+                                event.event_uuid,
+                              )}
+                            class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                          >
+                            Delete Event
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          for="event-name-{event.event_uuid}"
+                          class="block text-xs font-medium text-gray-700 mb-1"
+                          >Event Name</label
+                        >
+                        <div class="relative">
+                          <input
+                            type="text"
+                            id="event-name-{event.event_uuid}"
+                            bind:value={event.event_name}
+                            on:blur={() =>
+                              validateEventNameBlur(event.event_uuid)}
+                            class="w-full px-2 py-1 pr-8 text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {eventNameErrors[
+                              event.event_uuid
+                            ]
+                              ? 'border-red-500'
+                              : 'border-gray-300'}"
+                            placeholder="e.g. Shacharit, Mincha"
+                          />
+                          <button
+                            type="button"
+                            on:click={() => (event.event_name = '')}
+                            class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                            title="Clear"
+                            aria-label="Clear"
+                          >
+                            <svg
+                              class="w-3.5 h-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              stroke-width="2"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
                                 d="M6 18L18 6M6 6l12 12"
                               />
                             </svg>
                           </button>
+                        </div>
+                        {#if eventNameErrors[event.event_uuid]}
+                          <p class="mt-1 text-xs text-red-600">
+                            {eventNameErrors[event.event_uuid]}
+                          </p>
                         {/if}
                       </div>
-                    </div>
 
-                    <div>
-                      <label
-                        for="event-comment-{event.event_uuid}"
-                        class="block text-xs font-medium text-gray-700 mb-1"
-                        >Comment (optional)</label
+                      <div
+                        class="w-full min-w-0"
+                        style="max-width: 100%; overflow: hidden; box-sizing: border-box;"
                       >
-                      <textarea
-                        id="event-comment-{event.event_uuid}"
-                        bind:value={event.comment}
-                        rows="2"
-                        class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Optional comment"
-                      ></textarea>
+                        <label
+                          for="event-time-{event.event_uuid}"
+                          class="block text-xs font-medium text-gray-700 mb-1"
+                          >Time (HH:MM)</label
+                        >
+                        <div class="relative flex gap-1">
+                          <input
+                            type="time"
+                            id="event-time-{event.event_uuid}"
+                            bind:value={event.time}
+                            on:input={() => {
+                              const dateToUse =
+                                listData.date && listData.date.trim()
+                                  ? listData.date
+                                  : new Date().toISOString().split('T')[0];
+                              event.datetime = combineTimeAndDate(
+                                event.time,
+                                dateToUse,
+                                venueTimezone,
+                              );
+                            }}
+                            class="flex-1 min-w-0 px-2 py-1 pr-8 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            style="box-sizing: border-box; max-width: 100%; min-width: 0; -webkit-appearance: none; appearance: none;"
+                          />
+                          <button
+                            type="button"
+                            on:click={() => {
+                              event.time = '00:00';
+                              const dateToUse =
+                                listData.date && listData.date.trim()
+                                  ? listData.date
+                                  : new Date().toISOString().split('T')[0];
+                              event.datetime = combineTimeAndDate(
+                                '00:00',
+                                dateToUse,
+                                venueTimezone,
+                              );
+                            }}
+                            class="shrink-0 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors self-center"
+                            title="Clear time"
+                            aria-label="Clear time"
+                          >
+                            <svg
+                              class="w-3.5 h-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              stroke-width="2"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          for="event-duration-{event.event_uuid}"
+                          class="block text-xs font-medium text-gray-700 mb-1"
+                          >Duration (minutes) (optional)</label
+                        >
+                        <div class="flex gap-2">
+                          <input
+                            type="number"
+                            id="event-duration-{event.event_uuid}"
+                            bind:value={event.duration_minutes}
+                            min="1"
+                            class="flex-1 min-w-0 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="No duration"
+                          />
+                          {#if event.duration_minutes && event.duration_minutes !== '' && event.duration_minutes > 0}
+                            <button
+                              type="button"
+                              on:click={() =>
+                                clearEventDuration(
+                                  listData.event_list_uuid,
+                                  event.event_uuid,
+                                )}
+                              class="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded transition-colors duration-200 shrink-0"
+                              title="Clear duration"
+                            >
+                              <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          {/if}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          for="event-comment-{event.event_uuid}"
+                          class="block text-xs font-medium text-gray-700 mb-1"
+                          >Comment (optional)</label
+                        >
+                        <div class="relative">
+                          <textarea
+                            id="event-comment-{event.event_uuid}"
+                            bind:value={event.comment}
+                            rows="2"
+                            class="w-full px-2 py-1 pr-8 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Optional comment"
+                          ></textarea>
+                          <button
+                            type="button"
+                            on:click={() => (event.comment = '')}
+                            class="absolute right-2 top-2 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                            title="Clear"
+                            aria-label="Clear"
+                          >
+                            <svg
+                              class="w-3.5 h-3.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              stroke-width="2"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                {/each}
-                <button
-                  on:click={() => addEvent(listData.event_list_uuid)}
-                  class="mt-2 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
-                >
-                  + Add Event
-                </button>
+                  {/each}
+                  <button
+                    on:click={() => addEvent(listData.event_list_uuid)}
+                    class="mt-2 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+                  >
+                    + Add Event
+                  </button>
+                </div>
               </div>
-            </div>
-          {/each}
-          <button
-            on:click={addEventList}
-            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-          >
-            + Add Event List
-          </button>
+            {/each}
+            <button
+              on:click={addEventList}
+              class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+            >
+              + Add Event List
+            </button>
+          </div>
         </div>
-      </div>
       </div>
 
       <!-- Preview Pane (constrained to grid height on desktop so page doesn't scroll) -->
@@ -2253,7 +2567,8 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               {#each eventListsData as listData}
-                <option value={listData.event_list_uuid}>{listData.name}</option
+                <option value={listData.event_list_uuid}
+                  >{listData.name || 'Untitled Event List'}</option
                 >
               {/each}
             </select>
@@ -2357,7 +2672,7 @@
                       >
                         <div>
                           <p class="font-medium text-gray-900 text-sm">
-                            {event.event_name}
+                            {event.event_name || 'Untitled Event'}
                           </p>
                           {#if event.comment}
                             <p

@@ -326,6 +326,9 @@
       </button>
       
       <h1 class="text-4xl font-bold mb-2 text-gray-900">{venue.name}</h1>
+      {#if owner?.name}
+        <p class="text-lg text-gray-600 mb-1">Owner: {owner.name}</p>
+      {/if}
       {#if venue.address}
         <p class="text-lg text-gray-600 mb-4">{venue.address}</p>
       {/if}

@@ -652,6 +652,11 @@
       {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment}
         <div class="mb-3 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="flex flex-col justify-start">
+            {#if selectedVenue.owner_name}
+              <p class="text-sm text-gray-600 mb-1">
+                <span class="font-medium text-gray-700">Owner:</span> {selectedVenue.owner_name}
+              </p>
+            {/if}
             {#if selectedVenue.address}
               <p class="text-sm text-gray-600 mb-2">
                 <span class="font-medium text-gray-700">Address:</span>

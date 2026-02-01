@@ -45,10 +45,9 @@ help:
 	@echo ""
 	@echo "Backend Test Data:"
 	@echo "  make dbseed       - Seed test data into database"
-	@echo "  make dbseedclear  - Clear ALL data and seed (destroys real data)"
-	@echo "  make dbcleardemo  - Clear only demo data and reseed (preserves real data)"
-	@echo "  make dbseedrc     - Seed Render.com DB from local machine (DATABASE_URL_RENDER_COM)"
-	@echo "  make dbseedrcclear - Clear and seed Render.com DB from local machine (DATABASE_URL_RENDER_COM)"
+	@echo "  make dbseedclear   - Clear demo data only (does not seed; run dbseed to re-seed)"
+	@echo "  make dbseedrc        - Seed Render.com DB from local machine (DATABASE_URL_RENDER_COM)"
+	@echo "  make dbseedrcclear   - Clear demo only on Render.com DB (does not seed)"
 	@echo ""
 	@echo "Backend Testing:"
 	@echo "  make btest        - Run backend tests"
@@ -392,23 +391,7 @@ dbseed:
 
 dbseedclear:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
-		echo "Clearing ALL data and seeding (inside devcontainer)..."; \
-		cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear; \
-	else \
-		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
-		if [ -z "$$CONTAINER_NAME" ]; then \
-			echo "Error: Backend container not found. Is the devcontainer running?"; \
-			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
-			echo "Or run this command from inside the devcontainer"; \
-			exit 1; \
-		fi; \
-		echo "Clearing ALL data and seeding (from host via docker exec)..."; \
-		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear"; \
-	fi
-
-dbcleardemo:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
-		echo "Clearing demo data only and seeding (inside devcontainer)..."; \
+		echo "Clearing demo data only (inside devcontainer)..."; \
 		cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear-demo-only; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
@@ -418,7 +401,7 @@ dbcleardemo:
 			echo "Or run this command from inside the devcontainer"; \
 			exit 1; \
 		fi; \
-		echo "Clearing demo data only and seeding (from host via docker exec)..."; \
+		echo "Clearing demo data only (from host via docker exec)..."; \
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear-demo-only"; \
 	fi
 
@@ -447,8 +430,8 @@ dbseedrcclear:
 		echo "Error: DATABASE_URL_RENDER_COM not set in backend/.env"; \
 		exit 1; \
 	fi && \
-	echo "Clearing and seeding Render.com database..."; \
-	cd backend && DATABASE_URL="$$DATABASE_URL_RENDER_COM" go run ./cmd/cli/seed/main.go -clear
+	echo "Clearing demo data only on Render.com database..."; \
+	cd backend && DATABASE_URL="$$DATABASE_URL_RENDER_COM" go run ./cmd/cli/seed/main.go -clear-demo-only
 
 # Backend Database access targets
 # These work both from host (via docker exec) and inside the devcontainer (direct execution)

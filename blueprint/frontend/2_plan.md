@@ -93,10 +93,6 @@
 - **Current (prototype)**: Default/demo data pre-loaded on first use, serialized to localStorage on change
 - **Migration in progress**: Backend API is complete and ready. We are migrating from localStorage to API-only data storage (see "Backend API Integration" section below).
 
-## Localization
-
-- Support for both English and Hebrew
-
 ## Image Handling
 
 - Use simple file upload for banners, store as base64 or blob URL in localStorage

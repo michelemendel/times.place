@@ -297,6 +297,9 @@
             {/if}
             <div class="p-4 sm:p-6 flex flex-col flex-grow">
               <h3 class="text-xl font-bold text-gray-900 mb-2">{venue.name}</h3>
+              {#if owner?.name}
+                <p class="text-sm text-gray-600 mb-1">Owner: {owner.name}</p>
+              {/if}
               {#if venue.address}
                 <p class="text-sm text-gray-600 mb-2 flex items-start gap-2">
                   <svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

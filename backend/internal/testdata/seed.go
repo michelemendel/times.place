@@ -18,25 +18,30 @@ type Execer interface {
 
 // TestData holds references to seeded test data for use in tests
 type TestData struct {
-	Owner1UUID uuid.UUID
-	Owner2UUID uuid.UUID
-	Venue1UUID uuid.UUID
-	Venue2UUID uuid.UUID
-	Venue3UUID uuid.UUID
-	Venue4UUID uuid.UUID
+	Owner1UUID     uuid.UUID
+	Owner2UUID     uuid.UUID
+	Venue1UUID     uuid.UUID
+	Venue2UUID     uuid.UUID
+	Venue3UUID     uuid.UUID
+	Venue4UUID     uuid.UUID
 	EventList1UUID uuid.UUID
 	EventList2UUID uuid.UUID
-	EventList3UUID uuid.UUID
+	EventList3UUID uuid.UUID // Ben's house - Birthday
 	EventList4UUID uuid.UUID // הדגמה: אוהל אברהם - זמני תפילות חול, public so venue appears in public list
-	Event1UUID uuid.UUID
-	Event2UUID uuid.UUID
-	Event3UUID uuid.UUID
-	Event4UUID uuid.UUID
-	Event5UUID uuid.UUID
-	Event6UUID uuid.UUID
-	Event7UUID uuid.UUID // שחרית - Ohel Avraham
-	Event8UUID uuid.UUID // מנחה - Ohel Avraham
-	Event9UUID uuid.UUID // מעריב - Ohel Avraham
+	EventList5UUID uuid.UUID // After School Math - Daily Schedule
+	Event1UUID     uuid.UUID
+	Event2UUID     uuid.UUID
+	Event3UUID     uuid.UUID
+	Event4UUID     uuid.UUID
+	Event5UUID     uuid.UUID // Welcome - Ben's house Birthday
+	Event6UUID     uuid.UUID // unused (was Evening Shiur)
+	Event7UUID     uuid.UUID // שחרית - Ohel Avraham
+	Event8UUID     uuid.UUID // מנחה - Ohel Avraham
+	Event9UUID     uuid.UUID // מעריב - Ohel Avraham
+	Event10UUID    uuid.UUID // Algebra - After School Math
+	Event11UUID    uuid.UUID // Calculus - After School Math
+	Event12UUID    uuid.UUID // Lunch - After School Math
+	Event13UUID    uuid.UUID // Fourier Transformations - After School Math
 }
 
 // SeedTestData inserts test data into the database and returns references to the created records.
@@ -44,7 +49,7 @@ type TestData struct {
 //
 // The seeded data matches the structure from frontend/src/lib/demo_data.ts:
 // - Owner 1 (Abe): 2 venues (Beth El Synagogue, הדגמה: אוהל אברהם / Ohel Avraham)
-// - Owner 2 (Ben): 2 venues (Beit Midrash, Chagat House)
+// - Owner 2 (Ben): 2 venues (Ben's house, After School Math)
 // - Various event lists and events (including Hebrew prayer times for הדגמה: אוהל אברהם)
 //
 // Password for all test owners is "demo" (hashed with bcrypt).
@@ -151,7 +156,7 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 					INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
 					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `, data.Venue2UUID, data.Owner1UUID, "הדגמה: אוהל אברהם", "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&h=200&fit=crop",
-				"רחוב בן יהודה 42, ירושלים", "31.7800,35.2167", "מרחב קהילתי רב-שימושי.",
+					"רחוב בן יהודה 42, ירושלים", "31.7800,35.2167", "מרחב קהילתי רב-שימושי.",
 					"Asia/Jerusalem", now, now)
 				if err != nil {
 					return nil, err
@@ -166,40 +171,66 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		return nil, err
 	}
 
-	// Owner 2 - Venue 1: Beit Midrash - insert or get existing
+	// Owner 2 - Venue 1: Ben's house (private event demo) - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
-	`, data.Owner2UUID, "DEMO: Beit Midrash").Scan(&data.Venue3UUID)
+	`, data.Owner2UUID, "DEMO: Ben's house").Scan(&data.Venue3UUID)
 	if err == sql.ErrNoRows {
-		// Venue doesn't exist, insert it
-		data.Venue3UUID = uuid.New()
-		_, err = db.ExecContext(ctx, `
-			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		`, data.Venue3UUID, data.Owner2UUID, "DEMO: Beit Midrash", "https://placehold.co/600x200?text=Beit+Midrash",
-			"28 Jaffa Road, Jerusalem", "31.7820,35.2180", "Study hall and prayer space.",
-			"Asia/Jerusalem", now, now)
-		if err != nil {
+		err = db.QueryRowContext(ctx, `
+			SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
+		`, data.Owner2UUID, "DEMO: Beit Midrash").Scan(&data.Venue3UUID)
+		if err == nil {
+			_, err = db.ExecContext(ctx, `
+				UPDATE venues SET name = $1, banner_image = $2, modified_at = $3 WHERE venue_uuid = $4
+			`, "DEMO: Ben's house", "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&h=200&fit=crop", now, data.Venue3UUID)
+			if err != nil {
+				return nil, err
+			}
+		} else if err == sql.ErrNoRows {
+			data.Venue3UUID = uuid.New()
+			_, err = db.ExecContext(ctx, `
+				INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			`, data.Venue3UUID, data.Owner2UUID, "DEMO: Ben's house", "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&h=200&fit=crop",
+				"28 Jaffa Road, Jerusalem", "31.7820,35.2180", "Private event demo.",
+				"Asia/Jerusalem", now, now)
+			if err != nil {
+				return nil, err
+			}
+		} else {
 			return nil, err
 		}
 	} else if err != nil {
 		return nil, err
 	}
 
-	// Owner 2 - Venue 2: Chagat House - insert or get existing
+	// Owner 2 - Venue 2: After School Math - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
-	`, data.Owner2UUID, "DEMO: Chagat House").Scan(&data.Venue4UUID)
+	`, data.Owner2UUID, "DEMO: After School Math").Scan(&data.Venue4UUID)
 	if err == sql.ErrNoRows {
-		// Venue doesn't exist, insert it
-		data.Venue4UUID = uuid.New()
-		_, err = db.ExecContext(ctx, `
-			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		`, data.Venue4UUID, data.Owner2UUID, "DEMO: Chagat House", "https://placehold.co/600x200?text=Chagat+House",
-			"12 Rechov Agron, Jerusalem", "31.7750,35.2200", "Warm and welcoming Chagat center.",
-			"Asia/Jerusalem", now, now)
-		if err != nil {
+		err = db.QueryRowContext(ctx, `
+			SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
+		`, data.Owner2UUID, "DEMO: Chagat House").Scan(&data.Venue4UUID)
+		if err == nil {
+			_, err = db.ExecContext(ctx, `
+				UPDATE venues SET name = $1, banner_image = $2, modified_at = $3 WHERE venue_uuid = $4
+			`, "DEMO: After School Math", "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&h=200&fit=crop", now, data.Venue4UUID)
+			if err != nil {
+				return nil, err
+			}
+		} else if err == sql.ErrNoRows {
+			data.Venue4UUID = uuid.New()
+			_, err = db.ExecContext(ctx, `
+				INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			`, data.Venue4UUID, data.Owner2UUID, "DEMO: After School Math", "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&h=200&fit=crop",
+				"12 Rechov Agron, Jerusalem", "31.7750,35.2200", "Daily math schedule.",
+				"Asia/Jerusalem", now, now)
+			if err != nil {
+				return nil, err
+			}
+		} else {
 			return nil, err
 		}
 	} else if err != nil {
@@ -277,23 +308,45 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		return nil, err
 	}
 
-	// Event List 3 for Venue 3: Weekly Schedule - PRIVATE - insert or get existing
+	// Event List 3 for Venue 3 (Ben's house): Birthday - PUBLIC - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT event_list_uuid FROM event_lists WHERE venue_uuid = $1 AND name = $2
-	`, data.Venue3UUID, "Weekly Schedule").Scan(&data.EventList3UUID)
+	`, data.Venue3UUID, "Birthday").Scan(&data.EventList3UUID)
 	if err == sql.ErrNoRows {
-		// Event list doesn't exist, insert it
-		data.EventList3UUID = uuid.New()
-		privateToken := uuid.New()
-		_, err = db.ExecContext(ctx, `
-			INSERT INTO event_lists (event_list_uuid, venue_uuid, name, date, comment, visibility, private_link_token, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		`, data.EventList3UUID, data.Venue3UUID, "Weekly Schedule", "2025-12-25",
-			"Regular weekly learning sessions", "private", privateToken, 0, now, now)
-		if err != nil {
+		err = db.QueryRowContext(ctx, `
+			SELECT event_list_uuid FROM event_lists WHERE venue_uuid = $1 AND name = $2
+		`, data.Venue3UUID, "Weekly Schedule").Scan(&data.EventList3UUID)
+		if err == nil {
+			_, err = db.ExecContext(ctx, `
+				UPDATE event_lists SET name = $1, comment = $2, visibility = $3, private_link_token = NULL, modified_at = $4 WHERE event_list_uuid = $5
+			`, "Birthday", "Come as you are", "public", now, data.EventList3UUID)
+			if err != nil {
+				return nil, err
+			}
+			_, err = db.ExecContext(ctx, `
+				DELETE FROM events WHERE event_list_uuid = $1 AND event_name IN ('Morning Learning', 'Evening Shiur')
+			`, data.EventList3UUID)
+			if err != nil {
+				return nil, err
+			}
+		} else if err == sql.ErrNoRows {
+			data.EventList3UUID = uuid.New()
+			_, err = db.ExecContext(ctx, `
+				INSERT INTO event_lists (event_list_uuid, venue_uuid, name, date, comment, visibility, private_link_token, sort_order, created_at, modified_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+			`, data.EventList3UUID, data.Venue3UUID, "Birthday", "2025-12-25",
+				"Come as you are", "public", nil, 0, now, now)
+			if err != nil {
+				return nil, err
+			}
+		} else {
 			return nil, err
 		}
 	} else if err != nil {
+		return nil, err
+	}
+	_, err = db.ExecContext(ctx, `UPDATE event_lists SET visibility = 'public', private_link_token = NULL, modified_at = $1 WHERE event_list_uuid = $2`, now, data.EventList3UUID)
+	if err != nil {
 		return nil, err
 	}
 
@@ -373,18 +426,61 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		return nil, err
 	}
 
-	// Event 5: Morning Learning - insert or get existing
+	// Event 5: Welcome (Ben's house Birthday) - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList3UUID, "Morning Learning", "2025-12-25T08:00:00+02:00").Scan(&data.Event5UUID)
+	`, data.EventList3UUID, "Welcome", "2025-12-25T19:00:00+02:00").Scan(&data.Event5UUID)
 	if err == sql.ErrNoRows {
-		// Event doesn't exist, insert it
 		data.Event5UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
 			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event5UUID, data.EventList3UUID, "Morning Learning", "2025-12-25T08:00:00+02:00",
-			"", 90, 0, now, now)
+		`, data.Event5UUID, data.EventList3UUID, "Welcome", "2025-12-25T19:00:00+02:00",
+			"There will be barbecue and cake", 0, 0, now, now)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+	_, err = db.ExecContext(ctx, `UPDATE events SET comment = $1, modified_at = $2 WHERE event_uuid = $3`, "There will be barbecue and cake", now, data.Event5UUID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Event List 5 for Venue 4 (After School Math): Daily Schedule - PUBLIC - insert or get existing
+	err = db.QueryRowContext(ctx, `
+		SELECT event_list_uuid FROM event_lists WHERE venue_uuid = $1 AND name = $2
+	`, data.Venue4UUID, "Daily Schedule").Scan(&data.EventList5UUID)
+	if err == sql.ErrNoRows {
+		data.EventList5UUID = uuid.New()
+		_, err = db.ExecContext(ctx, `
+			INSERT INTO event_lists (event_list_uuid, venue_uuid, name, date, comment, visibility, private_link_token, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.EventList5UUID, data.Venue4UUID, "Daily Schedule", "2025-12-25",
+			"Daily math classes", "public", nil, 0, now, now)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+	_, err = db.ExecContext(ctx, `UPDATE event_lists SET visibility = 'public', private_link_token = NULL, modified_at = $1 WHERE event_list_uuid = $2`, now, data.EventList5UUID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Event 10: Algebra - insert or get existing
+	err = db.QueryRowContext(ctx, `
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
+	`, data.EventList5UUID, "Algebra", "2025-12-25T09:00:00+02:00").Scan(&data.Event10UUID)
+	if err == sql.ErrNoRows {
+		data.Event10UUID = uuid.New()
+		_, err = db.ExecContext(ctx, `
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`, data.Event10UUID, data.EventList5UUID, "Algebra", "2025-12-25T09:00:00+02:00",
+			"", 45, 0, now, now)
 		if err != nil {
 			return nil, err
 		}
@@ -392,18 +488,53 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		return nil, err
 	}
 
-	// Event 6: Evening Shiur - insert or get existing
+	// Event 11: Calculus - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList3UUID, "Evening Shiur", "2025-12-25T19:30:00+02:00").Scan(&data.Event6UUID)
+	`, data.EventList5UUID, "Calculus", "2025-12-25T10:00:00+02:00").Scan(&data.Event11UUID)
 	if err == sql.ErrNoRows {
-		// Event doesn't exist, insert it
-		data.Event6UUID = uuid.New()
+		data.Event11UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
 			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event6UUID, data.EventList3UUID, "Evening Shiur", "2025-12-25T19:30:00+02:00",
-			"", 60, 1, now, now)
+		`, data.Event11UUID, data.EventList5UUID, "Calculus", "2025-12-25T10:00:00+02:00",
+			"", 45, 1, now, now)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Event 12: Lunch - insert or get existing
+	err = db.QueryRowContext(ctx, `
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
+	`, data.EventList5UUID, "Lunch", "2025-12-25T11:00:00+02:00").Scan(&data.Event12UUID)
+	if err == sql.ErrNoRows {
+		data.Event12UUID = uuid.New()
+		_, err = db.ExecContext(ctx, `
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`, data.Event12UUID, data.EventList5UUID, "Lunch", "2025-12-25T11:00:00+02:00",
+			"", 50, 2, now, now)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Event 13: Fourier Transformations - insert or get existing
+	err = db.QueryRowContext(ctx, `
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
+	`, data.EventList5UUID, "Fourier Transformations", "2025-12-25T12:00:00+02:00").Scan(&data.Event13UUID)
+	if err == sql.ErrNoRows {
+		data.Event13UUID = uuid.New()
+		_, err = db.ExecContext(ctx, `
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`, data.Event13UUID, data.EventList5UUID, "Fourier Transformations", "2025-12-25T12:00:00+02:00",
+			"", 45, 3, now, now)
 		if err != nil {
 			return nil, err
 		}

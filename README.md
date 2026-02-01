@@ -10,7 +10,6 @@ This is a prototype web application that allows:
 
 - Visitors to browse venues and view upcoming event times, contact details, and venue information
 - Admins to edit venue details, schedules, and content through a simple admin interface
-- Bilingual support for English and Hebrew content
 
 The current prototype is frontend-only, using Svelete and SvelteKit with local storage for data persistence. Future versions will include a Go backend with PostgreSQL.
 

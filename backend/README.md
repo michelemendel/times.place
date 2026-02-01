@@ -338,7 +338,7 @@ All backend-related Makefile targets:
 - `make dbverify` - Verify schema: show migration status and list tables
 - `make bsqlcgenerate` - Generate sqlc code
 - `make dbseed` - Seed test data into database
-- `make dbseedclear` - Clear existing data and seed test data
+- `make dbseedclear` - Clear demo data only (does not seed; run `make dbseed` to re-seed)
 - `make devshell` - Open shell in devcontainer (for Warp/external terminals)
 - `make dbconnect` - Connect to database with psql (works from host or inside container)
 - `make dbhost` - Connect to database from host (direct connection via localhost:5432)

@@ -303,10 +303,6 @@
   - [ ] Test concurrent edits (if applicable)
   - [ ] Verify owner isolation (owners only see their venues)
 
-## Localization
-
-- [ ] Test support for Hebrew
-
 ## Misc
 
 - [x] Rename page Prototype to Demo with information about the site being fully functional but currently in test modus

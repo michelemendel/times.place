@@ -18,7 +18,10 @@
    */
   function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
     const unixTimestamp = Math.floor(new Date(rfc3339).getTime() / 1000);
-    return formatEventTime(unixTimestamp, venueTimezone ? { timeZone: venueTimezone } : {});
+    return formatEventTime(
+      unixTimestamp,
+      venueTimezone ? { timeZone: venueTimezone } : {},
+    );
   }
 
   /** @type {import('$lib/types').VenueOwner | null} */
@@ -94,111 +97,163 @@
 </script>
 
 <svelte:head>
-  <title>{eventList?.name || 'Event List'} - {venue?.name || 'Venue'} - times.place</title>
+  <title
+    >{eventList?.name || 'Event List'} - {venue?.name || 'Venue'} - times.place</title
+  >
 </svelte:head>
 
-<div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 py-8">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
   {#if !owner}
-    <div class="text-center py-8">
-      <p class="text-gray-600">Please log in to view event lists.</p>
+    <div class="text-center py-6">
+      <p class="text-sm text-gray-600">Please log in to view event lists.</p>
     </div>
   {:else if loading}
-    <div class="text-center py-8">
-      <p class="text-gray-600">Loading...</p>
+    <div class="text-center py-6">
+      <p class="text-sm text-gray-600">Loading...</p>
     </div>
   {:else if !venue || !eventList}
-    <div class="text-center py-8">
-      <p class="text-gray-600">
+    <div class="text-center py-6">
+      <p class="text-sm text-gray-600">
         {loadError || 'Event list not found.'}
       </p>
       <button
         on:click={goBack}
-        class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+        class="mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors duration-200"
       >
         Back to Venues
       </button>
     </div>
   {:else}
     <!-- Action Buttons (hidden when printing) -->
-    <div class="mb-6 flex gap-4 no-print">
+    <div class="mb-4 flex gap-4 no-print">
       <button
         on:click={goBack}
-        class="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200"
+        class="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200"
       >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
         <span>Back</span>
       </button>
 
       <button
         on:click={printEventList}
-        class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
+        class="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200"
       >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+          />
         </svg>
         <span>Print</span>
       </button>
     </div>
 
     <!-- Event List Content -->
-    <div class="bg-white rounded-xl shadow-lg p-6 md:p-12">
+    <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
       <!-- Banner Image -->
       {#if venue.banner_image}
         <BannerImage
           src={venue.banner_image}
           alt={venue.name}
-          size="lg"
-          wrapperClass="mb-6"
+          size="md"
+          wrapperClass="mb-4"
         />
       {/if}
 
       <!-- Venue Header -->
-      <div class="mb-6 pb-4 border-b border-gray-200">
-        <h1 class="text-3xl font-bold mb-2 text-gray-900">{venue.name}</h1>
+      <div class="mb-3 pb-2 border-b border-gray-200">
+        <h1 class="text-3xl font-bold mb-3 text-gray-900">{venue.name}</h1>
+        {#if owner?.name}
+          <p class="text-sm text-gray-600 mb-1">
+            <span class="font-medium text-gray-700">Owner:</span>
+            {owner.name}
+          </p>
+        {/if}
         {#if venue.address}
-          <p class="text-lg text-gray-600">{venue.address}</p>
+          <p class="text-sm text-gray-600 mb-2">{venue.address}</p>
         {/if}
       </div>
 
       <!-- Event List Header -->
-      <div class="mb-6">
-        <h2 class="text-2xl font-semibold mb-2 text-gray-900">{eventList.name || 'Untitled Event List'}</h2>
+      <div class="mb-4">
+        <h2 class="text-2xl font-semibold mb-1 text-gray-900">
+          {eventList.name || 'Untitled Event List'}
+        </h2>
         {#if eventList.date}
-          <p class="text-lg text-gray-600 mb-2">
-            <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <p class="text-sm text-gray-600 mb-2">
+            <svg
+              class="w-4 h-4 inline mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
             </svg>
             {formatEventListDate(eventList.date)}
           </p>
         {/if}
         {#if eventList.comment}
-          <p class="text-gray-600 whitespace-pre-line">{eventList.comment}</p>
+          <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">
+            {eventList.comment}
+          </p>
         {/if}
       </div>
 
       <!-- Events -->
       {#if listEvents.length === 0}
-        <div class="py-8 text-center">
-          <p class="text-gray-500">No events scheduled for this list.</p>
+        <div class="py-4 text-center">
+          <p class="text-sm text-gray-500">
+            No events scheduled for this list.
+          </p>
         </div>
       {:else}
-        <div class="space-y-4">
+        <div class="space-y-1">
           {#each listEvents as event}
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div
+              class="flex items-center justify-between py-1 px-3 bg-gray-50 rounded-lg"
+            >
               <div class="flex-1">
-                <p class="font-medium text-lg text-gray-900">{event.event_name}</p>
+                <p class="font-medium text-sm text-gray-900">
+                  {event.event_name}
+                </p>
                 {#if event.comment}
-                  <p class="text-sm text-gray-600 mt-1 whitespace-pre-line">{event.comment}</p>
+                  <p
+                    class="text-sm md:text-xs text-gray-600 mt-0.5 whitespace-pre-line"
+                  >
+                    {event.comment}
+                  </p>
                 {/if}
               </div>
               <div class="text-right ml-4">
-                <p class="text-xl font-semibold text-blue-600">
+                <p class="text-base font-semibold text-blue-600">
                   {formatEventTimeFromRFC3339(event.datetime, venue?.timezone)}
                 </p>
                 {#if event.duration_minutes}
-                  <p class="text-sm text-gray-500 mt-1">
+                  <p class="text-xs text-gray-500 mt-0.5">
                     {event.duration_minutes} min
                   </p>
                 {/if}

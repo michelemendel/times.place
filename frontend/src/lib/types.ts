@@ -19,6 +19,8 @@ export interface Venue {
   banner_image: string;
   address: string;
   geolocation: string;
+  /** Owner display name; set by public API, not by owner API */
+  owner_name?: string;
   comment?: string;
   /** Client-side only; API does not return this. Derived from listing event-lists. */
   event_list_uuids?: string[];

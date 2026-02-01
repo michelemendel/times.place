@@ -135,6 +135,13 @@
   let venueBannerImage = '';
   let venueTimezone = '';
 
+  /** Max banner image file size (5 MB). Shown to user and enforced before upload. */
+  const BANNER_MAX_MB = 5;
+  const BANNER_MAX_BYTES = BANNER_MAX_MB * 1024 * 1024;
+
+  /** @type {HTMLInputElement | null} */
+  let venueBannerInputEl = null;
+
   // Event lists state (array of event list objects being edited)
   /** @type {any[]} */
   let eventListsData = [];
@@ -829,8 +836,8 @@
     const file = target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB');
+    if (file.size > BANNER_MAX_BYTES) {
+      alert(`Image must be under ${BANNER_MAX_MB} MB. Please choose a smaller image or remove the banner.`);
       return;
     }
 
@@ -842,6 +849,16 @@
       }
     };
     reader.readAsDataURL(file);
+  }
+
+  /**
+   * Remove the banner image and clear the file input.
+   */
+  function removeBannerImage() {
+    venueBannerImage = '';
+    if (venueBannerInputEl) {
+      venueBannerInputEl.value = '';
+    }
   }
 
   /**
@@ -1121,6 +1138,8 @@
           goto('/login');
         } else if (err.status === 404) {
           saveError = 'Venue not found. It may have been deleted.';
+        } else if (err.status === 413) {
+          saveError = `Request too large. Use a smaller banner image (max ${BANNER_MAX_MB} MB) or remove the banner, then save again.`;
         } else {
           saveError = err.message || 'Failed to save venue. Please try again.';
         }
@@ -1993,9 +2012,10 @@
               <label
                 for="venue-banner"
                 class="block text-sm font-medium text-gray-700 mb-1"
-                >Banner Image (optional) — preferred ratio 16:9</label
+                >Banner Image (optional) — max {BANNER_MAX_MB} MB, preferred ratio 16:9</label
               >
               <input
+                bind:this={venueBannerInputEl}
                 type="file"
                 id="venue-banner"
                 accept="image/*"
@@ -2003,12 +2023,22 @@
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               {#if venueBannerImage}
-                <BannerImage
-                  src={venueBannerImage}
-                  alt="Banner preview"
-                  size="sm"
-                  wrapperClass="mt-2"
-                />
+                <div class="mt-2 flex items-start gap-2">
+                  <BannerImage
+                    src={venueBannerImage}
+                    alt="Banner preview"
+                    size="sm"
+                    wrapperClass="flex-1 min-w-0"
+                  />
+                  <button
+                    type="button"
+                    on:click={removeBannerImage}
+                    class="shrink-0 px-2 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                    title="Remove banner image"
+                  >
+                    Remove banner
+                  </button>
+                </div>
               {/if}
             </div>
           </div>

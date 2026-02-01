@@ -53,8 +53,9 @@ func NewServer() (*Server, error) {
 		AllowCredentials: true,
 	}))
 
-	// JSON middleware
-	e.Use(middleware.BodyLimit("1M"))
+	// Request body size limit (for venue create/update with base64 banner images).
+	// Banner images are sent as base64 (~33% larger than file size). 8M allows ~5MB images.
+	e.Use(middleware.BodyLimit("8M"))
 
 	// Connect to database
 	dbURL := os.Getenv("DATABASE_URL")

@@ -1,5 +1,5 @@
 <script>
-  import { onMount, afterUpdate, onDestroy } from 'svelte';
+  import { onMount, afterUpdate, onDestroy, tick } from 'svelte';
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/stores';
   import { dev, browser } from '$app/environment';
@@ -46,6 +46,14 @@
   let highlightedVenueIndex = -1;
   /** @type {HTMLElement | null} */
   let venueDropdownRef = null;
+  /** @type {HTMLInputElement | null} */
+  let searchInputRef = null;
+  /** @type {{ top: string; left: string; width: string } | null} */
+  let dropdownPosition = null;
+  /** @type {(() => void) | null} */
+  let dropdownScrollCleanup = null;
+  /** @type {number} */
+  let dropdownOpenedAt = 0;
 
   // Loading & error state
   let isLoadingVenues = false;
@@ -248,6 +256,20 @@
     if (browser) {
       document.addEventListener('click', handleClickOutside);
     }
+
+    // Close dropdown on scroll only after a short delay so opening on mobile does not close it immediately
+    if (browser && typeof window !== 'undefined') {
+      const closeDropdownOnScroll = () => {
+        if (showVenueDropdown && dropdownOpenedAt > 0 && Date.now() - dropdownOpenedAt > 200) {
+          showVenueDropdown = false;
+          highlightedVenueIndex = -1;
+        }
+      };
+      window.addEventListener('scroll', closeDropdownOnScroll, true);
+      dropdownScrollCleanup = () => {
+        window.removeEventListener('scroll', closeDropdownOnScroll, true);
+      };
+    }
   });
 
   onDestroy(() => {
@@ -255,6 +277,7 @@
       document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     }
+    dropdownScrollCleanup?.();
   });
 
   // Initialize or update map when venue changes
@@ -274,6 +297,9 @@
         map = null;
       }
     }
+    if (showVenueDropdown && searchInputRef) {
+      updateDropdownPosition();
+    }
   });
 
   // Visible venues (public list plus any token-derived venue)
@@ -284,6 +310,13 @@
 
   // When user searches, the backend returns venues matching query across venue name, address, comment, event list names, and event names. We use that list as-is.
   $: filteredVenues = sortedVenues;
+
+  // Position fixed dropdown when it opens so it is not clipped by overflow
+  $: if (showVenueDropdown) {
+    tick().then(updateDropdownPosition);
+  } else {
+    dropdownPosition = null;
+  }
 
   // Get selected venue
   $: selectedVenue = selectedVenueId
@@ -481,12 +514,20 @@
     }
 
     showVenueDropdown = true;
+    dropdownOpenedAt = Date.now();
     highlightedVenueIndex = -1;
+    if (browser && typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(() => updateDropdownPosition());
+    }
   }
 
   function handleVenueSearchFocus() {
     showVenueDropdown = true;
+    dropdownOpenedAt = Date.now();
     highlightedVenueIndex = -1;
+    if (browser && typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(() => updateDropdownPosition());
+    }
   }
 
   /**
@@ -496,6 +537,7 @@
     if (!showVenueDropdown || filteredVenues.length === 0) {
       if (event.key === 'ArrowDown' && filteredVenues.length > 0) {
         showVenueDropdown = true;
+        dropdownOpenedAt = Date.now();
         highlightedVenueIndex = 0;
         event.preventDefault();
       }
@@ -547,6 +589,20 @@
     }
   }
 
+  /** Update fixed dropdown position from search input rect (so dropdown is not clipped by overflow). */
+  function updateDropdownPosition() {
+    if (!browser || !searchInputRef || !showVenueDropdown) {
+      dropdownPosition = null;
+      return;
+    }
+    const rect = searchInputRef.getBoundingClientRect();
+    dropdownPosition = {
+      top: `${rect.bottom + 4}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`
+    };
+  }
+
   /**
    * @param {Event} event
    */
@@ -566,27 +622,28 @@
   />
 </svelte:head>
 
-<div class="w-full min-w-0 max-w-full overflow-x-hidden lg:max-w-[60%] lg:mx-auto">
-  <div class="mb-2 md:mb-2 text-center no-print-header">
-    <h1 class="text-[16px] md:text-4xl font-bold mb-1 md:mb-2 text-gray-900">Find Venues and Events</h1>
+<div class="w-full min-w-0 max-w-[100vw] overflow-x-clip lg:max-w-[60%] lg:mx-auto">
+  <div class="-mt-1 md:mt-0 mb-2 md:mb-2 text-center no-print-header">
+    <h1 class="text-[16px] md:text-4xl font-bold mb-0.5 md:mb-2 text-gray-900">Find Venues and Events</h1>
     <p class="text-[10px] md:text-base text-gray-600 mb-1 md:mb-0">
       Select a venue to view its event schedules and contact information.
     </p>
   </div>
 
-  <div class="bg-white rounded-xl shadow-lg p-2 md:p-12 md:pt-4 min-w-0 overflow-x-hidden">
-  <!-- Venue Searchable Dropdown -->
+  <div class="bg-white rounded-xl shadow-lg p-2 md:p-12 md:pt-4 min-w-0 max-w-full w-full overflow-x-clip box-border">
+  <!-- Venue Searchable Dropdown (no overflow-hidden here so dropdown is not clipped) -->
   <div class="mb-2 md:mb-2 relative no-print-venue-dropdown" bind:this={venueDropdownRef}>
     <div class="relative">
       <input
         type="text"
         id="venue-search"
+        bind:this={searchInputRef}
         value={venueSearchQuery}
         on:input={handleVenueSearchInput}
         on:focus={handleVenueSearchFocus}
         on:keydown={handleVenueSearchKeydown}
         placeholder="Search and select a venue..."
-        class="w-full px-3 md:px-4 py-1.5 md:py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900"
+        class="w-full max-w-full px-3 md:px-4 py-1.5 md:py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900 box-border"
       />
       {#if venueSearchQuery}
         <button
@@ -610,31 +667,37 @@
           </svg>
         </button>
       {/if}
-      {#if showVenueDropdown && filteredVenues.length > 0}
-        <div class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto left-0">
-          {#each filteredVenues as venue, index}
-            <button
-              type="button"
-              on:click={() => selectVenue(venue.venue_uuid)}
-              on:mouseenter={() => highlightedVenueIndex = index}
-              class="w-full text-left px-4 py-2 focus:outline-none {highlightedVenueIndex === index ? 'bg-blue-100' : selectedVenueId === venue.venue_uuid ? 'bg-blue-50' : 'hover:bg-gray-100'}"
-            >
-              {venue.name}
-            </button>
-          {/each}
-        </div>
-      {/if}
-      {#if showVenueDropdown && filteredVenues.length === 0 && venueSearchQuery}
-        <div class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg left-0">
-          <div class="px-4 py-2 text-gray-500 text-sm">No venues found</div>
+      <!-- Dropdown: fixed when position set (not clipped), else absolute below input so list shows immediately -->
+      {#if showVenueDropdown}
+        <div
+          class="z-[9999] bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto text-[14px] md:text-base {dropdownPosition ? 'fixed' : 'absolute left-0 top-full w-full mt-1'}"
+          style={dropdownPosition ? `top: ${dropdownPosition.top}; left: ${dropdownPosition.left}; width: ${dropdownPosition.width};` : ''}
+          role="listbox"
+        >
+          {#if filteredVenues.length > 0}
+            {#each filteredVenues as venue, index}
+              <button
+                type="button"
+                on:click={() => selectVenue(venue.venue_uuid)}
+                on:mouseenter={() => highlightedVenueIndex = index}
+                class="w-full text-left px-4 py-2 focus:outline-none text-[14px] md:text-base {highlightedVenueIndex === index ? 'bg-blue-100' : selectedVenueId === venue.venue_uuid ? 'bg-blue-50' : 'hover:bg-gray-100'}"
+                role="option"
+                aria-selected={highlightedVenueIndex === index}
+              >
+                {venue.name}
+              </button>
+            {/each}
+          {:else if venueSearchQuery}
+            <div class="px-4 py-2 text-gray-500 text-[14px] md:text-sm">No venues found</div>
+          {/if}
         </div>
       {/if}
     </div>
   </div>
 
   {#if selectedVenue}
-    <!-- Venue Details -->
-    <div class="pt-0 md:pt-2 md:mt-0 min-w-0">
+    <!-- Venue Details (overflow-x-clip only here so dropdown above is not clipped) -->
+    <div class="pt-0 md:pt-2 md:mt-0 min-w-0 max-w-[100vw] overflow-x-clip w-full">
       <!-- Banner Image -->
       {#if selectedVenue.banner_image}
         <BannerImage
@@ -650,7 +713,7 @@
 
       <!-- Address, Comment, and Map -->
       {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment}
-        <div class="mb-2 md:mb-3 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 min-w-0">
+        <div class="mb-2 md:mb-3 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 min-w-0 max-w-full overflow-hidden">
           <div class="flex flex-col justify-start min-w-0">
             {#if selectedVenue.owner_name}
               <p class="text-sm text-gray-600 mb-0.5 md:mb-1">
@@ -716,25 +779,25 @@
       {:else if selectedVenueEventLists.length === 1}
         <!-- Single event list - no selector needed -->
         {#if selectedEventList}
-          <div class="mt-3 md:mt-6">
-            <h3 class="text-[14px] md:text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
+          <div class="mt-3 md:mt-6 min-w-0 max-w-full overflow-hidden">
+            <h3 class="text-[14px] md:text-2xl font-semibold mb-1 text-gray-900 break-words min-w-0">{selectedEventList.name}</h3>
             {#if selectedEventList.comment}
-              <p class="text-xs text-gray-600 mb-3 md:mb-4 whitespace-pre-line">{selectedEventList.comment}</p>
+              <p class="text-xs text-gray-600 mb-3 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere">{selectedEventList.comment}</p>
             {/if}
 
             {#if listEvents.length === 0}
               <p class="text-gray-500">No events scheduled for this list.</p>
             {:else}
-              <div class="space-y-0.5 md:space-y-1 min-w-0">
+              <div class="space-y-0.5 md:space-y-1 min-w-0 overflow-hidden">
                 {#each listEvents as event}
-                  <div class="flex items-center justify-between gap-2 py-0.5 md:py-1 px-2 md:px-3 bg-gray-50 rounded-lg min-w-0">
+                  <div class="flex items-center justify-between gap-2 py-0.5 md:py-1 px-2 md:px-3 bg-gray-50 rounded-lg min-w-0 overflow-hidden">
                     <div class="min-w-0 flex-1">
                       <p class="font-medium text-gray-900 text-sm break-words">{event.event_name}</p>
                       {#if event.comment}
                         <p class="text-sm md:text-xs text-gray-600 whitespace-pre-line mt-0.5 break-words">{event.comment}</p>
                       {/if}
                     </div>
-                    <div class="text-right flex-shrink-0">
+                    <div class="text-right flex-shrink-0 min-w-0">
                       <p class="text-[14px] md:text-base font-semibold text-blue-600">
                         {formatEventTimeFromRFC3339(event.datetime, selectedVenue?.timezone)}
                       </p>
@@ -752,11 +815,11 @@
         {/if}
       {:else}
         <!-- Multiple event lists - show selector -->
-        <div class="mt-3 md:mt-6">
+        <div class="mt-3 md:mt-6 min-w-0 max-w-full overflow-hidden">
           <select
             id="event-list-select"
             on:change={handleEventListChange}
-            class="w-full px-3 md:px-4 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900 mb-3 md:mb-4 no-print-event-list-selector"
+            class="w-full max-w-full px-3 md:px-4 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900 mb-3 md:mb-4 no-print-event-list-selector box-border"
           >
             {#each selectedVenueEventLists as eventList}
               <option value={eventList.event_list_uuid} selected={selectedEventListId === eventList.event_list_uuid}>
@@ -766,25 +829,25 @@
           </select>
 
           {#if selectedEventList}
-            <div>
-              <h3 class="text-[14px] md:text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
+            <div class="min-w-0 max-w-full overflow-hidden">
+              <h3 class="text-[14px] md:text-2xl font-semibold mb-1 text-gray-900 break-words min-w-0">{selectedEventList.name}</h3>
               {#if selectedEventList.comment}
-                <p class="text-xs text-gray-600 mb-3 md:mb-4 whitespace-pre-line">{selectedEventList.comment}</p>
+                <p class="text-xs text-gray-600 mb-3 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere">{selectedEventList.comment}</p>
               {/if}
 
               {#if listEvents.length === 0}
                 <p class="text-gray-500">No events scheduled for this list.</p>
               {:else}
-                <div class="space-y-0.5 md:space-y-1 min-w-0">
+                <div class="space-y-0.5 md:space-y-1 min-w-0 overflow-hidden">
                   {#each listEvents as event}
-                    <div class="flex items-center justify-between gap-2 py-0.5 md:py-1 px-2 md:px-3 bg-gray-50 rounded-lg min-w-0">
+                    <div class="flex items-center justify-between gap-2 py-0.5 md:py-1 px-2 md:px-3 bg-gray-50 rounded-lg min-w-0 overflow-hidden">
                       <div class="min-w-0 flex-1">
                         <p class="font-medium text-gray-900 text-sm break-words">{event.event_name}</p>
                         {#if event.comment}
                           <p class="text-sm md:text-xs text-gray-600 whitespace-pre-line mt-0.5 break-words">{event.comment}</p>
                         {/if}
                       </div>
-                      <div class="text-right flex-shrink-0">
+                      <div class="text-right flex-shrink-0 min-w-0">
                         <p class="text-[14px] md:text-base font-semibold text-blue-600">
                           {formatEventTimeFromRFC3339(event.datetime, selectedVenue?.timezone)}
                         </p>
@@ -804,7 +867,7 @@
       {/if}
     </div>
   {:else}
-    <p class="text-gray-500 text-center text-[12px] md:text-sm">
+    <p class="text-gray-500 text-center text-[10px] md:text-sm">
       The search works across venue names, addresses, comments, owner information, event list names, and event names.
     </p>
   {/if}

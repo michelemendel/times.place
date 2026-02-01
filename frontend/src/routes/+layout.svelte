@@ -89,7 +89,7 @@
   }
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex flex-col min-h-screen w-full min-w-0 max-w-[100vw] overflow-x-clip">
   {#if !isOnline}
     <div class="bg-red-600 text-white text-center py-2 px-4">
       <p class="text-sm font-medium">
@@ -97,9 +97,9 @@
       </p>
     </div>
   {/if}
-  <header class="bg-gray-100 shadow-sm">
+  <header class="bg-gray-100 shadow-sm min-w-0 w-full max-w-[100vw] overflow-x-clip">
     <nav
-      class="container mx-auto h-20 flex items-center justify-between relative"
+      class="container mx-auto h-20 flex items-center justify-between relative min-w-0 max-w-full overflow-x-hidden"
     >
       <div class="flex items-center pl-4 md:pl-0">
         <a
@@ -275,7 +275,7 @@
         <div
           class="absolute top-20 left-0 right-0 bg-gray-100 border-t border-gray-200 shadow-lg md:hidden z-50"
         >
-          <div class="container mx-auto py-4 flex flex-col gap-2">
+          <div class="container mx-auto py-4 flex flex-col gap-2 min-w-0 max-w-full">
             <a
               href="/demo"
               class="text-red-600 hover:text-red-700 font-medium text-[14px] transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
@@ -337,9 +337,9 @@
     </nav>
   </header>
 
-  <main class="flex-1 bg-white w-full">
+  <main class="flex-1 bg-white w-full min-w-0 max-w-[100vw] overflow-x-clip">
     <div
-      class="container mx-auto py-4 {isVenueForm || isVenueOwner
+      class="container mx-auto py-4 w-full min-w-0 max-w-[100vw] box-border overflow-x-clip {isVenueForm || isVenueOwner
         ? 'md:pt-0 md:pb-12'
         : 'md:py-12'}"
     >
@@ -347,8 +347,8 @@
     </div>
   </main>
 
-  <footer class="bg-gray-100 border-t border-gray-200">
-    <div class="container mx-auto py-2 sm:py-3 flex items-center min-h-0">
+  <footer class="bg-gray-100 border-t border-gray-200 min-w-0 w-full max-w-[100vw] overflow-x-clip">
+    <div class="container mx-auto py-2 sm:py-3 flex items-center min-h-0 min-w-0 max-w-full">
       <div
         class="flex flex-col sm:flex-row justify-between items-center gap-1 sm:gap-3 w-full"
       >

@@ -16,11 +16,11 @@
 </script>
 
 <div
-  class="w-full overflow-hidden rounded-lg bg-white {sizeClasses[size]} {wrapperClass}"
+  class="w-full max-w-full overflow-hidden rounded-lg bg-white {sizeClasses[size]} {wrapperClass}"
 >
   <img
     src={src}
     alt={alt}
-    class="banner-img w-full h-full object-contain object-center"
+    class="banner-img w-full max-w-full h-full object-contain object-center"
   />
 </div>

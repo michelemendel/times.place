@@ -4,9 +4,17 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: '1rem',
+      padding: {
+        DEFAULT: '1rem',
+        sm: '1rem',
+        md: '1rem',
+        lg: '1rem',
+        xl: '1rem',
+        '2xl': '1rem',
+      },
       screens: {
-        sm: '640px',
+        // Don't apply fixed width below md so mobile uses full width
+        // sm: '640px', // removed
         md: '768px',
         lg: '1024px',
         xl: '1280px',

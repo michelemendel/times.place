@@ -13,6 +13,12 @@
   let success = '';
   let isLoading = false;
 
+  // Field-level validation (show on blur and on submit failure)
+  let nameError = '';
+  let emailError = '';
+  let passwordError = '';
+  let confirmPasswordError = '';
+
   /** @param {string} value */
   function normalizeEmail(value) {
     return value.trim().toLowerCase();
@@ -27,8 +33,34 @@
   function isValidMobile(value) {
     // Very light validation for demo purposes: allow digits, spaces, +, -, ()
     const v = value.trim();
-    if (!v) return false;
+    if (!v) return true; // empty is valid (optional field)
     return /^[0-9+\-()\s]{7,}$/.test(v);
+  }
+
+  function validateNameBlur() {
+    nameError = !name.trim() ? 'Name is required' : '';
+  }
+
+  function validateEmailBlur() {
+    const em = normalizeEmail(email);
+    emailError = !em ? 'Email is required' : !em.includes('@') ? 'Please enter a valid email address' : '';
+  }
+
+  function validatePasswordBlur() {
+    passwordError = !password ? 'Password is required' : password.length < 6 ? 'Password must be at least 6 characters' : '';
+  }
+
+  function validateConfirmPasswordBlur() {
+    confirmPasswordError = !confirmPassword ? 'Confirm password is required' : password !== confirmPassword ? 'Passwords do not match' : '';
+  }
+
+  /** Set all required-field errors (e.g. after failed submit) so user sees which fields are missing */
+  function setRequiredFieldErrors() {
+    nameError = !name.trim() ? 'Name is required' : '';
+    const em = normalizeEmail(email);
+    emailError = !em ? 'Email is required' : !em.includes('@') ? 'Please enter a valid email address' : '';
+    passwordError = !password ? 'Password is required' : password.length < 6 ? 'Password must be at least 6 characters' : '';
+    confirmPasswordError = !confirmPassword ? 'Confirm password is required' : password !== confirmPassword ? 'Passwords do not match' : '';
   }
 
   /** @param {SubmitEvent} e */
@@ -43,27 +75,31 @@
     const em = normalizeEmail(email);
 
     if (!n) {
-      error = 'Please enter your name.';
+      setRequiredFieldErrors();
+      error = 'Please fix the required fields below.';
       isLoading = false;
       return;
     }
     if (!em || !em.includes('@')) {
-      error = 'Please enter a valid email address.';
+      setRequiredFieldErrors();
+      error = 'Please fix the required fields below.';
       isLoading = false;
       return;
     }
     if (!isValidMobile(m)) {
-      error = 'Please enter a valid mobile number.';
+      error = 'Please enter a valid mobile number (or leave blank).';
       isLoading = false;
       return;
     }
     if (!password || password.length < 6) {
-      error = 'Please choose a password (at least 6 characters).';
+      setRequiredFieldErrors();
+      error = 'Please fix the required fields below.';
       isLoading = false;
       return;
     }
     if (password !== confirmPassword) {
-      error = 'Passwords do not match.';
+      setRequiredFieldErrors();
+      error = 'Please fix the required fields below.';
       isLoading = false;
       return;
     }
@@ -114,71 +150,93 @@
       <div class="max-w-xl mx-auto">
         <form class="space-y-5" on:submit={handleSubmit}>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="name">Name</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="name">Name *</label>
             <input
               id="name"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full rounded-md border px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 {nameError
+                ? 'border-red-500'
+                : 'border-gray-300'}"
               bind:value={name}
+              on:blur={validateNameBlur}
               autocomplete="name"
               placeholder="Your name"
-              required
             />
+            {#if nameError}
+              <p class="mt-1 text-sm text-red-600">{nameError}</p>
+            {/if}
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Email</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Email *</label>
             <input
               id="email"
               type="email"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full rounded-md border px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 {emailError
+                ? 'border-red-500'
+                : 'border-gray-300'}"
               bind:value={email}
+              on:blur={validateEmailBlur}
               autocomplete="email"
               placeholder="you@example.com"
-              required
             />
+            {#if emailError}
+              <p class="mt-1 text-sm text-red-600">{emailError}</p>
+            {/if}
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="mobile">Mobile</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="mobile"
+              >Mobile (optional)</label
+            >
             <input
               id="mobile"
               class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               bind:value={mobile}
               autocomplete="tel"
               placeholder="+1 555-555-5555"
-              required
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Password</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Password *</label>
             <input
               id="password"
               type="password"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full rounded-md border px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 {passwordError
+                ? 'border-red-500'
+                : 'border-gray-300'}"
               bind:value={password}
+              on:blur={validatePasswordBlur}
               autocomplete="new-password"
               placeholder="Choose a password (at least 6 characters)"
-              required
             />
-            <p class="mt-2 text-sm text-gray-600">
-              Password must be at least 6 characters long.
-            </p>
+            {#if passwordError}
+              <p class="mt-1 text-sm text-red-600">{passwordError}</p>
+            {:else}
+              <p class="mt-2 text-sm text-gray-600">
+                Password must be at least 6 characters long.
+              </p>
+            {/if}
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1" for="confirmPassword"
-              >Confirm password</label
+              >Confirm password *</label
             >
             <input
               id="confirmPassword"
               type="password"
-              class="w-full rounded-md border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full rounded-md border px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 {confirmPasswordError
+                ? 'border-red-500'
+                : 'border-gray-300'}"
               bind:value={confirmPassword}
+              on:blur={validateConfirmPasswordBlur}
               autocomplete="new-password"
               placeholder="Re-enter password"
-              required
             />
+            {#if confirmPasswordError}
+              <p class="mt-1 text-sm text-red-600">{confirmPasswordError}</p>
+            {/if}
           </div>
 
           {#if error}

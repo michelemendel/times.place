@@ -33,7 +33,7 @@ func NewAuthHandler(store *store.Store, authService *service.AuthService) *AuthH
 type RegisterRequest struct {
 	Name     string `json:"name" validate:"required"`
 	Email    string `json:"email" validate:"required,email"`
-	Mobile   string `json:"mobile" validate:"required"`
+	Mobile   string `json:"mobile"` // optional
 	Password string `json:"password" validate:"required,min=6"`
 }
 

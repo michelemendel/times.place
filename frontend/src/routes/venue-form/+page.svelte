@@ -858,6 +858,16 @@
       return;
     }
 
+    // Validate event names (required)
+    for (const list of eventListsData) {
+      for (const event of list.events) {
+        if (!event.event_name || !event.event_name.trim()) {
+          saveError = 'Event name is required for every event.';
+          return;
+        }
+      }
+    }
+
     // Validate event list dates (optional, but if provided must be valid)
     for (const list of eventListsData) {
       const dateValue = list.date ? String(list.date).trim() : '';
@@ -2101,7 +2111,7 @@
                       <label
                         for="event-name-{event.event_uuid}"
                         class="block text-xs font-medium text-gray-700 mb-1"
-                        >Event Name (optional)</label
+                        >Event Name</label
                       >
                       <input
                         type="text"

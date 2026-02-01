@@ -414,3 +414,35 @@ This file will track backend implementation work sessions, decisions made during
   - New `DeleteMe` handler: reads owner UUID from JWT context, calls `DeleteOwner`, clears refresh-token cookie, returns `204 No Content`.
 - **Routes** (`backend/internal/http/routes.go`):
   - Registered `auth.DELETE("/me", authHandler.DeleteMe, JWTAuthMiddleware(authService))`.
+
+### Summary
+
+- **Demo data locking (schema-based)**: Added `is_demo` to `venue_owners` so seeded demo accounts (Abe, Ben) and their data can be locked from mutation and cleared separately from real data.
+- **Clear demo only**: New `ClearDemoDataOnly` and CLI flag `--clear-demo-only` (plus `make dbcleardemo`) remove only demo owners and their cascaded data, leaving real users' data intact.
+
+### Notes
+
+- **Migrations** (`backend/db/migrations/00006_add_is_demo_to_venue_owners.sql`):
+  - **Up**: Add `is_demo boolean NOT NULL DEFAULT false` to `venue_owners`; backfill `is_demo = true` for `abe@demo.org` and `ben@demo.org`.
+  - **Down**: Drop column `is_demo`.
+- **Schema** (`backend/db/schema.sql`):
+  - Added `is_demo` to `venue_owners` table definition for sqlc.
+- **sqlc**:
+  - Ran `sqlc generate`; `VenueOwner` now has `IsDemo bool`; `GetOwnerByID` / `GetOwnerByEmail` / `CreateOwner` return/scan `is_demo`.
+- **Test data** (`backend/internal/testdata/seed.go`):
+  - Abe and Ben inserts/upserts set `is_demo = true`; `ON CONFLICT (email) DO UPDATE SET is_demo = true` so reseeding keeps them marked as demo.
+  - New `ClearDemoDataOnly(ctx, db)`: `DELETE FROM venue_owners WHERE is_demo = true` (CASCADE removes their venues, event_lists, events, refresh_tokens).
+- **API (demo lock)** (`backend/internal/http/demo.go`, handlers):
+  - New `IsDemoOwner(ctx, queries, ownerUUIDStr)` helper: loads owner by UUID, returns `owner.IsDemo`.
+  - Mutation handlers return **403 Forbidden** when the authenticated owner has `is_demo = true`:
+    - **Auth**: `DeleteMe` → "Demo accounts cannot be deleted"
+    - **Venues**: `Update`, `Delete` → "Demo data cannot be modified"
+    - **Event lists**: `Create`, `Update`, `Delete` → "Demo data cannot be modified"
+    - **Events**: `Create`, `Update`, `Delete` → "Demo data cannot be modified"
+  - Reads (GET, list, login) unchanged; only mutations are blocked for demo owners.
+- **CLI** (`backend/cmd/cli/seed/main.go`):
+  - New flag `--clear-demo-only`: runs `ClearDemoDataOnly` then seeds (no full wipe).
+  - Existing `-clear`: unchanged (clear ALL data then seed); help text clarified.
+- **Makefile**:
+  - New target `dbcleardemo`: runs seed with `-clear-demo-only` (from host or devcontainer).
+  - Help text updated: `dbseedclear` described as "Clear ALL data (destroys real data)", `dbcleardemo` as "Clear only demo data and reseed (preserves real data)".

@@ -27,22 +27,25 @@ type TestData struct {
 	EventList1UUID uuid.UUID
 	EventList2UUID uuid.UUID
 	EventList3UUID uuid.UUID
-	EventList4UUID uuid.UUID // Community Center - public, so venue appears in public list
+	EventList4UUID uuid.UUID // הדגמה: אוהל אברהם - זמני תפילות חול, public so venue appears in public list
 	Event1UUID uuid.UUID
 	Event2UUID uuid.UUID
 	Event3UUID uuid.UUID
 	Event4UUID uuid.UUID
 	Event5UUID uuid.UUID
 	Event6UUID uuid.UUID
+	Event7UUID uuid.UUID // שחרית - Ohel Avraham
+	Event8UUID uuid.UUID // מנחה - Ohel Avraham
+	Event9UUID uuid.UUID // מעריב - Ohel Avraham
 }
 
 // SeedTestData inserts test data into the database and returns references to the created records.
 // This is designed for use in tests and development, NOT for production.
 //
 // The seeded data matches the structure from frontend/src/lib/demo_data.ts:
-// - Owner 1 (Abe): 2 venues (Beth El Synagogue, Community Center)
+// - Owner 1 (Abe): 2 venues (Beth El Synagogue, הדגמה: אוהל אברהם / Ohel Avraham)
 // - Owner 2 (Ben): 2 venues (Beit Midrash, Chagat House)
-// - Various event lists and events
+// - Various event lists and events (including Hebrew prayer times for הדגמה: אוהל אברהם)
 //
 // Password for all test owners is "demo" (hashed with bcrypt).
 func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
@@ -55,12 +58,12 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		return nil, err
 	}
 
-	// Owner 1: Abe - insert or get existing
+	// Owner 1: Abe - insert or get existing (is_demo = true for locking and clear-demo-only)
 	data.Owner1UUID = uuid.New()
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO venue_owners (owner_uuid, name, mobile, email, password_hash, created_at, modified_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (email) DO NOTHING
+		INSERT INTO venue_owners (owner_uuid, name, mobile, email, password_hash, is_demo, created_at, modified_at)
+		VALUES ($1, $2, $3, $4, $5, true, $6, $7)
+		ON CONFLICT (email) DO UPDATE SET is_demo = true, modified_at = EXCLUDED.modified_at
 	`, data.Owner1UUID, "Abe", "+1-555-0199", "abe@demo.org", passwordHash, now, now)
 	if err != nil {
 		return nil, err
@@ -73,12 +76,12 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		return nil, err
 	}
 
-	// Owner 2: Ben - insert or get existing
+	// Owner 2: Ben - insert or get existing (is_demo = true for locking and clear-demo-only)
 	data.Owner2UUID = uuid.New()
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO venue_owners (owner_uuid, name, mobile, email, password_hash, created_at, modified_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (email) DO NOTHING
+		INSERT INTO venue_owners (owner_uuid, name, mobile, email, password_hash, is_demo, created_at, modified_at)
+		VALUES ($1, $2, $3, $4, $5, true, $6, $7)
+		ON CONFLICT (email) DO UPDATE SET is_demo = true, modified_at = EXCLUDED.modified_at
 	`, data.Owner2UUID, "Ben", "+1-555-0200", "ben@demo.org", passwordHash, now, now)
 	if err != nil {
 		return nil, err
@@ -101,7 +104,7 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		_, err = db.ExecContext(ctx, `
 			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		`, data.Venue1UUID, data.Owner1UUID, "DEMO: Beth El Synagogue", "https://placehold.co/600x200?text=Beth+El",
+		`, data.Venue1UUID, data.Owner1UUID, "DEMO: Beth El Synagogue", "https://images.unsplash.com/photo-1486718448742-163732cd1544?w=600&h=200&fit=crop",
 			"15 King George Street, Jerusalem", "31.7787,35.2175", "A welcoming community in the heart of the city.",
 			"Asia/Jerusalem", now, now)
 		if err != nil {
@@ -111,20 +114,52 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		return nil, err
 	}
 
-	// Owner 1 - Venue 2: Community Center - insert or get existing
+	// Owner 1 - Venue 2: הדגמה: אוהל אברהם (Ohel Avraham) - Hebrew community venue - insert or get existing
 	err = db.QueryRowContext(ctx, `
 		SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
-	`, data.Owner1UUID, "DEMO: Community Center").Scan(&data.Venue2UUID)
+	`, data.Owner1UUID, "הדגמה: אוהל אברהם").Scan(&data.Venue2UUID)
 	if err == sql.ErrNoRows {
-		// Venue doesn't exist, insert it
-		data.Venue2UUID = uuid.New()
-		_, err = db.ExecContext(ctx, `
-			INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		`, data.Venue2UUID, data.Owner1UUID, "DEMO: Community Center", "https://placehold.co/600x200?text=Community+Center",
-			"42 Ben Yehuda Street, Jerusalem", "31.7800,35.2167", "Multi-purpose community space.",
-			"Asia/Jerusalem", now, now)
-		if err != nil {
+		// Try legacy name "אוהל אברהם" (without prefix) and update in place if present
+		err = db.QueryRowContext(ctx, `
+			SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
+		`, data.Owner1UUID, "אוהל אברהם").Scan(&data.Venue2UUID)
+		if err == nil {
+			_, err = db.ExecContext(ctx, `
+				UPDATE venues SET name = $1, modified_at = $2 WHERE venue_uuid = $3
+			`, "הדגמה: אוהל אברהם", now, data.Venue2UUID)
+			if err != nil {
+				return nil, err
+			}
+		} else if err == sql.ErrNoRows {
+			// Try legacy name "DEMO: Community Center" and update in place if present
+			err = db.QueryRowContext(ctx, `
+				SELECT venue_uuid FROM venues WHERE owner_uuid = $1 AND name = $2
+			`, data.Owner1UUID, "DEMO: Community Center").Scan(&data.Venue2UUID)
+			if err == nil {
+				_, err = db.ExecContext(ctx, `
+					UPDATE venues SET name = $1, banner_image = $2, address = $3, comment = $4, modified_at = $5
+					WHERE venue_uuid = $6
+				`, "הדגמה: אוהל אברהם", "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&h=200&fit=crop",
+					"רחוב בן יהודה 42, ירושלים", "מרחב קהילתי רב-שימושי.", now, data.Venue2UUID)
+				if err != nil {
+					return nil, err
+				}
+			} else if err == sql.ErrNoRows {
+				// Venue doesn't exist, insert it
+				data.Venue2UUID = uuid.New()
+				_, err = db.ExecContext(ctx, `
+					INSERT INTO venues (venue_uuid, owner_uuid, name, banner_image, address, geolocation, comment, timezone, created_at, modified_at)
+					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+`, data.Venue2UUID, data.Owner1UUID, "הדגמה: אוהל אברהם", "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&h=200&fit=crop",
+				"רחוב בן יהודה 42, ירושלים", "31.7800,35.2167", "מרחב קהילתי רב-שימושי.",
+					"Asia/Jerusalem", now, now)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		} else {
 			return nil, err
 		}
 	} else if err != nil {
@@ -209,18 +244,33 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		return nil, err
 	}
 
-	// Event List for Venue 2 (Community Center): public so the venue appears in the public venues list
+	// Event List for Venue 2 (הדגמה: אוהל אברהם): זמני תפילות חול - public so the venue appears in the public venues list
 	err = db.QueryRowContext(ctx, `
 		SELECT event_list_uuid FROM event_lists WHERE venue_uuid = $1 AND name = $2
-	`, data.Venue2UUID, "Community Events").Scan(&data.EventList4UUID)
+	`, data.Venue2UUID, "זמני תפילות חול").Scan(&data.EventList4UUID)
 	if err == sql.ErrNoRows {
-		data.EventList4UUID = uuid.New()
-		_, err = db.ExecContext(ctx, `
-			INSERT INTO event_lists (event_list_uuid, venue_uuid, name, date, comment, visibility, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.EventList4UUID, data.Venue2UUID, "Community Events", "2025-12-25",
-			"Open community events", "public", 0, now, now)
-		if err != nil {
+		// Try legacy name "Community Events" and update in place if present
+		err = db.QueryRowContext(ctx, `
+			SELECT event_list_uuid FROM event_lists WHERE venue_uuid = $1 AND name = $2
+		`, data.Venue2UUID, "Community Events").Scan(&data.EventList4UUID)
+		if err == nil {
+			_, err = db.ExecContext(ctx, `
+				UPDATE event_lists SET name = $1, comment = $2, modified_at = $3 WHERE event_list_uuid = $4
+			`, "זמני תפילות חול", "תפילות ימי חול", now, data.EventList4UUID)
+			if err != nil {
+				return nil, err
+			}
+		} else if err == sql.ErrNoRows {
+			data.EventList4UUID = uuid.New()
+			_, err = db.ExecContext(ctx, `
+				INSERT INTO event_lists (event_list_uuid, venue_uuid, name, date, comment, visibility, sort_order, created_at, modified_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			`, data.EventList4UUID, data.Venue2UUID, "זמני תפילות חול", "2025-12-25",
+				"תפילות ימי חול", "public", 0, now, now)
+			if err != nil {
+				return nil, err
+			}
+		} else {
 			return nil, err
 		}
 	} else if err != nil {
@@ -361,6 +411,60 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 		return nil, err
 	}
 
+	// Event 7: שחרית (Shacharit) - הדגמה: אוהל אברהם - insert or get existing
+	err = db.QueryRowContext(ctx, `
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
+	`, data.EventList4UUID, "שחרית", "2025-12-25T06:30:00+02:00").Scan(&data.Event7UUID)
+	if err == sql.ErrNoRows {
+		data.Event7UUID = uuid.New()
+		_, err = db.ExecContext(ctx, `
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`, data.Event7UUID, data.EventList4UUID, "שחרית", "2025-12-25T06:30:00+02:00",
+			"", 0, 0, now, now)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Event 8: מנחה (Mincha) - הדגמה: אוהל אברהם - insert or get existing
+	err = db.QueryRowContext(ctx, `
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
+	`, data.EventList4UUID, "מנחה", "2025-12-25T16:30:00+02:00").Scan(&data.Event8UUID)
+	if err == sql.ErrNoRows {
+		data.Event8UUID = uuid.New()
+		_, err = db.ExecContext(ctx, `
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`, data.Event8UUID, data.EventList4UUID, "מנחה", "2025-12-25T16:30:00+02:00",
+			"", 0, 1, now, now)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Event 9: מעריב (Ma'ariv) - הדגמה: אוהל אברהם - insert or get existing
+	err = db.QueryRowContext(ctx, `
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
+	`, data.EventList4UUID, "מעריב", "2025-12-25T18:00:00+02:00").Scan(&data.Event9UUID)
+	if err == sql.ErrNoRows {
+		data.Event9UUID = uuid.New()
+		_, err = db.ExecContext(ctx, `
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`, data.Event9UUID, data.EventList4UUID, "מעריב", "2025-12-25T18:00:00+02:00",
+			"", 0, 2, now, now)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
 	return data, nil
 }
 
@@ -384,4 +488,12 @@ func ClearTestData(ctx context.Context, db Execer) error {
 	}
 
 	return nil
+}
+
+// ClearDemoDataOnly removes only demo (seeded) owners and their data.
+// Deletes venue_owners where is_demo = true; CASCADE removes their
+// venues, event_lists, events, and refresh_tokens. Real users' data is untouched.
+func ClearDemoDataOnly(ctx context.Context, db Execer) error {
+	_, err := db.ExecContext(ctx, `DELETE FROM venue_owners WHERE is_demo = true`)
+	return err
 }

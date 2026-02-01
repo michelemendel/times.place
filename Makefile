@@ -45,7 +45,8 @@ help:
 	@echo ""
 	@echo "Backend Test Data:"
 	@echo "  make dbseed       - Seed test data into database"
-	@echo "  make dbseedclear  - Clear existing data and seed test data"
+	@echo "  make dbseedclear  - Clear ALL data and seed (destroys real data)"
+	@echo "  make dbcleardemo  - Clear only demo data and reseed (preserves real data)"
 	@echo "  make dbseedrc     - Seed Render.com DB from local machine (DATABASE_URL_RENDER_COM)"
 	@echo "  make dbseedrcclear - Clear and seed Render.com DB from local machine (DATABASE_URL_RENDER_COM)"
 	@echo ""
@@ -391,7 +392,7 @@ dbseed:
 
 dbseedclear:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
-		echo "Clearing and seeding test data (inside devcontainer)..."; \
+		echo "Clearing ALL data and seeding (inside devcontainer)..."; \
 		cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
@@ -401,8 +402,24 @@ dbseedclear:
 			echo "Or run this command from inside the devcontainer"; \
 			exit 1; \
 		fi; \
-		echo "Clearing and seeding test data (from host via docker exec)..."; \
+		echo "Clearing ALL data and seeding (from host via docker exec)..."; \
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear"; \
+	fi
+
+dbcleardemo:
+	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+		echo "Clearing demo data only and seeding (inside devcontainer)..."; \
+		cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear-demo-only; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Clearing demo data only and seeding (from host via docker exec)..."; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear-demo-only"; \
 	fi
 
 # Seed Render.com database from local machine only; uses DATABASE_URL_RENDER_COM from backend/.env

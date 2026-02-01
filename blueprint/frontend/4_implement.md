@@ -1067,3 +1067,14 @@
   - Desktop: [Test Phase] in a centered block (`hidden md:flex absolute left-1/2 -translate-x-1/2 h-full items-center pointer-events-none`); link has `pointer-events-auto`, `text-[14px]`, label "[Test Phase]".
   - Right nav block no longer includes [Test Phase] or leading pipe; starts with Home | About | Price | user menu.
   - Mobile: [Test Phase] link left-aligned (no flex/justify-center), same styling as other menu items.
+
+### Summary (account deletion)
+
+- **Account deletion**: Added permanent account deletion on the My page: calls `DELETE /api/auth/me`, clears session and redirects; includes confirmation and error handling.
+
+### Notes (account deletion)
+
+- **API Client** (`frontend/src/lib/api/auth.js`):
+  - New `deleteAccount()`: sends `DELETE /api/auth/me`, then clears access token and `currentOwnerStore` so the user is logged out after deletion.
+- **Routes/Pages** (`frontend/src/routes/my/+page.svelte`):
+  - New "Delete account" section: warning copy ("Permanently delete your account and all your venues. This cannot be undone."), inline error display (`deleteError`), confirm dialog ("Permanently delete your account and all your venues? This cannot be undone."), loading state (`deleting`), calls `deleteAccount()` then redirects (e.g. home); surfaces API errors for failed deletion.

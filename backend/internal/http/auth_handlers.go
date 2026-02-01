@@ -477,6 +477,14 @@ func (h *AuthHandler) DeleteMe(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
+	demo, err := IsDemoOwner(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if demo {
+		return ForbiddenError(c, "Demo accounts cannot be deleted")
+	}
+
 	ownerUUID, err := stringToUUID(ownerUUIDStr)
 	if err != nil {
 		return ValidationError(c, "Invalid owner UUID")

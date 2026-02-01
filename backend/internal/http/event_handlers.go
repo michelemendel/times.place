@@ -161,6 +161,14 @@ func (h *EventHandler) Create(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
+	demo, err := IsDemoOwner(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if demo {
+		return ForbiddenError(c, "Demo data cannot be modified")
+	}
+
 	// Convert UUIDs
 	eventListUUID, err := stringToUUID(eventListUUIDStr)
 	if err != nil {
@@ -287,6 +295,14 @@ func (h *EventHandler) Update(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
+	demo, err := IsDemoOwner(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if demo {
+		return ForbiddenError(c, "Demo data cannot be modified")
+	}
+
 	// Convert UUIDs
 	eventUUID, err := stringToUUID(eventUUIDStr)
 	if err != nil {
@@ -380,6 +396,14 @@ func (h *EventHandler) Delete(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
+
+	demo, err := IsDemoOwner(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if demo {
+		return ForbiddenError(c, "Demo data cannot be modified")
+	}
 
 	// Convert UUIDs
 	eventUUID, err := stringToUUID(eventUUIDStr)

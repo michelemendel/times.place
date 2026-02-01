@@ -1050,3 +1050,20 @@
   - Desktop nav: user icon (anon = person icon, logged in = initial in circle) with dropdown; dropdown items: Account (/my), My Venues, Logout when logged in; Login, Register, My account when anon. Click-outside closes dropdown.
   - Mobile nav: added "My account" link; kept Login/Register or My Venues/Logout as before.
   - `userMenuOpen`, `userMenuEl`, `toggleUserMenu`, `closeUserMenu`, `handleClickOutside` for dropdown behavior.
+
+## 2026-02-01
+
+### Summary
+
+- **Demo page renamed to Test Phase**: Renamed the Demo page and nav label to "Test Phase" to avoid confusion; page title is "Test Phase" (no brackets), centered with 22px font; copy updated from "demo" to "test" wording (test accounts, test data).
+- **Nav [Test Phase] placement**: On desktop, [Test Phase] is centered in the header using absolute positioning (`left-1/2 -translate-x-1/2`); nav link uses 14px font and brackets in the label. On mobile (hamburger menu), [Test Phase] is left-aligned like other items (no centering).
+
+### Notes
+
+- **Routes/Pages** (`frontend/src/routes/demo/+page.svelte`):
+  - `<title>` set to "Test Phase - times.place"; main heading "Test Phase" (no brackets), `text-[22px]`, `text-center`, `w-full`.
+  - Copy: "Use these test accounts to try the application"; "when test data is seeded" (replacing "demo" wording).
+- **Routes/Pages** (`frontend/src/routes/+layout.svelte`):
+  - Desktop: [Test Phase] in a centered block (`hidden md:flex absolute left-1/2 -translate-x-1/2 h-full items-center pointer-events-none`); link has `pointer-events-auto`, `text-[14px]`, label "[Test Phase]".
+  - Right nav block no longer includes [Test Phase] or leading pipe; starts with Home | About | Price | user menu.
+  - Mobile: [Test Phase] link left-aligned (no flex/justify-center), same styling as other menu items.

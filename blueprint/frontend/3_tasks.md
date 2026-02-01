@@ -319,8 +319,23 @@
   - [x] "Signed in as ...": Remove border and background. Move it closer to "My Venues" and center it.
   - [x] Make banner (the image) shorter (reduce height)
 - [x] Fix image to fit in banner space
+- [x] Change name of Demo page to something like "Test Phase", center it, and make font 22px, and put in brackets: [Test Phase]
 - [ ] New Feature: Main Page: Add the possibility to search near me. The distance can be hardcoded. Set it to a radius of 500 meter.
 
 ## Deployment
 
 See 3_tasks.md under backend
+
+## Security
+
+- [x] Delete account button in account page
+
+## Instrumentation
+
+- [ ] Basic statistics (to save database cost)
+
+## Backoffice
+
+- [ ] New URL endpoint for admins
+- [ ] Viewing statistics
+- [ ] Manual handling of owners, their accounts and venues

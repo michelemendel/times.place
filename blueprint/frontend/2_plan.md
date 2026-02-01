@@ -229,3 +229,17 @@ We will **remove all localStorage-based data storage code** and switch to API-on
 - **Deployment**: Single Go binary serves both frontend (static SvelteKit build) and backend API
 - **Next step**: Complete frontend migration to backend API, then deploy integrated application
 
+## Security
+
+### Email verification
+
+## Instrumentation
+
+### Basic statistics (to save database cost)
+
+
+## Backoffice
+
+### Viewing statistics (see intrumentation)
+
+### Manual handling of owners, their accounts and venues

@@ -55,11 +55,15 @@
         // This is expected for unauthenticated users, so we silently ignore
         // The error could be 401 (no valid token) or network error
       }
-      
+
       // Set up offline detection
       isOnline = navigator.onLine;
-      handleOnline = () => { isOnline = true; };
-      handleOffline = () => { isOnline = false; };
+      handleOnline = () => {
+        isOnline = true;
+      };
+      handleOffline = () => {
+        isOnline = false;
+      };
       window.addEventListener('online', handleOnline);
       window.addEventListener('offline', handleOffline);
       document.addEventListener('click', handleClickOutside);
@@ -83,17 +87,20 @@
     closeUserMenu();
     goto('/');
   }
-
 </script>
 
 <div class="flex flex-col min-h-screen">
   {#if !isOnline}
     <div class="bg-red-600 text-white text-center py-2 px-4">
-      <p class="text-sm font-medium">You are currently offline. Some features may not be available.</p>
+      <p class="text-sm font-medium">
+        You are currently offline. Some features may not be available.
+      </p>
     </div>
   {/if}
   <header class="bg-gray-100 shadow-sm">
-    <nav class="container mx-auto h-20 flex items-center justify-between relative">
+    <nav
+      class="container mx-auto h-20 flex items-center justify-between relative"
+    >
       <div class="flex items-center pl-4 md:pl-0">
         <a
           href="/"
@@ -110,14 +117,17 @@
         </a>
       </div>
 
-      <!-- Desktop Navigation -->
-      <div class="hidden md:flex items-center gap-2">
+      <!-- Desktop: [Test Phase] centered in header -->
+      <div class="hidden md:flex absolute left-1/2 -translate-x-1/2 h-full items-center pointer-events-none">
         <a
           href="/demo"
-          class="text-red-600 hover:text-red-700 font-medium text-base transition-colors"
-          >Demo</a
+          class="pointer-events-auto text-red-600 hover:text-red-700 font-medium text-[14px] transition-colors"
+          >[Test Phase]</a
         >
-        <span class="text-gray-400">|</span>
+      </div>
+
+      <!-- Desktop Navigation -->
+      <div class="hidden md:flex items-center gap-2">
         <a
           href="/"
           class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors"
@@ -154,8 +164,19 @@
                 {$currentOwnerStore.name?.charAt(0)?.toUpperCase() ?? '?'}
               </span>
             {:else}
-              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             {/if}
           </button>
@@ -169,44 +190,38 @@
                   href="/venue-owner"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   role="menuitem"
-                  on:click={closeUserMenu}
-                >My Venues</a
+                  on:click={closeUserMenu}>My Venues</a
                 >
                 <a
                   href="/my"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   role="menuitem"
-                  on:click={closeUserMenu}
-                >Account</a
+                  on:click={closeUserMenu}>Account</a
                 >
                 <button
                   type="button"
                   class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   role="menuitem"
-                  on:click={logout}
-                >Logout</button
+                  on:click={logout}>Logout</button
                 >
               {:else}
                 <a
                   href="/login"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   role="menuitem"
-                  on:click={closeUserMenu}
-                >Login</a
+                  on:click={closeUserMenu}>Login</a
                 >
                 <a
                   href="/registration"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   role="menuitem"
-                  on:click={closeUserMenu}
-                >Register</a
+                  on:click={closeUserMenu}>Register</a
                 >
                 <a
                   href="/my"
                   class="block px-4 py-2 text-sm text-gray-500 hover:bg-gray-100"
                   role="menuitem"
-                  on:click={closeUserMenu}
-                >Account</a
+                  on:click={closeUserMenu}>Account</a
                 >
               {/if}
             </div>
@@ -257,44 +272,40 @@
 
       <!-- Mobile Menu -->
       {#if mobileMenuOpen}
-        <div class="absolute top-20 left-0 right-0 bg-gray-100 border-t border-gray-200 shadow-lg md:hidden z-50">
+        <div
+          class="absolute top-20 left-0 right-0 bg-gray-100 border-t border-gray-200 shadow-lg md:hidden z-50"
+        >
           <div class="container mx-auto py-4 flex flex-col gap-2">
             <a
               href="/demo"
-              class="text-red-600 hover:text-red-700 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-              on:click={closeMobileMenu}
-              >Demo</a
+              class="text-red-600 hover:text-red-700 font-medium text-[14px] transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+              on:click={closeMobileMenu}>[Test Phase]</a
             >
             <a
               href="/"
               class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-              on:click={closeMobileMenu}
-              >Home</a
+              on:click={closeMobileMenu}>Home</a
             >
             <a
               href="/about"
               class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-              on:click={closeMobileMenu}
-              >About</a
+              on:click={closeMobileMenu}>About</a
             >
             <a
               href="/price"
               class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-              on:click={closeMobileMenu}
-              >Price</a
+              on:click={closeMobileMenu}>Price</a
             >
             {#if $currentOwnerStore}
               <a
                 href="/venue-owner"
                 class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-                on:click={closeMobileMenu}
-                >My Venues</a
+                on:click={closeMobileMenu}>My Venues</a
               >
               <a
                 href="/my"
                 class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-                on:click={closeMobileMenu}
-                >Account</a
+                on:click={closeMobileMenu}>Account</a
               >
               <button
                 type="button"
@@ -307,20 +318,17 @@
               <a
                 href="/my"
                 class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-                on:click={closeMobileMenu}
-                >Account</a
+                on:click={closeMobileMenu}>Account</a
               >
               <a
                 href="/login"
                 class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-                on:click={closeMobileMenu}
-                >Login</a
+                on:click={closeMobileMenu}>Login</a
               >
               <a
                 href="/registration"
                 class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
-                on:click={closeMobileMenu}
-                >Register</a
+                on:click={closeMobileMenu}>Register</a
               >
             {/if}
           </div>
@@ -330,17 +338,27 @@
   </header>
 
   <main class="flex-1 bg-white w-full">
-    <div class="container mx-auto py-4 {(isVenueForm || isVenueOwner) ? 'md:pt-0 md:pb-12' : 'md:py-12'}">
+    <div
+      class="container mx-auto py-4 {isVenueForm || isVenueOwner
+        ? 'md:pt-0 md:pb-12'
+        : 'md:py-12'}"
+    >
       <slot />
     </div>
   </main>
 
   <footer class="bg-gray-100 border-t border-gray-200">
     <div class="container mx-auto h-20 flex items-center">
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
+      <div
+        class="flex flex-col sm:flex-row justify-between items-center gap-4 w-full"
+      >
         <p class="text-gray-600 text-sm">
-          &copy; 2024 times.place. All rights reserved.
-          <a href="/disclaimer" class="text-blue-600 hover:text-blue-800 font-medium transition-colors ml-2">Disclaimer</a>
+          &copy; 2026 times.place. All rights reserved.
+          <a
+            href="/disclaimer"
+            class="text-blue-600 hover:text-blue-800 font-medium transition-colors ml-2"
+            >Disclaimer</a
+          >
         </p>
         <p class="text-gray-600 text-sm">
           Contact: <a

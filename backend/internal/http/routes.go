@@ -27,6 +27,7 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 
 	// Protected auth routes
 	auth.GET("/me", authHandler.Me, JWTAuthMiddleware(authService))
+	auth.DELETE("/me", authHandler.DeleteMe, JWTAuthMiddleware(authService))
 
 	// Owner-scoped routes (protected)
 	// Register more specific paths before :venue_uuid so /venues/:id/event-lists is matched correctly

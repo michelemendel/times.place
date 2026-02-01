@@ -330,3 +330,19 @@ We will **defer** implementing the ability to pay for more venues. When we add i
 - A way to associate an owner with a “plan” or “tier” (e.g. free vs paid), and optionally a per-plan venue cap or “unlimited.”
 - Backend support for reading that plan (from DB or a billing provider) and using it when enforcing the venue limit (e.g. free = 2, paid = higher or unlimited).
 - No implementation detail is committed here; this is a placeholder for future work.
+
+## Security
+
+### Email verification
+
+
+## Instrumentation
+
+### Basic statistics (to save database cost)
+
+
+## Backoffice
+
+### Viewing statistics (see intrumentation)
+
+### Manual handling of owners, their accounts and venues

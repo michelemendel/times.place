@@ -2,12 +2,12 @@
 </script>
 
 <svelte:head>
-  <title>Demo - times.place</title>
+  <title>Test Phase - times.place</title>
 </svelte:head>
 
 <div class="bg-white rounded-xl shadow-lg p-8 md:p-12">
-  <h1 class="text-4xl font-bold mb-8 text-gray-900 text-center">
-    Demo
+  <h1 class="w-full text-[22px] font-bold mb-8 text-gray-900 text-center">
+    Test Phase
   </h1>
 
   <div class="space-y-6 text-gray-700 leading-relaxed max-w-3xl mx-auto">
@@ -25,7 +25,7 @@
         Test User Accounts
       </h2>
       <p class="mb-4">
-        Use these demo accounts to test the application:
+        Use these test accounts to try the application:
       </p>
       <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
         <div class="space-y-3">
@@ -42,7 +42,7 @@
         </div>
       </div>
       <p class="text-sm text-gray-600 mb-4">
-        These accounts are created when demo data is seeded in the backend database.
+        These accounts are created when test data is seeded in the backend database.
       </p>
     </div>
 

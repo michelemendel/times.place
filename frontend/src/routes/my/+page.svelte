@@ -1,7 +1,8 @@
 <script>
   import { get } from 'svelte/store';
+  import { goto } from '$app/navigation';
   import { currentOwnerStore } from '$lib/stores';
-  import { getAuthMe } from '$lib/api/auth.js';
+  import { getAuthMe, deleteAccount } from '$lib/api/auth.js';
   import { onMount } from 'svelte';
 
   /** @type {number | null} */
@@ -9,6 +10,9 @@
   /** @type {number | null} */
   let venueLimit = null;
   let loading = true;
+  /** @type {string | null} */
+  let deleteError = null;
+  let deleting = false;
 
   $: owner = $currentOwnerStore;
   $: isLoggedIn = !!owner;
@@ -98,6 +102,36 @@
             Billing and plan options will appear here when available.
           </li>
         </ul>
+      </section>
+
+      <section class="bg-gray-50 rounded-lg p-6 border border-red-200">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3">Danger zone</h2>
+        <p class="text-gray-600 text-sm mb-3">
+          Permanently delete your account and all your venues. This cannot be undone.
+        </p>
+        {#if deleteError}
+          <p class="text-red-600 text-sm mb-3">{deleteError}</p>
+        {/if}
+        <button
+          type="button"
+          class="inline-flex items-center px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          disabled={deleting}
+          onclick={async () => {
+            if (!confirm('Permanently delete your account and all your venues? This cannot be undone.')) return;
+            deleteError = null;
+            deleting = true;
+            try {
+              await deleteAccount();
+              goto('/');
+            } catch (e) {
+              deleteError = e instanceof Error ? e.message : 'Failed to delete account. Please try again.';
+            } finally {
+              deleting = false;
+            }
+          }}
+        >
+          {deleting ? 'Deleting…' : 'Delete account'}
+        </button>
       </section>
     </div>
   {/if}

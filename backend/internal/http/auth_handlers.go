@@ -467,3 +467,27 @@ func (h *AuthHandler) Me(c echo.Context) error {
 		"venue_limit": venueLimit,
 	})
 }
+
+// DeleteMe handles DELETE /api/auth/me
+func (h *AuthHandler) DeleteMe(c echo.Context) error {
+	ownerUUIDStr, err := GetOwnerUUIDFromContext(c)
+	if err != nil {
+		return UnauthorizedError(c, "Unauthorized")
+	}
+
+	ctx := c.Request().Context()
+
+	ownerUUID, err := stringToUUID(ownerUUIDStr)
+	if err != nil {
+		return ValidationError(c, "Invalid owner UUID")
+	}
+
+	err = h.store.Queries.DeleteOwner(ctx, ownerUUID)
+	if err != nil {
+		return InternalError(c, "Failed to delete account")
+	}
+
+	h.clearRefreshTokenCookie(c)
+
+	return c.NoContent(http.StatusNoContent)
+}

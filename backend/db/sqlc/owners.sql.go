@@ -44,6 +44,16 @@ func (q *Queries) CreateOwner(ctx context.Context, arg CreateOwnerParams) (Venue
 	return i, err
 }
 
+const deleteOwner = `-- name: DeleteOwner :exec
+DELETE FROM venue_owners
+WHERE owner_uuid = $1
+`
+
+func (q *Queries) DeleteOwner(ctx context.Context, ownerUuid pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteOwner, ownerUuid)
+	return err
+}
+
 const getOwnerByEmail = `-- name: GetOwnerByEmail :one
 SELECT owner_uuid, name, mobile, email, password_hash, created_at, modified_at FROM venue_owners
 WHERE LOWER(email) = LOWER($1)

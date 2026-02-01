@@ -399,3 +399,18 @@ This file will track backend implementation work sessions, decisions made during
   - `GET /api/auth/me` response now includes top-level `venue_count` (int64) and `venue_limit` (int64) in addition to `owner`, so the frontend can show upgrade prompts when at limit.
 - **Integration test** (`backend/internal/http/integration_test.go`):
   - Added `TestIntegration_FreeTierVenueLimit`: sets `FREE_TIER_MAX_VENUES=2`, creates 2 venues (201), then 3rd create returns 403; verifies `/api/auth/me` returns `venue_count: 2` and `venue_limit: 2`.
+
+## 2026-02-01
+
+### Summary
+
+- **Delete account**: Added `DELETE /api/auth/me` so an authenticated owner can delete their account; handler deletes the owner row and clears the refresh-token cookie.
+
+### Notes
+
+- **sqlc** (`backend/db/queries/owners.sql`):
+  - Added `DeleteOwner :exec` query; ran `sqlc generate` (new function in `backend/db/sqlc/owners.sql.go`).
+- **API** (`backend/internal/http/auth_handlers.go`):
+  - New `DeleteMe` handler: reads owner UUID from JWT context, calls `DeleteOwner`, clears refresh-token cookie, returns `204 No Content`.
+- **Routes** (`backend/internal/http/routes.go`):
+  - Registered `auth.DELETE("/me", authHandler.DeleteMe, JWTAuthMiddleware(authService))`.

@@ -10,6 +10,7 @@
  */
 
 // Memory-based access token storage (not localStorage for security)
+/** @type {string | null} */
 let accessToken = null;
 
 // Loading state management
@@ -29,6 +30,7 @@ export function onLoadingChange(callback) {
 
 /**
  * Notify all loading callbacks of state change
+ * @param {boolean} isLoading - Whether a request is in progress
  */
 function setLoading(isLoading) {
   loadingCallbacks.forEach((callback) => callback(isLoading));
@@ -36,6 +38,7 @@ function setLoading(isLoading) {
 
 /**
  * Set the access token (memory-based)
+ * @param {string | null} token - JWT access token or null to clear
  */
 export function setAccessToken(token) {
   accessToken = token;
@@ -59,6 +62,7 @@ export function clearAccessToken() {
  * Check if we're currently refreshing the token (to prevent refresh loops)
  */
 let isRefreshing = false;
+/** @type {Promise<string | null> | null} */
 let refreshPromise = null;
 
 /**
@@ -101,6 +105,7 @@ async function refreshAccessToken() {
 
 /**
  * Parse error response from API
+ * @param {Response} response - Fetch response object
  */
 async function parseErrorResponse(response) {
   try {
@@ -140,10 +145,16 @@ class ApiClient {
     setLoading(true);
 
     try {
-      // Prepare headers
+      // Prepare headers: normalize to plain object so type assertion is valid, then allow adding Authorization
+      const baseHeaders = options.headers instanceof Headers
+        ? Object.fromEntries(options.headers.entries())
+        : Array.isArray(options.headers)
+          ? Object.fromEntries(options.headers)
+          : (options.headers ?? {});
+      /** @type {Record<string, string>} */
       const headers = {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...baseHeaders,
       };
 
       // Add access token if available
@@ -199,7 +210,7 @@ class ApiClient {
       }
       
       // Handle timeout errors (AbortError from AbortController)
-      if (error.name === 'AbortError' || (error instanceof Error && error.message.includes('timeout'))) {
+      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('timeout'))) {
         throw new ApiError('Request timed out. Please try again.', 0, 'timeout');
       }
       
@@ -208,7 +219,8 @@ class ApiClient {
         throw error;
       }
       // Wrap other errors
-      throw new ApiError(error.message || 'An unexpected error occurred', 0, 'unknown');
+      const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+      throw new ApiError(message, 0, 'unknown');
     } finally {
       setLoading(false);
     }
@@ -216,6 +228,8 @@ class ApiClient {
 
   /**
    * GET request
+   * @param {string} endpoint - API endpoint
+   * @param {RequestInit} [options] - Fetch options
    */
   async get(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: 'GET' });
@@ -223,6 +237,9 @@ class ApiClient {
 
   /**
    * POST request
+   * @param {string} endpoint - API endpoint
+   * @param {object} body - Request body (JSON-serialized)
+   * @param {RequestInit} [options] - Fetch options
    */
   async post(endpoint, body, options = {}) {
     return this.request(endpoint, {
@@ -234,6 +251,9 @@ class ApiClient {
 
   /**
    * PATCH request
+   * @param {string} endpoint - API endpoint
+   * @param {object} body - Request body (JSON-serialized)
+   * @param {RequestInit} [options] - Fetch options
    */
   async patch(endpoint, body, options = {}) {
     return this.request(endpoint, {
@@ -245,6 +265,8 @@ class ApiClient {
 
   /**
    * DELETE request
+   * @param {string} endpoint - API endpoint
+   * @param {RequestInit} [options] - Fetch options
    */
   async delete(endpoint, options = {}) {
     return this.request(endpoint, { ...options, method: 'DELETE' });
@@ -252,6 +274,8 @@ class ApiClient {
 
   /**
    * GET request and parse JSON
+   * @param {string} endpoint - API endpoint
+   * @param {RequestInit} [options] - Fetch options
    */
   async getJSON(endpoint, options = {}) {
     const response = await this.get(endpoint, options);
@@ -260,6 +284,9 @@ class ApiClient {
 
   /**
    * POST request and parse JSON
+   * @param {string} endpoint - API endpoint
+   * @param {object} body - Request body (JSON-serialized)
+   * @param {RequestInit} [options] - Fetch options
    */
   async postJSON(endpoint, body, options = {}) {
     const response = await this.post(endpoint, body, options);
@@ -268,6 +295,9 @@ class ApiClient {
 
   /**
    * PATCH request and parse JSON
+   * @param {string} endpoint - API endpoint
+   * @param {object} body - Request body (JSON-serialized)
+   * @param {RequestInit} [options] - Fetch options
    */
   async patchJSON(endpoint, body, options = {}) {
     const response = await this.patch(endpoint, body, options);
@@ -279,6 +309,11 @@ class ApiClient {
  * Custom API Error class
  */
 export class ApiError extends Error {
+  /**
+   * @param {string} message - Error message
+   * @param {number} [status=0] - HTTP status code
+   * @param {string} [code='unknown'] - Error code
+   */
   constructor(message, status = 0, code = 'unknown') {
     super(message);
     this.name = 'ApiError';

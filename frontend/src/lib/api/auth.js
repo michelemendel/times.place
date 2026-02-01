@@ -65,7 +65,7 @@ export async function login(email, password) {
  */
 export async function logout() {
   try {
-    await api.post('/api/auth/logout');
+    await api.post('/api/auth/logout', {});
   } catch (error) {
     // Continue with logout even if API call fails
     console.error('Logout API call failed:', error);
@@ -108,4 +108,15 @@ export async function getAuthMe() {
 export async function getCurrentOwner() {
   const response = await getAuthMe();
   return response.owner;
+}
+
+/**
+ * Permanently delete the current account and all associated data (venues, event lists, events).
+ * On success, clears access token and owner store. Does not call logout; account and tokens are already gone.
+ * @returns {Promise<void>}
+ */
+export async function deleteAccount() {
+  await api.delete('/api/auth/me');
+  clearAccessToken();
+  currentOwnerStore.set(null);
 }

@@ -110,3 +110,18 @@
   - [ ] Integrate with payment/billing when implemented
 
 - [x] Add my page with anon user icon in the menu, with a dropdown with login, logout, account links. We need this for future account and billing.
+
+## Security
+
+- [x] Make owner be able to delete his account
+- [ ] Email verification
+
+## Instrumentation
+
+- [ ] Basic statistics (to save database cost)
+
+## Backoffice
+
+- [ ] New URL endpoint for admins.
+- [ ] Set up handling of some statistics
+- [ ] Set up handling of owners, their accounts and venues

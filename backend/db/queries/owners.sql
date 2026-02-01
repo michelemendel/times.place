@@ -10,3 +10,7 @@ WHERE owner_uuid = $1;
 -- name: GetOwnerByEmail :one
 SELECT * FROM venue_owners
 WHERE LOWER(email) = LOWER($1);
+
+-- name: DeleteOwner :exec
+DELETE FROM venue_owners
+WHERE owner_uuid = $1;

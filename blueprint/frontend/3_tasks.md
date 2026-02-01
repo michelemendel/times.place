@@ -317,7 +317,7 @@
 - [x] Fix image to fit in banner space
 - [x] Change name of Demo page to something like "Test Phase", center it, and make font 22px, and put in brackets: [Test Phase]
 - [ ] New Feature: Main Page: Add the possibility to search near me. The distance can be hardcoded. Set it to a radius of 500 meter.
-- [ ] Add updated time on each event list
+- [x] Add updated time on each event list
 
 ## Deployment
 
@@ -328,12 +328,13 @@ See 3_tasks.md under backend
 - [x] Delete account button in account page
 - [x] Email verification GUI
 
+## Backoffice
+
+- [ ] New URL endpoint for admins
+- [ ] Manual handling of owners, their accounts and venues
+- [ ] Viewing statistics
+
 ## Instrumentation
 
 - [ ] Basic statistics (to save database cost)
 
-## Backoffice
-
-- [ ] New URL endpoint for admins
-- [ ] Viewing statistics
-- [ ] Manual handling of owners, their accounts and venues

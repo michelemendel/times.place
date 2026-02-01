@@ -116,12 +116,12 @@
 - [x] Make owner be able to delete his account
 - [x] Email verification
 
-## Instrumentation
-
-- [ ] Basic statistics (to save database cost)
-
 ## Backoffice
 
 - [ ] New URL endpoint for admins.
-- [ ] Set up handling of some statistics
 - [ ] Set up handling of owners, their accounts and venues
+- [ ] Set up handling of some statistics
+
+## Instrumentation
+
+- [ ] Basic statistics (to save database cost)

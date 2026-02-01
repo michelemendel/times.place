@@ -89,7 +89,9 @@
   }
 </script>
 
-<div class="flex flex-col min-h-screen w-full min-w-0 max-w-[100vw] overflow-x-clip">
+<div
+  class="flex flex-col min-h-screen w-full min-w-0 max-w-[100vw] overflow-x-clip"
+>
   {#if !isOnline}
     <div class="bg-red-600 text-white text-center py-2 px-4">
       <p class="text-sm font-medium">
@@ -97,7 +99,9 @@
       </p>
     </div>
   {/if}
-  <header class="bg-gray-100 shadow-sm min-w-0 w-full max-w-[100vw] overflow-x-clip">
+  <header
+    class="bg-gray-100 shadow-sm min-w-0 w-full max-w-[100vw] overflow-x-clip"
+  >
     <nav
       class="container mx-auto h-14 md:h-20 flex items-center justify-between relative min-w-0 max-w-full overflow-visible"
     >
@@ -110,15 +114,19 @@
           <img
             src="/house_clock.png"
             alt="times.place logo"
-            class="h-10 md:h-14 w-auto object-contain"
+            class="h-10 md:h-14 w-auto object-contain -mt-2"
             style="aspect-ratio: 886/762;"
           />
-          <span class="text-xl md:text-2xl font-bold text-gray-900">times.place</span>
+          <span class="text-xl md:text-2xl font-bold text-gray-900"
+            >times.place</span
+          >
         </a>
       </div>
 
       <!-- Desktop: [Test Phase] centered in header -->
-      <div class="hidden md:flex absolute left-1/2 -translate-x-1/2 h-full items-center pointer-events-none">
+      <div
+        class="hidden md:flex absolute left-1/2 -translate-x-1/2 h-full items-center pointer-events-none"
+      >
         <a
           href="/demo"
           class="pointer-events-auto text-red-600 hover:text-red-700 font-medium text-[14px] transition-colors"
@@ -275,7 +283,9 @@
         <div
           class="absolute top-14 md:top-20 left-0 right-0 bg-gray-100 border-t border-gray-200 shadow-lg md:hidden z-50"
         >
-          <div class="container mx-auto py-2 flex flex-col gap-0 min-w-0 max-w-full">
+          <div
+            class="container mx-auto py-2 flex flex-col gap-0 min-w-0 max-w-full"
+          >
             <a
               href="/demo"
               class="text-red-600 hover:text-red-700 font-medium text-[14px] transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
@@ -339,7 +349,8 @@
 
   <main class="flex-1 bg-white w-full min-w-0 max-w-[100vw] overflow-x-clip">
     <div
-      class="container mx-auto py-4 w-full min-w-0 max-w-[100vw] box-border overflow-x-clip {isVenueForm || isVenueOwner
+      class="container mx-auto py-4 w-full min-w-0 max-w-[100vw] box-border overflow-x-clip {isVenueForm ||
+      isVenueOwner
         ? 'md:pt-0 md:pb-12'
         : 'md:py-12'}"
     >
@@ -347,8 +358,12 @@
     </div>
   </main>
 
-  <footer class="bg-gray-100 border-t border-gray-200 min-w-0 w-full max-w-[100vw] overflow-x-clip">
-    <div class="container mx-auto py-2 sm:py-3 flex items-center min-h-0 min-w-0 max-w-full">
+  <footer
+    class="bg-gray-100 border-t border-gray-200 min-w-0 w-full max-w-[100vw] overflow-x-clip"
+  >
+    <div
+      class="container mx-auto py-2 sm:py-3 flex items-center min-h-0 min-w-0 max-w-full"
+    >
       <div
         class="flex flex-col sm:flex-row justify-between items-center gap-1 sm:gap-3 w-full"
       >

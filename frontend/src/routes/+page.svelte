@@ -709,19 +709,19 @@
       {/if}
 
       <!-- Venue Name -->
-      <h2 class="text-[16px] md:text-3xl font-bold mb-2 md:mb-3 text-gray-900 break-words min-w-0">{selectedVenue.name}</h2>
+      <h2 class="text-[14px] md:text-3xl font-bold mb-1 md:mb-3 text-gray-900 break-words min-w-0">{selectedVenue.name}</h2>
 
       <!-- Address, Comment, and Map -->
       {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment}
-        <div class="mb-2 md:mb-3 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 min-w-0 max-w-full overflow-hidden">
-          <div class="flex flex-col justify-start min-w-0">
+        <div class="mb-1 md:mb-3 grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-4 min-w-0 max-w-full overflow-hidden">
+          <div class="flex flex-col justify-start min-w-0 gap-0 md:gap-0">
             {#if selectedVenue.owner_name}
-              <p class="text-sm text-gray-600 mb-0.5 md:mb-1">
+              <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-1">
                 <span class="font-medium text-gray-700">Admin:</span> {selectedVenue.owner_name}
               </p>
             {/if}
             {#if selectedVenue.owner_email}
-              <p class="text-sm text-gray-600 mb-0.5 md:mb-1 break-all min-w-0">
+              <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-1 break-all min-w-0">
                 <a
                   href="mailto:{selectedVenue.owner_email}"
                   class="text-blue-600 hover:text-blue-800 hover:underline break-all"
@@ -731,7 +731,7 @@
               </p>
             {/if}
             {#if selectedVenue.address}
-              <p class="text-sm text-gray-600 mb-1 md:mb-2 break-words min-w-0">
+              <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2 break-words min-w-0">
                 <span class="font-medium text-gray-700">Address:</span>
                 {#if getDirectionsUrl(selectedVenue)}
                   <a
@@ -748,17 +748,17 @@
               </p>
             {/if}
             {#if selectedVenue.geolocation}
-              <p class="hidden md:block text-sm text-gray-600 mb-1 md:mb-2 no-print-geolocation">
+              <p class="hidden md:block text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2 no-print-geolocation">
                 <span class="font-medium text-gray-700">Geolocation:</span> {selectedVenue.geolocation}
               </p>
             {/if}
             {#if selectedVenue.timezone}
-              <p class="text-sm text-gray-600 mb-1 md:mb-2 no-print-timezone">
+              <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2 no-print-timezone">
                 <span class="font-medium text-gray-700">Timezone:</span> {selectedVenue.timezone}
               </p>
             {/if}
             {#if selectedVenue.comment}
-              <p class="text-sm text-gray-600 whitespace-pre-line break-words">{selectedVenue.comment}</p>
+              <p class="text-[12px] md:text-sm text-gray-600 whitespace-pre-line break-words mt-0">{selectedVenue.comment}</p>
             {/if}
           </div>
           {#if selectedVenue.geolocation}
@@ -780,9 +780,9 @@
         <!-- Single event list - no selector needed -->
         {#if selectedEventList}
           <div class="mt-3 md:mt-6 min-w-0 max-w-full overflow-hidden">
-            <h3 class="text-[14px] md:text-2xl font-semibold mb-1 text-gray-900 break-words min-w-0">{selectedEventList.name}</h3>
+            <h3 class="text-[14px] md:text-2xl font-semibold mb-0 md:mb-1 text-gray-900 break-words min-w-0">{selectedEventList.name}</h3>
             {#if selectedEventList.comment}
-              <p class="text-xs text-gray-600 mb-3 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere">{selectedEventList.comment}</p>
+              <p class="text-xs text-gray-600 mb-2 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere">{selectedEventList.comment}</p>
             {/if}
 
             {#if listEvents.length === 0}
@@ -794,7 +794,7 @@
                     <div class="min-w-0 flex-1">
                       <p class="font-medium text-gray-900 text-sm break-words">{event.event_name}</p>
                       {#if event.comment}
-                        <p class="text-sm md:text-xs text-gray-600 whitespace-pre-line mt-0.5 break-words">{event.comment}</p>
+                        <p class="text-[12px] md:text-xs text-gray-600 whitespace-pre-line mt-0 md:mt-0.5 break-words">{event.comment}</p>
                       {/if}
                     </div>
                     <div class="text-right flex-shrink-0 min-w-0">
@@ -819,7 +819,7 @@
           <select
             id="event-list-select"
             on:change={handleEventListChange}
-            class="w-full max-w-full px-3 md:px-4 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900 mb-3 md:mb-4 no-print-event-list-selector box-border"
+            class="w-full max-w-full px-3 md:px-4 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900 mb-3 md:mb-4 no-print-event-list-selector box-border"
           >
             {#each selectedVenueEventLists as eventList}
               <option value={eventList.event_list_uuid} selected={selectedEventListId === eventList.event_list_uuid}>
@@ -830,9 +830,9 @@
 
           {#if selectedEventList}
             <div class="min-w-0 max-w-full overflow-hidden">
-              <h3 class="text-[14px] md:text-2xl font-semibold mb-1 text-gray-900 break-words min-w-0">{selectedEventList.name}</h3>
+              <h3 class="text-[14px] md:text-2xl font-semibold mb-0 md:mb-1 text-gray-900 break-words min-w-0">{selectedEventList.name}</h3>
               {#if selectedEventList.comment}
-                <p class="text-xs text-gray-600 mb-3 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere">{selectedEventList.comment}</p>
+                <p class="text-xs text-gray-600 mb-2 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere">{selectedEventList.comment}</p>
               {/if}
 
               {#if listEvents.length === 0}
@@ -844,7 +844,7 @@
                       <div class="min-w-0 flex-1">
                         <p class="font-medium text-gray-900 text-sm break-words">{event.event_name}</p>
                         {#if event.comment}
-                          <p class="text-sm md:text-xs text-gray-600 whitespace-pre-line mt-0.5 break-words">{event.comment}</p>
+                          <p class="text-[12px] md:text-xs text-gray-600 whitespace-pre-line mt-0 md:mt-0.5 break-words">{event.comment}</p>
                         {/if}
                       </div>
                       <div class="text-right flex-shrink-0 min-w-0">

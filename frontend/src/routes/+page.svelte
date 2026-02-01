@@ -3,14 +3,14 @@
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/stores';
   import { dev, browser } from '$app/environment';
-  import { formatEventTime } from '$lib/utils/datetime.js';
+  import { formatEventTime, formatModifiedAt } from '$lib/utils/datetime.js';
   import BannerImage from '$lib/BannerImage.svelte';
   import {
     listPublicVenues,
     getPublicEventListsForVenue,
     getPrivateVenueByToken,
     getPrivateEventListByToken,
-    getPublicEventsForEventList
+    getPublicEventsForEventList,
   } from '$lib/api/public.js';
 
   /** @type {string | null} */
@@ -60,10 +60,20 @@
   let isLoadingListsAndEvents = false;
   let loadError = '';
 
+  /**
+   * Get timestamp string from event list (API may use snake_case or camelCase).
+   * @param {import('$lib/types').EventList & { modifiedAt?: string; createdAt?: string }} el
+   * @returns {string}
+   */
+  function getEventListTimestamp(el) {
+    return el?.modified_at ?? el?.modifiedAt ?? el?.created_at ?? el?.createdAt ?? '';
+  }
+
   // Private token from URL (only in browser to avoid prerender issues)
-  $: privateLinkToken = browser && $page.url.searchParams
-    ? $page.url.searchParams.get('token') || null
-    : null;
+  $: privateLinkToken =
+    browser && $page.url.searchParams
+      ? $page.url.searchParams.get('token') || null
+      : null;
 
   /**
    * Load public venues list (optionally with search query).
@@ -134,7 +144,7 @@
         }
         venueEventListsMap[venue.venue_uuid] = [
           ...(venueEventListsMap[venue.venue_uuid] || []),
-          tokenEventList
+          tokenEventList,
         ];
         eventListEventsMap[tokenEventList.event_list_uuid] = tokenEvents;
         selectedVenueId = venue.venue_uuid;
@@ -161,7 +171,7 @@
       const lists = await getPublicEventListsForVenue(venueUuid);
       venueEventListsMap = {
         ...venueEventListsMap,
-        [venueUuid]: lists
+        [venueUuid]: lists,
       };
     } catch (err) {
       console.error('Failed to load event lists', err);
@@ -187,7 +197,7 @@
       const events = await getPublicEventsForEventList(eventListUuid);
       eventListEventsMap = {
         ...eventListEventsMap,
-        [eventListUuid]: events
+        [eventListUuid]: events,
       };
       return events;
     } catch (err) {
@@ -199,7 +209,10 @@
 
   /** Refetch venues when page becomes visible (e.g. user returns from adding a venue). */
   function handleVisibilityChange() {
-    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    if (
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'visible'
+    ) {
       loadVenues(venueSearchQuery || undefined);
     }
   }
@@ -260,7 +273,11 @@
     // Close dropdown on scroll only after a short delay so opening on mobile does not close it immediately
     if (browser && typeof window !== 'undefined') {
       const closeDropdownOnScroll = () => {
-        if (showVenueDropdown && dropdownOpenedAt > 0 && Date.now() - dropdownOpenedAt > 200) {
+        if (
+          showVenueDropdown &&
+          dropdownOpenedAt > 0 &&
+          Date.now() - dropdownOpenedAt > 200
+        ) {
           showVenueDropdown = false;
           highlightedVenueIndex = -1;
         }
@@ -306,7 +323,9 @@
   $: visibleVenues = venues;
 
   // Sorted venues
-  $: sortedVenues = [...visibleVenues].sort((a, b) => a.name.localeCompare(b.name));
+  $: sortedVenues = [...visibleVenues].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
 
   // When user searches, the backend returns venues matching query across venue name, address, comment, event list names, and event names. We use that list as-is.
   $: filteredVenues = sortedVenues;
@@ -342,26 +361,30 @@
 
   // Get selected event list
   $: selectedEventList = selectedEventListId
-    ? selectedVenueEventLists.find((el) => el.event_list_uuid === selectedEventListId) || null
+    ? selectedVenueEventLists.find(
+        (el) => el.event_list_uuid === selectedEventListId,
+      ) || null
     : null;
 
   // Events for selected list
   /** @type {import('$lib/types').Event[]} */
   let listEvents = /** @type {import('$lib/types').Event[]} */ ([]);
   let isLoadingEvents = false;
-  
+
   // Reactive statement to load events when event list changes
   $: {
     if (selectedEventList) {
       isLoadingEvents = true;
-      ensureEventsForEventList(selectedEventList.event_list_uuid).then(events => {
-        listEvents = /** @type {import('$lib/types').Event[]} */ (events);
-        isLoadingEvents = false;
-      }).catch(err => {
-        console.error('Failed to load events', err);
-        listEvents = /** @type {import('$lib/types').Event[]} */ ([]);
-        isLoadingEvents = false;
-      });
+      ensureEventsForEventList(selectedEventList.event_list_uuid)
+        .then((events) => {
+          listEvents = /** @type {import('$lib/types').Event[]} */ (events);
+          isLoadingEvents = false;
+        })
+        .catch((err) => {
+          console.error('Failed to load events', err);
+          listEvents = /** @type {import('$lib/types').Event[]} */ ([]);
+          isLoadingEvents = false;
+        });
     } else {
       listEvents = /** @type {import('$lib/types').Event[]} */ ([]);
       isLoadingEvents = false;
@@ -422,8 +445,9 @@
     map = L.map(mapContainer).setView([coords.lat, coords.lng], 15);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
     }).addTo(map);
 
     marker = L.marker([coords.lat, coords.lng])
@@ -473,11 +497,15 @@
    */
   function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
     const unixTimestamp = rfc3339ToUnixTimestamp(rfc3339);
-    const timezoneToUse = venueTimezone && typeof venueTimezone === 'string' && venueTimezone.trim()
-      ? venueTimezone.trim()
-      : undefined;
+    const timezoneToUse =
+      venueTimezone && typeof venueTimezone === 'string' && venueTimezone.trim()
+        ? venueTimezone.trim()
+        : undefined;
 
-    return formatEventTime(unixTimestamp, timezoneToUse ? { timeZone: timezoneToUse } : {});
+    return formatEventTime(
+      unixTimestamp,
+      timezoneToUse ? { timeZone: timezoneToUse } : {},
+    );
   }
 
   /**
@@ -547,7 +575,8 @@
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        highlightedVenueIndex = (highlightedVenueIndex + 1) % filteredVenues.length;
+        highlightedVenueIndex =
+          (highlightedVenueIndex + 1) % filteredVenues.length;
         break;
       case 'ArrowUp':
         event.preventDefault();
@@ -559,7 +588,10 @@
         break;
       case 'Enter':
         event.preventDefault();
-        if (highlightedVenueIndex >= 0 && highlightedVenueIndex < filteredVenues.length) {
+        if (
+          highlightedVenueIndex >= 0 &&
+          highlightedVenueIndex < filteredVenues.length
+        ) {
           await selectVenue(filteredVenues[highlightedVenueIndex].venue_uuid);
         }
         break;
@@ -583,7 +615,10 @@
    * @param {Event} event
    */
   function handleClickOutside(event) {
-    if (venueDropdownRef && !venueDropdownRef.contains(/** @type {Node} */ (event.target))) {
+    if (
+      venueDropdownRef &&
+      !venueDropdownRef.contains(/** @type {Node} */ (event.target))
+    ) {
       showVenueDropdown = false;
       highlightedVenueIndex = -1;
     }
@@ -599,7 +634,7 @@
     dropdownPosition = {
       top: `${rect.bottom + 4}px`,
       left: `${rect.left}px`,
-      width: `${rect.width}px`
+      width: `${rect.width}px`,
     };
   }
 
@@ -622,217 +657,225 @@
   />
 </svelte:head>
 
-<div class="w-full min-w-0 max-w-[100vw] overflow-x-clip lg:max-w-[60%] lg:mx-auto">
+<div
+  class="w-full min-w-0 max-w-[100vw] overflow-x-clip lg:max-w-[60%] lg:mx-auto"
+>
   <div class="-mt-1 md:mt-0 mb-2 md:mb-2 text-center no-print-header">
-    <h1 class="text-[16px] md:text-4xl font-bold mb-0.5 md:mb-2 text-gray-900">Find Venues and Events</h1>
+    <h1 class="text-[16px] md:text-4xl font-bold mb-0.5 md:mb-2 text-gray-900">
+      Find Venues and Events
+    </h1>
     <p class="text-[10px] md:text-base text-gray-600 mb-1 md:mb-0">
       Select a venue to view its event schedules and contact information.
     </p>
   </div>
 
-  <div class="bg-white rounded-xl shadow-lg p-2 md:p-12 md:pt-4 min-w-0 max-w-full w-full overflow-x-clip box-border">
-  <!-- Venue Searchable Dropdown (no overflow-hidden here so dropdown is not clipped) -->
-  <div class="mb-2 md:mb-2 relative no-print-venue-dropdown" bind:this={venueDropdownRef}>
-    <div class="relative">
-      <input
-        type="text"
-        id="venue-search"
-        bind:this={searchInputRef}
-        value={venueSearchQuery}
-        on:input={handleVenueSearchInput}
-        on:focus={handleVenueSearchFocus}
-        on:keydown={handleVenueSearchKeydown}
-        placeholder="Search and select a venue..."
-        class="w-full max-w-full px-3 md:px-4 py-1.5 md:py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900 box-border"
-      />
-      {#if venueSearchQuery}
-        <button
-          type="button"
-          on:click={clearVenueSearch}
-          class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
-          aria-label="Clear search"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      {/if}
-      <!-- Dropdown: fixed when position set (not clipped), else absolute below input so list shows immediately -->
-      {#if showVenueDropdown}
-        <div
-          class="z-[9999] bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto text-[14px] md:text-base {dropdownPosition ? 'fixed' : 'absolute left-0 top-full w-full mt-1'}"
-          style={dropdownPosition ? `top: ${dropdownPosition.top}; left: ${dropdownPosition.left}; width: ${dropdownPosition.width};` : ''}
-          role="listbox"
-        >
-          {#if filteredVenues.length > 0}
-            {#each filteredVenues as venue, index}
-              <button
-                type="button"
-                on:click={() => selectVenue(venue.venue_uuid)}
-                on:mouseenter={() => highlightedVenueIndex = index}
-                class="w-full text-left px-4 py-2 focus:outline-none text-[14px] md:text-base {highlightedVenueIndex === index ? 'bg-blue-100' : selectedVenueId === venue.venue_uuid ? 'bg-blue-50' : 'hover:bg-gray-100'}"
-                role="option"
-                aria-selected={highlightedVenueIndex === index}
-              >
-                {venue.name}
-              </button>
-            {/each}
-          {:else if venueSearchQuery}
-            <div class="px-4 py-2 text-gray-500 text-[14px] md:text-sm">No venues found</div>
-          {/if}
-        </div>
-      {/if}
-    </div>
-  </div>
-
-  {#if selectedVenue}
-    <!-- Venue Details (overflow-x-clip only here so dropdown above is not clipped) -->
-    <div class="pt-0 md:pt-2 md:mt-0 min-w-0 max-w-[100vw] overflow-x-clip w-full">
-      <!-- Banner Image -->
-      {#if selectedVenue.banner_image}
-        <BannerImage
-          src={selectedVenue.banner_image}
-          alt={selectedVenue.name}
-          size="md"
-          wrapperClass="mb-4"
+  <div
+    class="bg-white rounded-xl shadow-lg p-2 md:p-12 md:pt-4 min-w-0 max-w-full w-full overflow-x-clip box-border"
+  >
+    <!-- Venue Searchable Dropdown (no overflow-hidden here so dropdown is not clipped) -->
+    <div
+      class="mb-2 md:mb-2 relative no-print-venue-dropdown"
+      bind:this={venueDropdownRef}
+    >
+      <div class="relative">
+        <input
+          type="text"
+          id="venue-search"
+          bind:this={searchInputRef}
+          value={venueSearchQuery}
+          on:input={handleVenueSearchInput}
+          on:focus={handleVenueSearchFocus}
+          on:keydown={handleVenueSearchKeydown}
+          placeholder="Search and select a venue..."
+          class="w-full max-w-full px-3 md:px-4 py-1.5 md:py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900 box-border"
         />
-      {/if}
-
-      <!-- Venue Name -->
-      <h2 class="text-[14px] md:text-3xl font-bold mb-1 md:mb-3 text-gray-900 break-words min-w-0">{selectedVenue.name}</h2>
-
-      <!-- Address, Comment, and Map -->
-      {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment}
-        <div class="mb-1 md:mb-3 grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-4 min-w-0 max-w-full overflow-hidden">
-          <div class="flex flex-col justify-start min-w-0 gap-0 md:gap-0">
-            {#if selectedVenue.owner_name}
-              <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-1">
-                <span class="font-medium text-gray-700">Admin:</span> {selectedVenue.owner_name}
-              </p>
-            {/if}
-            {#if selectedVenue.owner_email}
-              <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-1 break-all min-w-0">
-                <a
-                  href="mailto:{selectedVenue.owner_email}"
-                  class="text-blue-600 hover:text-blue-800 hover:underline break-all"
+        {#if venueSearchQuery}
+          <button
+            type="button"
+            on:click={clearVenueSearch}
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
+            aria-label="Clear search"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        {/if}
+        <!-- Dropdown: fixed when position set (not clipped), else absolute below input so list shows immediately -->
+        {#if showVenueDropdown}
+          <div
+            class="z-[9999] bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto text-[14px] md:text-base {dropdownPosition
+              ? 'fixed'
+              : 'absolute left-0 top-full w-full mt-1'}"
+            style={dropdownPosition
+              ? `top: ${dropdownPosition.top}; left: ${dropdownPosition.left}; width: ${dropdownPosition.width};`
+              : ''}
+            role="listbox"
+          >
+            {#if filteredVenues.length > 0}
+              {#each filteredVenues as venue, index}
+                <button
+                  type="button"
+                  on:click={() => selectVenue(venue.venue_uuid)}
+                  on:mouseenter={() => (highlightedVenueIndex = index)}
+                  class="w-full text-left px-4 py-2 focus:outline-none text-[14px] md:text-base {highlightedVenueIndex ===
+                  index
+                    ? 'bg-blue-100'
+                    : selectedVenueId === venue.venue_uuid
+                      ? 'bg-blue-50'
+                      : 'hover:bg-gray-100'}"
+                  role="option"
+                  aria-selected={highlightedVenueIndex === index}
                 >
-                  {selectedVenue.owner_email}
-                </a>
-              </p>
-            {/if}
-            {#if selectedVenue.address}
-              <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2 break-words min-w-0">
-                <span class="font-medium text-gray-700">Address:</span>
-                {#if getDirectionsUrl(selectedVenue)}
-                  <a
-                    href={getDirectionsUrl(selectedVenue)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-blue-600 hover:text-blue-800 hover:underline break-all"
-                  >
-                    {selectedVenue.address}
-                  </a>
-                {:else}
-                  {selectedVenue.address}
-                {/if}
-              </p>
-            {/if}
-            {#if selectedVenue.geolocation}
-              <p class="hidden md:block text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2 no-print-geolocation">
-                <span class="font-medium text-gray-700">Geolocation:</span> {selectedVenue.geolocation}
-              </p>
-            {/if}
-            {#if selectedVenue.timezone}
-              <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2 no-print-timezone">
-                <span class="font-medium text-gray-700">Timezone:</span> {selectedVenue.timezone}
-              </p>
-            {/if}
-            {#if selectedVenue.comment}
-              <p class="text-[12px] md:text-sm text-gray-600 whitespace-pre-line break-words mt-0">{selectedVenue.comment}</p>
-            {/if}
-          </div>
-          {#if selectedVenue.geolocation}
-            <div class="hidden md:block w-full h-48 rounded-lg overflow-hidden border border-gray-300 no-print-map">
-              <div bind:this={mapContainer} class="w-full h-full"></div>
-            </div>
-          {/if}
-        </div>
-      {/if}
-
-      <!-- Event Lists Section -->
-      {#if selectedVenueEventLists.length === 0}
-        <div class="mt-3 md:mt-6 p-4 bg-gray-50 rounded-lg">
-          <p class="text-gray-500 text-center">
-            This venue currently has no event schedules available.
-          </p>
-        </div>
-      {:else if selectedVenueEventLists.length === 1}
-        <!-- Single event list - no selector needed -->
-        {#if selectedEventList}
-          <div class="mt-3 md:mt-6 min-w-0 max-w-full overflow-hidden">
-            <h3 class="text-[14px] md:text-2xl font-semibold mb-0 md:mb-1 text-gray-900 break-words min-w-0">{selectedEventList.name}</h3>
-            {#if selectedEventList.comment}
-              <p class="text-xs text-gray-600 mb-2 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere">{selectedEventList.comment}</p>
-            {/if}
-
-            {#if listEvents.length === 0}
-              <p class="text-gray-500">No events scheduled for this list.</p>
-            {:else}
-              <div class="space-y-0.5 md:space-y-1 min-w-0 overflow-hidden">
-                {#each listEvents as event}
-                  <div class="flex items-center justify-between gap-2 py-0.5 md:py-1 px-2 md:px-3 bg-gray-50 rounded-lg min-w-0 overflow-hidden">
-                    <div class="min-w-0 flex-1">
-                      <p class="font-medium text-gray-900 text-sm break-words">{event.event_name}</p>
-                      {#if event.comment}
-                        <p class="text-[12px] md:text-xs text-gray-600 whitespace-pre-line mt-0 md:mt-0.5 break-words">{event.comment}</p>
-                      {/if}
-                    </div>
-                    <div class="text-right flex-shrink-0 min-w-0">
-                      <p class="text-[14px] md:text-base font-semibold text-blue-600">
-                        {formatEventTimeFromRFC3339(event.datetime, selectedVenue?.timezone)}
-                      </p>
-                      {#if event.duration_minutes}
-                        <p class="text-xs text-gray-500 mt-0.5">
-                          {event.duration_minutes} min
-                        </p>
-                      {/if}
-                    </div>
-                  </div>
-                {/each}
+                  {venue.name}
+                </button>
+              {/each}
+            {:else if venueSearchQuery}
+              <div class="px-4 py-2 text-gray-500 text-[14px] md:text-sm">
+                No venues found
               </div>
             {/if}
           </div>
         {/if}
-      {:else}
-        <!-- Multiple event lists - show selector -->
-        <div class="mt-3 md:mt-6 min-w-0 max-w-full overflow-hidden">
-          <select
-            id="event-list-select"
-            on:change={handleEventListChange}
-            class="w-full max-w-full px-3 md:px-4 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900 mb-3 md:mb-4 no-print-event-list-selector box-border"
-          >
-            {#each selectedVenueEventLists as eventList}
-              <option value={eventList.event_list_uuid} selected={selectedEventListId === eventList.event_list_uuid}>
-                {eventList.name}
-              </option>
-            {/each}
-          </select>
+      </div>
+    </div>
 
+    {#if selectedVenue}
+      <!-- Venue Details (overflow-x-clip only here so dropdown above is not clipped) -->
+      <div
+        class="pt-0 md:pt-2 md:mt-0 min-w-0 max-w-[100vw] overflow-x-clip w-full"
+      >
+        <!-- Banner Image -->
+        {#if selectedVenue.banner_image}
+          <BannerImage
+            src={selectedVenue.banner_image}
+            alt={selectedVenue.name}
+            size="md"
+            wrapperClass="mb-4"
+          />
+        {/if}
+
+        <!-- Venue Name -->
+        <h2
+          class="text-[14px] md:text-3xl font-bold mb-1 md:mb-3 text-gray-900 break-words min-w-0"
+        >
+          {selectedVenue.name}
+        </h2>
+
+        <!-- Address, Comment, and Map -->
+        {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment}
+          <div
+            class="mb-1 md:mb-3 grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-4 min-w-0 max-w-full overflow-hidden"
+          >
+            <div class="flex flex-col justify-start min-w-0 gap-0 md:gap-0">
+              {#if selectedVenue.owner_name}
+                <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-1">
+                  <span class="font-medium text-gray-700">Admin:</span>
+                  {selectedVenue.owner_name}
+                </p>
+              {/if}
+              {#if selectedVenue.owner_email}
+                <p
+                  class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-1 break-all min-w-0"
+                >
+                  <a
+                    href="mailto:{selectedVenue.owner_email}"
+                    class="text-blue-600 hover:text-blue-800 hover:underline break-all"
+                  >
+                    {selectedVenue.owner_email}
+                  </a>
+                </p>
+              {/if}
+              {#if selectedVenue.address}
+                <p
+                  class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2 break-words min-w-0"
+                >
+                  <span class="font-medium text-gray-700">Address:</span>
+                  {#if getDirectionsUrl(selectedVenue)}
+                    <a
+                      href={getDirectionsUrl(selectedVenue)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-blue-600 hover:text-blue-800 hover:underline break-all"
+                    >
+                      {selectedVenue.address}
+                    </a>
+                  {:else}
+                    {selectedVenue.address}
+                  {/if}
+                </p>
+              {/if}
+              {#if selectedVenue.geolocation}
+                <p
+                  class="hidden md:block text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2 no-print-geolocation"
+                >
+                  <span class="font-medium text-gray-700">Geolocation:</span>
+                  {selectedVenue.geolocation}
+                </p>
+              {/if}
+              {#if selectedVenue.timezone}
+                <p
+                  class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2 no-print-timezone"
+                >
+                  <span class="font-medium text-gray-700">Timezone:</span>
+                  {selectedVenue.timezone}
+                </p>
+              {/if}
+              {#if selectedVenue.comment}
+                <p
+                  class="text-[12px] md:text-sm text-gray-600 whitespace-pre-line break-words mt-0"
+                >
+                  {selectedVenue.comment}
+                </p>
+              {/if}
+            </div>
+            {#if selectedVenue.geolocation}
+              <div
+                class="hidden md:block w-full h-48 rounded-lg overflow-hidden border border-gray-300 no-print-map"
+              >
+                <div bind:this={mapContainer} class="w-full h-full"></div>
+              </div>
+            {/if}
+          </div>
+        {/if}
+
+        <!-- Event Lists Section -->
+        {#if selectedVenueEventLists.length === 0}
+          <div class="mt-3 md:mt-6 p-4 bg-gray-50 rounded-lg">
+            <p class="text-gray-500 text-center">
+              This venue currently has no event schedules available.
+            </p>
+          </div>
+        {:else if selectedVenueEventLists.length === 1}
+          <!-- Single event list - no selector needed -->
           {#if selectedEventList}
-            <div class="min-w-0 max-w-full overflow-hidden">
-              <h3 class="text-[14px] md:text-2xl font-semibold mb-0 md:mb-1 text-gray-900 break-words min-w-0">{selectedEventList.name}</h3>
+            <div class="mt-3 md:mt-6 min-w-0 max-w-full overflow-hidden">
+              <h3
+                class="text-[14px] md:text-2xl font-semibold mb-0 md:mb-1 text-gray-900 break-words min-w-0"
+              >
+                {selectedEventList.name}
+              </h3>
+              {#if getEventListTimestamp(selectedEventList)}
+                <p class="text-xs text-gray-600 mb-1 md:mb-2">
+                  Modified: {formatModifiedAt(getEventListTimestamp(selectedEventList))}
+                </p>
+              {/if}
               {#if selectedEventList.comment}
-                <p class="text-xs text-gray-600 mb-2 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere">{selectedEventList.comment}</p>
+                <p
+                  class="text-xs text-gray-600 mb-2 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere"
+                >
+                  {selectedEventList.comment}
+                </p>
               {/if}
 
               {#if listEvents.length === 0}
@@ -840,16 +883,31 @@
               {:else}
                 <div class="space-y-0.5 md:space-y-1 min-w-0 overflow-hidden">
                   {#each listEvents as event}
-                    <div class="flex items-center justify-between gap-2 py-0.5 md:py-1 px-2 md:px-3 bg-gray-50 rounded-lg min-w-0 overflow-hidden">
+                    <div
+                      class="flex items-center justify-between gap-2 py-0.5 md:py-1 px-2 md:px-3 bg-gray-50 rounded-lg min-w-0 overflow-hidden"
+                    >
                       <div class="min-w-0 flex-1">
-                        <p class="font-medium text-gray-900 text-sm break-words">{event.event_name}</p>
+                        <p
+                          class="font-medium text-gray-900 text-sm break-words"
+                        >
+                          {event.event_name}
+                        </p>
                         {#if event.comment}
-                          <p class="text-[12px] md:text-xs text-gray-600 whitespace-pre-line mt-0 md:mt-0.5 break-words">{event.comment}</p>
+                          <p
+                            class="text-[12px] md:text-xs text-gray-600 whitespace-pre-line mt-0 md:mt-0.5 break-words"
+                          >
+                            {event.comment}
+                          </p>
                         {/if}
                       </div>
                       <div class="text-right flex-shrink-0 min-w-0">
-                        <p class="text-[14px] md:text-base font-semibold text-blue-600">
-                          {formatEventTimeFromRFC3339(event.datetime, selectedVenue?.timezone)}
+                        <p
+                          class="text-[14px] md:text-base font-semibold text-blue-600"
+                        >
+                          {formatEventTimeFromRFC3339(
+                            event.datetime,
+                            selectedVenue?.timezone,
+                          )}
                         </p>
                         {#if event.duration_minutes}
                           <p class="text-xs text-gray-500 mt-0.5">
@@ -863,13 +921,104 @@
               {/if}
             </div>
           {/if}
-        </div>
-      {/if}
-    </div>
-  {:else}
-    <p class="text-gray-500 text-center text-[10px] md:text-sm">
-      The search works across venue names, addresses, comments, owner information, event list names, and event names.
-    </p>
-  {/if}
+        {:else}
+          <!-- Multiple event lists - show selector (same as venue-form preview) -->
+          <div class="mt-3 md:mt-6 min-w-0 max-w-full overflow-hidden px-2 md:px-3">
+            <div class="no-print-event-list-selector">
+              <label
+                for="event-list-select"
+                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
+                >Select Event List</label
+              >
+              <select
+                id="event-list-select"
+                on:change={handleEventListChange}
+                class="w-full px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 mb-3 md:mb-4 box-border"
+              >
+                {#each selectedVenueEventLists as eventList}
+                  <option
+                    value={eventList.event_list_uuid}
+                    selected={selectedEventListId === eventList.event_list_uuid}
+                  >
+                    {eventList.name}
+                  </option>
+                {/each}
+              </select>
+            </div>
+
+            {#if selectedEventList}
+              <div class="min-w-0 max-w-full overflow-hidden">
+                <h3
+                  class="text-[14px] md:text-2xl font-semibold mb-0 md:mb-1 text-gray-900 break-words min-w-0"
+                >
+                  {selectedEventList.name}
+                </h3>
+                {#if getEventListTimestamp(selectedEventList)}
+                  <p class="text-xs text-gray-600 mb-1 md:mb-2">
+                    Modified: {formatModifiedAt(getEventListTimestamp(selectedEventList))}
+                  </p>
+                {/if}
+                {#if selectedEventList.comment}
+                  <p
+                    class="text-xs text-gray-600 mb-2 md:mb-4 whitespace-pre-line break-words min-w-0 overflow-wrap-anywhere"
+                  >
+                    {selectedEventList.comment}
+                  </p>
+                {/if}
+
+                {#if listEvents.length === 0}
+                  <p class="text-gray-500">
+                    No events scheduled for this list.
+                  </p>
+                {:else}
+                  <div class="space-y-0.5 md:space-y-1 min-w-0 overflow-hidden">
+                    {#each listEvents as event}
+                      <div
+                        class="flex items-center justify-between gap-2 py-0.5 md:py-1 px-2 md:px-3 bg-gray-50 rounded-lg min-w-0 overflow-hidden"
+                      >
+                        <div class="min-w-0 flex-1">
+                          <p
+                            class="font-medium text-gray-900 text-sm break-words"
+                          >
+                            {event.event_name}
+                          </p>
+                          {#if event.comment}
+                            <p
+                              class="text-[12px] md:text-xs text-gray-600 whitespace-pre-line mt-0 md:mt-0.5 break-words"
+                            >
+                              {event.comment}
+                            </p>
+                          {/if}
+                        </div>
+                        <div class="text-right flex-shrink-0 min-w-0">
+                          <p
+                            class="text-[14px] md:text-base font-semibold text-blue-600"
+                          >
+                            {formatEventTimeFromRFC3339(
+                              event.datetime,
+                              selectedVenue?.timezone,
+                            )}
+                          </p>
+                          {#if event.duration_minutes}
+                            <p class="text-xs text-gray-500 mt-0.5">
+                              {event.duration_minutes} min
+                            </p>
+                          {/if}
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {:else}
+      <p class="text-gray-500 text-center text-[10px] md:text-sm">
+        The search works across venue names, addresses, comments, owner
+        information, event list names, and event names.
+      </p>
+    {/if}
   </div>
 </div>

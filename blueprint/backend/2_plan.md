@@ -337,13 +337,12 @@ We will **defer** implementing the ability to pay for more venues. When we add i
 
 We require venue owners to verify their email before they can create or edit venues, event lists, or events. On registration we send a verification link (via Resend); unverified owners can log in and read their data but receive `403` with code `email_not_verified` on any write. Verification tokens are stored in a separate `email_verification_tokens` table (hashed, with expiry); we use constant-time comparison and rate-limit resend. The Resend API key is configured via `RESEND_API_KEY` in `backend/.env`.
 
-## Instrumentation
-
-### Basic statistics (to save database cost)
-
-
 ## Backoffice
+
+### Manual handling of owners, their accounts and venues
 
 ### Viewing statistics (see intrumentation)
 
-### Manual handling of owners, their accounts and venues
+## Instrumentation
+
+### Basic statistics (to save database cost)

@@ -147,6 +147,33 @@ export function createEventTimestamp(eventListDate, hours, minutes) {
 }
 
 /**
+ * Format modified_at/created_at (ISO 8601–style) for display under event list title.
+ * Output format: "YYYY-MM-DD HH:mm" in the given timezone (e.g. "2026-01-01 23:33").
+ * @param {string} isoString - ISO 8601 datetime string
+ * @param {{ timeZone?: string }} [options] - Optional: timeZone (defaults to user's)
+ * @returns {string} Formatted string or '' if invalid
+ */
+export function formatModifiedAt(isoString, options = {}) {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return '';
+  const timeZone = options?.timeZone ?? getUserTimezone();
+  const tf = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone
+  });
+  const parts = tf.formatToParts(date);
+  /** @param {string} type */
+  const get = (type) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`;
+}
+
+/**
  * Get the current timestamp as an ISO 8601 string (RFC3339 format with timezone offset)
  * Used for created_at and modified_at fields in entities
  *

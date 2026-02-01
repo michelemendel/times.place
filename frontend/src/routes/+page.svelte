@@ -804,7 +804,7 @@
       {/if}
     </div>
   {:else}
-    <p class="text-gray-500 text-center" style="font-size: 14px;">
+    <p class="text-gray-500 text-center text-[12px] md:text-sm">
       The search works across venue names, addresses, comments, owner information, event list names, and event names.
     </p>
   {/if}

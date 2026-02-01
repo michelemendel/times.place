@@ -348,11 +348,11 @@
   </main>
 
   <footer class="bg-gray-100 border-t border-gray-200">
-    <div class="container mx-auto h-20 flex items-center">
+    <div class="container mx-auto py-2 sm:py-3 flex items-center min-h-0">
       <div
-        class="flex flex-col sm:flex-row justify-between items-center gap-4 w-full"
+        class="flex flex-col sm:flex-row justify-between items-center gap-1 sm:gap-3 w-full"
       >
-        <p class="text-gray-600 text-sm">
+        <p class="text-gray-600 text-xs sm:text-sm">
           &copy; 2026 times.place. All rights reserved.
           <a
             href="/disclaimer"
@@ -360,7 +360,7 @@
             >Disclaimer</a
           >
         </p>
-        <p class="text-gray-600 text-sm">
+        <p class="text-gray-600 text-xs sm:text-sm">
           Contact: <a
             href="mailto:timesandplaceadmin@atomicmail.io"
             target="_blank"

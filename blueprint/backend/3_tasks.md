@@ -17,10 +17,10 @@
   - [x] Add `backend/.env` to `.gitignore`
   - [x] Document how to load `.env` in Go (e.g. using `godotenv` or similar)
   - [x] Configure devcontainer to use local `.env` or set non-secret vars in `devcontainer.json`
-- [ ] Set up production environment variables on Render.com:
-  - [ ] Configure non-secret variables in Render Web Service dashboard (LOG_LEVEL, cookie settings)
-  - [ ] Configure secret variables in Render with "Secret" toggle enabled (DATABASE_URL, JWT_SECRET, REFRESH_TOKEN_SECRET)
-  - [ ] Link Render Postgres instance to Web Service (auto-provides DATABASE_URL) or set manually
+- [x] Set up production environment variables on Render.com:
+  - [x] Configure non-secret variables in Render Web Service dashboard (LOG_LEVEL, cookie settings)
+  - [x] Configure secret variables in Render with "Secret" toggle enabled (DATABASE_URL, JWT_SECRET, REFRESH_TOKEN_SECRET)
+  - [x] Link Render Postgres instance to Web Service (auto-provides DATABASE_URL) or set manually
   - [x] Document all required production environment variables and their purposes
 
 ## Database schema & migrations (goose)

@@ -188,6 +188,16 @@
             {owner.name}
           </p>
         {/if}
+        {#if owner?.email}
+          <p class="text-sm text-gray-600 mb-1">
+            <a
+              href="mailto:{owner.email}"
+              class="text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              {owner.email}
+            </a>
+          </p>
+        {/if}
         {#if venue.address}
           <p class="text-sm text-gray-600 mb-2">{venue.address}</p>
         {/if}

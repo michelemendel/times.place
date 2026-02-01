@@ -50,6 +50,7 @@ func venueRowToResponse(venue sqlc.ListPublicVenuesRow) VenueResponse {
 		Timezone:         venue.Timezone,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
 		OwnerName:        venue.OwnerName,
+		OwnerEmail:       venue.OwnerEmail,
 		CreatedAt:        timestamptzToString(venue.CreatedAt),
 		ModifiedAt:       timestamptzToString(venue.ModifiedAt),
 	}
@@ -68,6 +69,7 @@ func searchVenueRowToResponse(venue sqlc.SearchPublicVenuesRow) VenueResponse {
 		Timezone:         venue.Timezone,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
 		OwnerName:        venue.OwnerName,
+		OwnerEmail:       venue.OwnerEmail,
 		CreatedAt:        timestamptzToString(venue.CreatedAt),
 		ModifiedAt:       timestamptzToString(venue.ModifiedAt),
 	}
@@ -86,6 +88,7 @@ func venueTokenRowToResponse(venue sqlc.GetVenueByTokenRow) VenueResponse {
 		Timezone:         venue.Timezone,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
 		OwnerName:        venue.OwnerName,
+		OwnerEmail:       venue.OwnerEmail,
 		CreatedAt:        timestamptzToString(venue.CreatedAt),
 		ModifiedAt:       timestamptzToString(venue.ModifiedAt),
 	}
@@ -207,6 +210,7 @@ func (h *PublicHandler) GetVenueByToken(c echo.Context) error {
 		CreatedAt:        firstRow.CreatedAt,
 		ModifiedAt:       firstRow.ModifiedAt,
 		OwnerName:        firstRow.OwnerName,
+		OwnerEmail:       firstRow.OwnerEmail,
 	})
 
 	// Convert event lists from rows
@@ -269,9 +273,9 @@ func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
 	venueUUID := eventList.VenueUuid
 	var venue VenueResponse
 
-	// Query venue with owner name (no owner check needed for public endpoint)
+	// Query venue with owner name and email (no owner check needed for public endpoint)
 	row := h.store.DB().QueryRow(ctx,
-		"SELECT v.venue_uuid, v.name, v.banner_image, v.address, v.geolocation, v.comment, v.timezone, v.private_link_token, v.created_at, v.modified_at, o.name AS owner_name FROM venues v INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid WHERE v.venue_uuid = $1",
+		"SELECT v.venue_uuid, v.name, v.banner_image, v.address, v.geolocation, v.comment, v.timezone, v.private_link_token, v.created_at, v.modified_at, o.name AS owner_name, o.email AS owner_email FROM venues v INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid WHERE v.venue_uuid = $1",
 		venueUUID)
 	
 	var v sqlc.GetVenueByTokenRow
@@ -287,6 +291,7 @@ func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
 		&v.CreatedAt,
 		&v.ModifiedAt,
 		&v.OwnerName,
+		&v.OwnerEmail,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {

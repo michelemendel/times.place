@@ -657,6 +657,16 @@
                 <span class="font-medium text-gray-700">Owner:</span> {selectedVenue.owner_name}
               </p>
             {/if}
+            {#if selectedVenue.owner_email}
+              <p class="text-sm text-gray-600 mb-1">
+                <a
+                  href="mailto:{selectedVenue.owner_email}"
+                  class="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {selectedVenue.owner_email}
+                </a>
+              </p>
+            {/if}
             {#if selectedVenue.address}
               <p class="text-sm text-gray-600 mb-2">
                 <span class="font-medium text-gray-700">Address:</span>
@@ -684,7 +694,6 @@
                 <span class="font-medium text-gray-700">Timezone:</span> {selectedVenue.timezone}
               </p>
             {/if}
-            <!-- Contact information is hidden from public visitor page for security -->
             {#if selectedVenue.comment}
               <p class="text-sm text-gray-600 whitespace-pre-line">{selectedVenue.comment}</p>
             {/if}

@@ -11,7 +11,8 @@ SELECT
     v.private_link_token,
     v.created_at,
     v.modified_at,
-    o.name AS owner_name
+    o.name AS owner_name,
+    o.email AS owner_email
 FROM venues v
 INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
 WHERE EXISTS (
@@ -33,7 +34,8 @@ SELECT DISTINCT
     v.private_link_token,
     v.created_at,
     v.modified_at,
-    o.name AS owner_name
+    o.name AS owner_name,
+    o.email AS owner_email
 FROM venues v
 INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
 WHERE EXISTS (
@@ -87,7 +89,8 @@ SELECT
     v.private_link_token,
     v.created_at,
     v.modified_at,
-    o.name AS owner_name
+    o.name AS owner_name,
+    o.email AS owner_email
 FROM venues v
 INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
 WHERE v.private_link_token = $1;
@@ -121,6 +124,7 @@ SELECT
     v.created_at,
     v.modified_at,
     o.name AS owner_name,
+    o.email AS owner_email,
     el.event_list_uuid,
     el.name as event_list_name,
     el.date as event_list_date,

@@ -23,6 +23,8 @@ export interface Venue {
   geolocation: string;
   /** Owner display name; set by public API, not by owner API */
   owner_name?: string;
+  /** Owner email; set by public API, not by owner API */
+  owner_email?: string;
   comment?: string;
   /** Client-side only; API does not return this. Derived from listing event-lists. */
   event_list_uuids?: string[];

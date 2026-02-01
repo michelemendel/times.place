@@ -57,6 +57,7 @@ type VenueResponse struct {
 	Timezone         string `json:"timezone"`
 	PrivateLinkToken string `json:"private_link_token"`
 	OwnerName        string `json:"owner_name,omitempty"` // Set by public endpoints; empty for owner endpoints
+	OwnerEmail       string `json:"owner_email,omitempty"` // Set by public endpoints; empty for owner endpoints
 	CreatedAt        string `json:"created_at"`
 	ModifiedAt       string `json:"modified_at"`
 }

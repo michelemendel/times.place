@@ -99,21 +99,21 @@
   {/if}
   <header class="bg-gray-100 shadow-sm min-w-0 w-full max-w-[100vw] overflow-x-clip">
     <nav
-      class="container mx-auto h-20 flex items-center justify-between relative min-w-0 max-w-full overflow-visible"
+      class="container mx-auto h-14 md:h-20 flex items-center justify-between relative min-w-0 max-w-full overflow-visible"
     >
       <div class="flex items-center pl-4 md:pl-0">
         <a
           href="/"
-          class="flex items-center gap-2 md:gap-4 hover:opacity-80 transition-opacity"
+          class="flex items-center gap-1.5 md:gap-4 hover:opacity-80 transition-opacity"
           on:click={closeMobileMenu}
         >
           <img
             src="/house_clock.png"
             alt="times.place logo"
-            class="h-14 w-auto object-contain"
+            class="h-10 md:h-14 w-auto object-contain"
             style="aspect-ratio: 886/762;"
           />
-          <span class="text-2xl font-bold text-gray-900">times.place</span>
+          <span class="text-xl md:text-2xl font-bold text-gray-900">times.place</span>
         </a>
       </div>
 
@@ -273,43 +273,43 @@
       <!-- Mobile Menu -->
       {#if mobileMenuOpen}
         <div
-          class="absolute top-20 left-0 right-0 bg-gray-100 border-t border-gray-200 shadow-lg md:hidden z-50"
+          class="absolute top-14 md:top-20 left-0 right-0 bg-gray-100 border-t border-gray-200 shadow-lg md:hidden z-50"
         >
-          <div class="container mx-auto py-4 flex flex-col gap-2 min-w-0 max-w-full">
+          <div class="container mx-auto py-2 flex flex-col gap-0 min-w-0 max-w-full">
             <a
               href="/demo"
-              class="text-red-600 hover:text-red-700 font-medium text-[14px] transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+              class="text-red-600 hover:text-red-700 font-medium text-[14px] transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
               on:click={closeMobileMenu}>[Test Phase]</a
             >
             <a
               href="/"
-              class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+              class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
               on:click={closeMobileMenu}>Home</a
             >
             <a
               href="/about"
-              class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+              class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
               on:click={closeMobileMenu}>About</a
             >
             <a
               href="/price"
-              class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+              class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
               on:click={closeMobileMenu}>Price</a
             >
             {#if $currentOwnerStore}
               <a
                 href="/venue-owner"
-                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
                 on:click={closeMobileMenu}>My Venues</a
               >
               <a
                 href="/my"
-                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
                 on:click={closeMobileMenu}>Account</a
               >
               <button
                 type="button"
-                class="text-left text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                class="text-left text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
                 on:click={logout}
               >
                 Logout
@@ -317,17 +317,17 @@
             {:else}
               <a
                 href="/my"
-                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
                 on:click={closeMobileMenu}>Account</a
               >
               <a
                 href="/login"
-                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
                 on:click={closeMobileMenu}>Login</a
               >
               <a
                 href="/registration"
-                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-2 hover:bg-gray-200 rounded-md"
+                class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
                 on:click={closeMobileMenu}>Register</a
               >
             {/if}

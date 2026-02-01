@@ -6,8 +6,8 @@
   <title>Price - times.place</title>
 </svelte:head>
 
-<div class="bg-white rounded-xl shadow-lg p-8 md:p-12">
-  <h1 class="text-4xl font-bold mb-8 text-gray-900 text-center">
+<div class="bg-white rounded-xl shadow-lg pt-4 px-8 pb-8 md:pt-12 md:px-12 md:pb-12 text-[12px] md:text-base">
+  <h1 class="text-[28px] md:text-4xl font-bold mb-8 text-gray-900 text-center">
     Price
   </h1>
 

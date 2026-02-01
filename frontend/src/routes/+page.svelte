@@ -568,8 +568,8 @@
 
 <div class="w-full lg:max-w-[60%] lg:mx-auto">
   <div class="mb-2 md:mb-2 text-center no-print-header">
-    <h1 class="text-xl md:text-4xl font-bold mb-1 md:mb-2 text-gray-900">Find Venues and Events</h1>
-    <p class="text-sm md:text-base text-gray-600 mb-1 md:mb-0">
+    <h1 class="text-[18px] md:text-4xl font-bold mb-1 md:mb-2 text-gray-900">Find Venues and Events</h1>
+    <p class="text-[12px] md:text-base text-gray-600 mb-1 md:mb-0">
       Select a venue to view its event schedules and contact information.
     </p>
   </div>
@@ -586,7 +586,7 @@
         on:focus={handleVenueSearchFocus}
         on:keydown={handleVenueSearchKeydown}
         placeholder="Search and select a venue..."
-        class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
+        class="w-full px-3 md:px-4 py-1.5 md:py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-[14px] md:text-base text-gray-900"
       />
       {#if venueSearchQuery}
         <button
@@ -646,19 +646,19 @@
       {/if}
 
       <!-- Venue Name -->
-      <h2 class="text-[24px] md:text-3xl font-bold mb-3 text-gray-900">{selectedVenue.name}</h2>
+      <h2 class="text-[20px] md:text-3xl font-bold mb-2 md:mb-3 text-gray-900">{selectedVenue.name}</h2>
 
       <!-- Address, Comment, and Map -->
       {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment}
-        <div class="mb-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="mb-2 md:mb-3 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
           <div class="flex flex-col justify-start">
             {#if selectedVenue.owner_name}
-              <p class="text-sm text-gray-600 mb-1">
+              <p class="text-sm text-gray-600 mb-0.5 md:mb-1">
                 <span class="font-medium text-gray-700">Admin:</span> {selectedVenue.owner_name}
               </p>
             {/if}
             {#if selectedVenue.owner_email}
-              <p class="text-sm text-gray-600 mb-1">
+              <p class="text-sm text-gray-600 mb-0.5 md:mb-1">
                 <a
                   href="mailto:{selectedVenue.owner_email}"
                   class="text-blue-600 hover:text-blue-800 hover:underline"
@@ -668,7 +668,7 @@
               </p>
             {/if}
             {#if selectedVenue.address}
-              <p class="text-sm text-gray-600 mb-2">
+              <p class="text-sm text-gray-600 mb-1 md:mb-2">
                 <span class="font-medium text-gray-700">Address:</span>
                 {#if getDirectionsUrl(selectedVenue)}
                   <a
@@ -685,12 +685,12 @@
               </p>
             {/if}
             {#if selectedVenue.geolocation}
-              <p class="hidden md:block text-sm text-gray-600 mb-2 no-print-geolocation">
+              <p class="hidden md:block text-sm text-gray-600 mb-1 md:mb-2 no-print-geolocation">
                 <span class="font-medium text-gray-700">Geolocation:</span> {selectedVenue.geolocation}
               </p>
             {/if}
             {#if selectedVenue.timezone}
-              <p class="text-sm text-gray-600 mb-2 no-print-timezone">
+              <p class="text-sm text-gray-600 mb-1 md:mb-2 no-print-timezone">
                 <span class="font-medium text-gray-700">Timezone:</span> {selectedVenue.timezone}
               </p>
             {/if}
@@ -717,7 +717,7 @@
         <!-- Single event list - no selector needed -->
         {#if selectedEventList}
           <div class="mt-6">
-            <h3 class="text-[20px] md:text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
+            <h3 class="text-[18px] md:text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
             {#if selectedEventList.comment}
               <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">{selectedEventList.comment}</p>
             {/if}
@@ -735,7 +735,7 @@
                       {/if}
                     </div>
                     <div class="text-right">
-                      <p class="text-base font-semibold text-blue-600">
+                      <p class="text-[14px] md:text-base font-semibold text-blue-600">
                         {formatEventTimeFromRFC3339(event.datetime, selectedVenue?.timezone)}
                       </p>
                       {#if event.duration_minutes}
@@ -767,7 +767,7 @@
 
           {#if selectedEventList}
             <div>
-              <h3 class="text-[20px] md:text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
+              <h3 class="text-[18px] md:text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
               {#if selectedEventList.comment}
                 <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">{selectedEventList.comment}</p>
               {/if}
@@ -785,7 +785,7 @@
                         {/if}
                       </div>
                       <div class="text-right">
-                        <p class="text-base font-semibold text-blue-600">
+                        <p class="text-[14px] md:text-base font-semibold text-blue-600">
                           {formatEventTimeFromRFC3339(event.datetime, selectedVenue?.timezone)}
                         </p>
                         {#if event.duration_minutes}

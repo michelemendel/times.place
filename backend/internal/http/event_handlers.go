@@ -168,6 +168,13 @@ func (h *EventHandler) Create(c echo.Context) error {
 	if demo {
 		return ForbiddenError(c, "Demo data cannot be modified")
 	}
+	verified, err := IsEmailVerified(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if !verified {
+		return EmailNotVerifiedError(c, "Please verify your email address to make changes.")
+	}
 
 	// Convert UUIDs
 	eventListUUID, err := stringToUUID(eventListUUIDStr)
@@ -302,6 +309,13 @@ func (h *EventHandler) Update(c echo.Context) error {
 	if demo {
 		return ForbiddenError(c, "Demo data cannot be modified")
 	}
+	verified, err := IsEmailVerified(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if !verified {
+		return EmailNotVerifiedError(c, "Please verify your email address to make changes.")
+	}
 
 	// Convert UUIDs
 	eventUUID, err := stringToUUID(eventUUIDStr)
@@ -403,6 +417,13 @@ func (h *EventHandler) Delete(c echo.Context) error {
 	}
 	if demo {
 		return ForbiddenError(c, "Demo data cannot be modified")
+	}
+	verified, err := IsEmailVerified(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if !verified {
+		return EmailNotVerifiedError(c, "Please verify your email address to make changes.")
 	}
 
 	// Convert UUIDs

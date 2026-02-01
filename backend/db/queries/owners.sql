@@ -11,6 +11,11 @@ WHERE owner_uuid = $1;
 SELECT * FROM venue_owners
 WHERE LOWER(email) = LOWER($1);
 
+-- name: SetOwnerEmailVerified :exec
+UPDATE venue_owners
+SET email_verified_at = now(), modified_at = now()
+WHERE owner_uuid = $1;
+
 -- name: DeleteOwner :exec
 DELETE FROM venue_owners
 WHERE owner_uuid = $1;

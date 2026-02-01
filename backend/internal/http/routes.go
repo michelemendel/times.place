@@ -2,14 +2,15 @@ package http
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/michelemendel/times.place/internal/mailer"
 	"github.com/michelemendel/times.place/internal/service"
 	"github.com/michelemendel/times.place/internal/store"
 )
 
 // RegisterRoutes registers all API routes and frontend static files (if built assets exist).
-func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthService) {
+func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthService, mailerSender mailer.Sender) {
 	// Create handlers
-	authHandler := NewAuthHandler(store, authService)
+	authHandler := NewAuthHandler(store, authService, mailerSender)
 	healthcheckHandler := NewHealthcheckHandler(store)
 
 	// Health check endpoint (public, no auth)
@@ -24,10 +25,12 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 	auth.POST("/login", authHandler.Login)
 	auth.POST("/refresh", authHandler.Refresh)
 	auth.POST("/logout", authHandler.Logout)
+	auth.GET("/verify-email", authHandler.VerifyEmail)
 
 	// Protected auth routes
 	auth.GET("/me", authHandler.Me, JWTAuthMiddleware(authService))
 	auth.DELETE("/me", authHandler.DeleteMe, JWTAuthMiddleware(authService))
+	auth.POST("/resend-verification", authHandler.ResendVerification, JWTAuthMiddleware(authService))
 
 	// Owner-scoped routes (protected)
 	// Register more specific paths before :venue_uuid so /venues/:id/event-lists is matched correctly

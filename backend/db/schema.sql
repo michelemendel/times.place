@@ -12,8 +12,18 @@ CREATE TABLE venue_owners (
     email text NOT NULL UNIQUE,
     password_hash text NOT NULL,
     is_demo boolean NOT NULL DEFAULT false,
+    email_verified_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
     modified_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Create email_verification_tokens table (separate table for token hygiene and cleanup)
+CREATE TABLE email_verification_tokens (
+    token_uuid uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_uuid uuid NOT NULL REFERENCES venue_owners(owner_uuid) ON DELETE CASCADE,
+    token_hash text NOT NULL UNIQUE,
+    expires_at timestamptz NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- Create venues table
@@ -88,3 +98,8 @@ CREATE INDEX events_event_list_uuid_sort_order_idx ON events(event_list_uuid, so
 -- Indexes for refresh_tokens
 CREATE INDEX refresh_tokens_owner_uuid_idx ON refresh_tokens(owner_uuid);
 CREATE INDEX refresh_tokens_token_hash_idx ON refresh_tokens(token_hash);
+
+-- Indexes for email_verification_tokens
+CREATE INDEX email_verification_tokens_token_hash_idx ON email_verification_tokens(token_hash);
+CREATE INDEX email_verification_tokens_owner_uuid_idx ON email_verification_tokens(owner_uuid);
+CREATE INDEX email_verification_tokens_expires_at_idx ON email_verification_tokens(expires_at);

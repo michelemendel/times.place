@@ -446,3 +446,54 @@ This file will track backend implementation work sessions, decisions made during
 - **Makefile**:
   - New target `dbcleardemo`: runs seed with `-clear-demo-only` (from host or devcontainer).
   - Help text updated: `dbseedclear` described as "Clear ALL data (destroys real data)", `dbcleardemo` as "Clear only demo data and reseed (preserves real data)".
+
+### Summary
+
+- **Email verification**: Owners must verify their email before creating or editing venues, event lists, or events. Verification tokens are stored in a separate table; Resend is used for sending verification emails. Unverified owners can log in and read data but receive 403 with code `email_not_verified` on mutations.
+
+### Notes
+
+- **Plan** (`blueprint/backend/2_plan.md`):
+  - Under **Security → Email verification**: Documented that we require verification before writes; tokens in `email_verification_tokens`; Resend API key via `RESEND_API_KEY` in `.env`.
+- **Migrations** (`backend/db/migrations/00007_email_verification.sql`):
+  - **Up**: Add `email_verified_at timestamptz` to `venue_owners`; create `email_verification_tokens` table (token_uuid, owner_uuid, token_hash, expires_at, created_at) with indexes on token_hash, owner_uuid, expires_at.
+  - **Down**: Drop `email_verification_tokens`; drop `email_verified_at` from `venue_owners`.
+- **Schema** (`backend/db/schema.sql`):
+  - Added `email_verified_at` to `venue_owners`; added `email_verification_tokens` table and indexes for sqlc.
+- **sqlc**:
+  - New `backend/db/queries/email_verification.sql`: CreateEmailVerificationToken, GetEmailVerificationTokenByHash, DeleteEmailVerificationTokensByOwner, DeleteEmailVerificationTokenByHash.
+  - **owners.sql**: Added SetOwnerEmailVerified; CreateOwner / GetOwnerByID / GetOwnerByEmail now return `email_verified_at`. Ran `sqlc generate`.
+- **Mailer** (`backend/internal/mailer/`):
+  - Interface `Sender` with `SendVerificationEmail(to, verificationLink string) error`.
+  - **resend.go**: ResendSender using Resend API (POST https://api.resend.com/emails); API key and optional from address from env (`RESEND_API_KEY`, `RESEND_FROM`).
+- **Environment** (`backend/.env.example`):
+  - `RESEND_API_KEY` (required for sending verification emails), optional `RESEND_FROM`, `VERIFICATION_BASE_URL` (base URL for verification links, default http://localhost:5173).
+- **API (auth)** (`backend/internal/http/auth_handlers.go`):
+  - Owner response and `ownerToResponse` now include `email_verified` (boolean from `email_verified_at.Valid`).
+  - **Register**: After creating owner and refresh token, creates email verification token (24h expiry), builds link from VERIFICATION_BASE_URL, sends verification email via mailer (best-effort; registration does not fail if send fails).
+  - **VerifyEmail** (GET `/api/auth/verify-email?token=...`): Validates token by hash, sets `email_verified_at`, deletes token; returns 200 with message.
+  - **ResendVerification** (POST `/api/auth/resend-verification`, protected): Deletes existing tokens for owner, creates new token, sends email; returns 202. Returns 400 if already verified.
+- **API (errors)** (`backend/internal/http/errors.go`):
+  - New `ErrorCodeEmailNotVerified` and `EmailNotVerifiedError(c, message)` returning 403 with code `email_not_verified`.
+- **API (verified gate)** (`backend/internal/http/demo.go`, venue/event_list/event handlers):
+  - New `IsEmailVerified(ctx, queries, ownerUUIDStr)` helper (same pattern as IsDemoOwner).
+  - All mutation handlers (venue Create/Update/Delete, event list Create/Update/Delete, event Create/Update/Delete) now check `IsEmailVerified` after demo check; if not verified return `EmailNotVerifiedError`.
+- **Routes** (`backend/internal/http/routes.go`, server.go):
+  - Auth handler now takes `mailer.Sender` (nil allowed for tests). Registered GET `/api/auth/verify-email`, POST `/api/auth/resend-verification` (protected). Server creates ResendSender and passes to RegisterRoutes.
+- **Integration tests** (`backend/internal/http/integration_test.go`):
+  - RegisterRoutes now takes mailer (nil in tests). New helper `setOwnerEmailVerified(t, s, ownerUUIDStr)`; after register in tests that do mutations, call `setOwnerEmailVerified` so create/update/delete succeed.
+- **Unit tests** (`backend/internal/http/auth_handlers_test.go`):
+  - NewAuthHandler call updated to pass nil mailer.
+
+### Summary
+
+- **Resend verification rate limit**: Added 60-second cooldown per owner on `POST /api/auth/resend-verification` to avoid sending a second email immediately after the first (improves deliverability; second email often lands in spam).
+
+### Notes
+
+- **sqlc** (`backend/db/queries/email_verification.sql`):
+  - New `GetLatestVerificationCreatedAtByOwner :one`: returns most recent `created_at` for the owner (used to enforce cooldown before sending resend).
+- **API (errors)** (`backend/internal/http/errors.go`):
+  - New `ErrorCodeTooManyRequests` and `TooManyRequestsError(c, message)` for 429 Too Many Requests.
+- **API (auth)** (`backend/internal/http/auth_handlers.go`):
+  - **ResendVerification**: Before deleting tokens and sending, calls `GetLatestVerificationCreatedAtByOwner`; if a token was created within the last 60 seconds, returns 429 with message "Please wait a minute before requesting another verification email." so users cannot trigger back-to-back resends.

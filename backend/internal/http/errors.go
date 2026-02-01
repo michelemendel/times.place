@@ -19,12 +19,14 @@ type ErrorDetail struct {
 
 // Error codes
 const (
-	ErrorCodeValidation = "validation_error"
-	ErrorCodeUnauthorized = "unauthorized"
-	ErrorCodeForbidden = "forbidden"
-	ErrorCodeNotFound = "not_found"
-	ErrorCodeConflict = "conflict"
-	ErrorCodeInternal = "internal"
+	ErrorCodeValidation       = "validation_error"
+	ErrorCodeUnauthorized     = "unauthorized"
+	ErrorCodeForbidden        = "forbidden"
+	ErrorCodeEmailNotVerified = "email_not_verified"
+	ErrorCodeTooManyRequests  = "too_many_requests"
+	ErrorCodeNotFound         = "not_found"
+	ErrorCodeConflict         = "conflict"
+	ErrorCodeInternal         = "internal"
 )
 
 // ErrorResponseHelper creates an error response
@@ -56,6 +58,22 @@ func ForbiddenError(c echo.Context, message string) error {
 		message = "Forbidden"
 	}
 	return ErrorResponseHelper(c, http.StatusForbidden, ErrorCodeForbidden, message)
+}
+
+// EmailNotVerifiedError returns a 403 with code email_not_verified (so frontend can show verify-email UI).
+func EmailNotVerifiedError(c echo.Context, message string) error {
+	if message == "" {
+		message = "Please verify your email address to make changes."
+	}
+	return ErrorResponseHelper(c, http.StatusForbidden, ErrorCodeEmailNotVerified, message)
+}
+
+// TooManyRequestsError returns a 429 too many requests error (e.g. resend cooldown).
+func TooManyRequestsError(c echo.Context, message string) error {
+	if message == "" {
+		message = "Too many requests"
+	}
+	return ErrorResponseHelper(c, http.StatusTooManyRequests, ErrorCodeTooManyRequests, message)
 }
 
 // NotFoundError returns a 404 not found error

@@ -1,30 +1,37 @@
 package http
 
 import (
+	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 	sqlc "github.com/michelemendel/times.place/db/sqlc"
+	"github.com/michelemendel/times.place/internal/mailer"
 	"github.com/michelemendel/times.place/internal/service"
 	"github.com/michelemendel/times.place/internal/store"
+	"github.com/michelemendel/times.place/utils"
 )
 
 // AuthHandler handles authentication endpoints
 type AuthHandler struct {
-	store      *store.Store
+	store       *store.Store
 	authService *service.AuthService
+	mailer      mailer.Sender
 }
 
-// NewAuthHandler creates a new auth handler
-func NewAuthHandler(store *store.Store, authService *service.AuthService) *AuthHandler {
+// NewAuthHandler creates a new auth handler. mailer may be nil (verification emails will be skipped).
+func NewAuthHandler(store *store.Store, authService *service.AuthService, m mailer.Sender) *AuthHandler {
 	return &AuthHandler{
 		store:       store,
 		authService: authService,
+		mailer:      m,
 	}
 }
 
@@ -56,12 +63,13 @@ type RefreshResponse struct {
 }
 
 type OwnerResponse struct {
-	OwnerUUID  string `json:"owner_uuid"`
-	Name       string `json:"name"`
-	Email      string `json:"email"`
-	Mobile     string `json:"mobile"`
-	CreatedAt  string `json:"created_at"`
-	ModifiedAt string `json:"modified_at"`
+	OwnerUUID     string `json:"owner_uuid"`
+	Name          string `json:"name"`
+	Email         string `json:"email"`
+	Mobile        string `json:"mobile"`
+	EmailVerified bool   `json:"email_verified"`
+	CreatedAt     string `json:"created_at"`
+	ModifiedAt    string `json:"modified_at"`
 }
 
 // Helper functions
@@ -105,12 +113,13 @@ func timestamptzToString(t pgtype.Timestamptz) string {
 // ownerToResponse converts sqlc VenueOwner to OwnerResponse
 func ownerToResponse(owner sqlc.VenueOwner) OwnerResponse {
 	return OwnerResponse{
-		OwnerUUID:  uuidToString(owner.OwnerUuid),
-		Name:       owner.Name,
-		Email:      owner.Email,
-		Mobile:     owner.Mobile,
-		CreatedAt:  timestamptzToString(owner.CreatedAt),
-		ModifiedAt: timestamptzToString(owner.ModifiedAt),
+		OwnerUUID:     uuidToString(owner.OwnerUuid),
+		Name:          owner.Name,
+		Email:         owner.Email,
+		Mobile:        owner.Mobile,
+		EmailVerified: owner.EmailVerifiedAt.Valid,
+		CreatedAt:     timestamptzToString(owner.CreatedAt),
+		ModifiedAt:    timestamptzToString(owner.ModifiedAt),
 	}
 }
 
@@ -254,6 +263,28 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	// Set refresh token cookie
 	h.setRefreshTokenCookie(c, refreshToken)
+
+	// Create email verification token and send email (best-effort; do not fail registration)
+	rawToken, err := utils.GenerateToken()
+	if err == nil {
+		tokenHash := h.authService.HashRefreshToken(rawToken)
+		expiresAt := time.Now().Add(24 * time.Hour)
+		_, err = h.store.Queries.CreateEmailVerificationToken(ctx, sqlc.CreateEmailVerificationTokenParams{
+			OwnerUuid: ownerUUID,
+			TokenHash: tokenHash,
+			ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+		})
+		if err == nil && h.mailer != nil {
+			baseURL := os.Getenv("VERIFICATION_BASE_URL")
+			if baseURL == "" {
+				baseURL = "http://localhost:5173"
+			}
+			link := baseURL + "/verify-email?token=" + url.QueryEscape(rawToken)
+			if sendErr := h.mailer.SendVerificationEmail(owner.Email, link); sendErr != nil {
+				log.Printf("failed to send verification email: %v", sendErr)
+			}
+		}
+	}
 
 	// Return response
 	return c.JSON(http.StatusCreated, AuthResponse{
@@ -498,4 +529,94 @@ func (h *AuthHandler) DeleteMe(c echo.Context) error {
 	h.clearRefreshTokenCookie(c)
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+// VerifyEmail handles GET /api/auth/verify-email?token=...
+// Public endpoint: validates token, sets email_verified_at, deletes token.
+func (h *AuthHandler) VerifyEmail(c echo.Context) error {
+	token := c.QueryParam("token")
+	if token == "" {
+		return ValidationError(c, "token is required")
+	}
+
+	ctx := c.Request().Context()
+	tokenHash := h.authService.HashRefreshToken(token)
+
+	row, err := h.store.Queries.GetEmailVerificationTokenByHash(ctx, tokenHash)
+	if err != nil {
+		return ValidationError(c, "Invalid or expired verification link")
+	}
+
+	ownerUUID := row.OwnerUuid
+	if err := h.store.Queries.SetOwnerEmailVerified(ctx, ownerUUID); err != nil {
+		return InternalError(c, "Failed to verify email")
+	}
+	_ = h.store.Queries.DeleteEmailVerificationTokenByHash(ctx, tokenHash)
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Email verified"})
+}
+
+// ResendVerification handles POST /api/auth/resend-verification (protected).
+// Deletes existing tokens for owner, creates new token, sends email. Rate-limited by caller or middleware if needed.
+func (h *AuthHandler) ResendVerification(c echo.Context) error {
+	ownerUUIDStr, err := GetOwnerUUIDFromContext(c)
+	if err != nil {
+		return UnauthorizedError(c, "Unauthorized")
+	}
+
+	ctx := c.Request().Context()
+
+	ownerUUID, err := stringToUUID(ownerUUIDStr)
+	if err != nil {
+		return ValidationError(c, "Invalid owner UUID")
+	}
+
+	owner, err := h.store.Queries.GetOwnerByID(ctx, ownerUUID)
+	if err != nil {
+		return NotFoundError(c, "Owner not found")
+	}
+	if owner.EmailVerifiedAt.Valid {
+		return ValidationError(c, "Email is already verified")
+	}
+
+	// Rate limit: don't send another verification email within 60 seconds (improves deliverability)
+	latest, err := h.store.Queries.GetLatestVerificationCreatedAtByOwner(ctx, ownerUUID)
+	if err != nil && err != pgx.ErrNoRows {
+		return InternalError(c, "Failed to check resend limit")
+	}
+	if err == nil && latest.Valid && time.Since(latest.Time) < 60*time.Second {
+		return TooManyRequestsError(c, "Please wait a minute before requesting another verification email.")
+	}
+
+	// Delete any existing verification tokens for this owner
+	_ = h.store.Queries.DeleteEmailVerificationTokensByOwner(ctx, ownerUUID)
+
+	rawToken, err := utils.GenerateToken()
+	if err != nil {
+		return InternalError(c, "Failed to create verification token")
+	}
+	tokenHash := h.authService.HashRefreshToken(rawToken)
+	expiresAt := time.Now().Add(24 * time.Hour)
+	_, err = h.store.Queries.CreateEmailVerificationToken(ctx, sqlc.CreateEmailVerificationTokenParams{
+		OwnerUuid: ownerUUID,
+		TokenHash: tokenHash,
+		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+	})
+	if err != nil {
+		return InternalError(c, "Failed to create verification token")
+	}
+
+	if h.mailer != nil {
+		baseURL := os.Getenv("VERIFICATION_BASE_URL")
+		if baseURL == "" {
+			baseURL = "http://localhost:5173"
+		}
+		link := baseURL + "/verify-email?token=" + url.QueryEscape(rawToken)
+		if sendErr := h.mailer.SendVerificationEmail(owner.Email, link); sendErr != nil {
+			log.Printf("resend verification email failed: %v", sendErr)
+			return InternalError(c, "Failed to send verification email")
+		}
+	}
+
+	return c.JSON(http.StatusAccepted, map[string]string{"message": "Verification email sent"})
 }

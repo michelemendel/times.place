@@ -171,6 +171,14 @@ func (h *VenueHandler) Create(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
+	verified, err := IsEmailVerified(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if !verified {
+		return EmailNotVerifiedError(c, "Please verify your email address to make changes.")
+	}
+
 	// Convert owner UUID
 	ownerUUID, err := stringToUUID(ownerUUIDStr)
 	if err != nil {
@@ -293,6 +301,13 @@ func (h *VenueHandler) Update(c echo.Context) error {
 	if demo {
 		return ForbiddenError(c, "Demo data cannot be modified")
 	}
+	verified, err := IsEmailVerified(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if !verified {
+		return EmailNotVerifiedError(c, "Please verify your email address to make changes.")
+	}
 
 	// Convert UUIDs
 	venueUUID, err := stringToUUID(venueUUIDStr)
@@ -411,6 +426,13 @@ func (h *VenueHandler) Delete(c echo.Context) error {
 	}
 	if demo {
 		return ForbiddenError(c, "Demo data cannot be modified")
+	}
+	verified, err := IsEmailVerified(ctx, h.store.Queries, ownerUUIDStr)
+	if err != nil {
+		return InternalError(c, "Failed to check owner")
+	}
+	if !verified {
+		return EmailNotVerifiedError(c, "Please verify your email address to make changes.")
 	}
 
 	// Convert UUIDs

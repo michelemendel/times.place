@@ -120,3 +120,12 @@ export async function deleteAccount() {
   clearAccessToken();
   currentOwnerStore.set(null);
 }
+
+/**
+ * Request a new verification email. Requires authenticated user.
+ * @returns {Promise<{message: string}>}
+ */
+export async function resendVerificationEmail() {
+  const response = await api.postJSON('/api/auth/resend-verification', {});
+  return response;
+}

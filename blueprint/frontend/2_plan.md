@@ -229,6 +229,8 @@ We will **remove all localStorage-based data storage code** and switch to API-on
 
 ### Email verification
 
+Owners must verify their email before editing. The backend returns `email_verified` on the owner object from `GET /api/auth/me`; when false, the UI shows a persistent banner and blocks write actions (or shows a clear message on 403 `email_not_verified`). A dedicated `/verify-email?token=...` page calls the verify endpoint and redirects on success; a "Resend verification email" action calls the resend endpoint (rate-limited).
+
 ## Instrumentation
 
 ### Basic statistics (to save database cost)

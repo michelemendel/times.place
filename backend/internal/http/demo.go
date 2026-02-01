@@ -24,3 +24,20 @@ func IsDemoOwner(ctx context.Context, queries *sqlc.Queries, ownerUUIDStr string
 	}
 	return owner.IsDemo, nil
 }
+
+// IsEmailVerified returns true if the owner has a non-null email_verified_at.
+// Used to gate mutations until the user has verified their email.
+func IsEmailVerified(ctx context.Context, queries *sqlc.Queries, ownerUUIDStr string) (bool, error) {
+	ownerUUID, err := stringToUUID(ownerUUIDStr)
+	if err != nil {
+		return false, err
+	}
+	owner, err := queries.GetOwnerByID(ctx, ownerUUID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return owner.EmailVerifiedAt.Valid, nil
+}

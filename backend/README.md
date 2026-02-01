@@ -31,6 +31,7 @@ Edit `backend/.env` and set your values:
 - **DATABASE_URL**: PostgreSQL connection string
 - **JWT_SECRET**: Strong random secret for JWT signing (generate with `openssl rand -base64 32`)
 - **REFRESH_TOKEN_SECRET**: Strong random secret for refresh tokens (generate with `openssl rand -base64 32`)
+- **RESEND_API_KEY**: API key from [Resend](https://resend.com) for sending verification emails (required for email verification; leave empty to skip sending)
 - **PORT**: Backend API port (default: `8080`)
 - **LOG_LEVEL**: Logging verbosity (`debug`, `info`, `warn`, `error`)
 

@@ -31,8 +31,8 @@ func createTestAuthHandler(t *testing.T) *AuthHandler {
 		t.Fatalf("Failed to create AuthService: %v", err)
 	}
 	
-	// Create handler with nil store (not used in helper tests)
-	return NewAuthHandler(nil, authService)
+	// Create handler with nil store and nil mailer (not used in helper tests)
+	return NewAuthHandler(nil, authService, nil)
 }
 
 // Helper to restore environment variables after test

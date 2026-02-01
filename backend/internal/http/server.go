@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/michelemendel/times.place/internal/mailer"
 	"github.com/michelemendel/times.place/internal/service"
 	"github.com/michelemendel/times.place/internal/store"
 )
@@ -73,8 +74,11 @@ func NewServer() (*Server, error) {
 		return nil, fmt.Errorf("failed to initialize auth service: %w", err)
 	}
 
+	// Mailer for verification emails (nil if RESEND_API_KEY not set)
+	var mailerSender mailer.Sender = mailer.NewResendSender()
+
 	// Register routes
-	RegisterRoutes(e, store, authService)
+	RegisterRoutes(e, store, authService, mailerSender)
 
 	return &Server{
 		echo:        e,

@@ -114,7 +114,7 @@
 ## Security
 
 - [x] Make owner be able to delete his account
-- [ ] Email verification
+- [x] Email verification
 
 ## Instrumentation
 

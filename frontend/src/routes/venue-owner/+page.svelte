@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { getAuthMe } from '$lib/api/auth.js';
+  import { getAuthMe, resendVerificationEmail } from '$lib/api/auth.js';
   import { listVenues, deleteVenue } from '$lib/api/venues.js';
   import BannerImage from '$lib/BannerImage.svelte';
 
@@ -20,9 +20,12 @@
   /** Max venues allowed (from API). Default 2. */
   let venueLimit = 2;
   let showLimitPopup = false;
+  let resendVerificationLoading = false;
+  let resendVerificationMessage = '';
 
   $: venueCount = ownerVenues.length;
   $: atVenueLimit = venueCount >= venueLimit;
+  $: addVenueDisabled = atVenueLimit || owner?.email_verified === false;
 
   async function loadVenuesAndLists() {
     isLoading = true;
@@ -198,6 +201,22 @@
   function viewPrintEventList(venueUuid, eventListUuid) {
     goto(`/venue-owner/${venueUuid}/event-lists/${eventListUuid}`);
   }
+
+  async function handleResendVerification() {
+    if (resendVerificationLoading) return;
+    resendVerificationLoading = true;
+    resendVerificationMessage = '';
+    try {
+      await resendVerificationEmail();
+      resendVerificationMessage = 'Verification email sent. Check your inbox.';
+      const me = await getAuthMe();
+      owner = me.owner;
+    } catch (err) {
+      resendVerificationMessage = err instanceof Error ? err.message : 'Failed to send. Try again later.';
+    } finally {
+      resendVerificationLoading = false;
+    }
+  }
 </script>
 
 <svelte:head>
@@ -218,10 +237,31 @@
       </div>
     </div>
 
+    {#if owner.email_verified === false}
+      <div class="mb-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-900">
+        <p class="font-medium">Verify your email to add or edit venues and events.</p>
+        <p class="text-sm mt-1">Check your inbox for a verification link, or request a new one. If you don't see it, check your spam or junk folder.</p>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            on:click={handleResendVerification}
+            disabled={resendVerificationLoading}
+            class="text-sm font-medium py-1.5 px-3 rounded-md bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50"
+          >
+            {resendVerificationLoading ? 'Sending…' : 'Resend verification email'}
+          </button>
+          {#if resendVerificationMessage}
+            <span class="text-sm {resendVerificationMessage.startsWith('Verification') ? 'text-green-700' : 'text-red-600'}">{resendVerificationMessage}</span>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
     <div class="mb-6 flex justify-center md:justify-end">
       <button
         on:click={handleAddVenue}
-        class="font-semibold py-1.5 px-3 text-sm rounded-lg shadow-md transition-colors duration-200 flex items-center gap-1.5 md:py-3 md:px-6 md:text-base md:gap-2 {atVenueLimit
+        disabled={addVenueDisabled}
+        class="font-semibold py-1.5 px-3 text-sm rounded-lg shadow-md transition-colors duration-200 flex items-center gap-1.5 md:py-3 md:px-6 md:text-base md:gap-2 {addVenueDisabled
           ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
           : 'bg-blue-600 hover:bg-blue-700 text-white'}"
       >
@@ -277,7 +317,10 @@
         <p class="text-gray-600 mb-6">Get started by adding your first venue.</p>
         <button
           on:click={handleAddVenue}
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors duration-200"
+          disabled={owner.email_verified === false}
+          class="font-semibold py-2 px-6 rounded-lg shadow-md transition-colors duration-200 {owner.email_verified === false
+            ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            : 'bg-blue-600 hover:bg-blue-700 text-white'}"
         >
           Add Your First Venue
         </button>

@@ -325,6 +325,7 @@ See 3_tasks.md under backend
 ## Security
 
 - [x] Delete account button in account page
+- [x] Email verification GUI
 
 ## Instrumentation
 

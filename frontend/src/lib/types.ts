@@ -3,6 +3,8 @@ export interface VenueOwner {
   name: string;
   mobile: string;
   email: string;
+  /** Whether the owner has verified their email; required for creating/editing venues and events. */
+  email_verified?: boolean;
   /**
    * Password field (optional, used during registration/login).
    * Passwords are handled by the backend and never stored client-side.

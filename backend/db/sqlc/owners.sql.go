@@ -14,7 +14,7 @@ import (
 const createOwner = `-- name: CreateOwner :one
 INSERT INTO venue_owners (name, email, mobile, password_hash)
 VALUES ($1, $2, $3, $4)
-RETURNING owner_uuid, name, mobile, email, password_hash, is_demo, created_at, modified_at
+RETURNING owner_uuid, name, mobile, email, password_hash, is_demo, email_verified_at, created_at, modified_at
 `
 
 type CreateOwnerParams struct {
@@ -39,6 +39,7 @@ func (q *Queries) CreateOwner(ctx context.Context, arg CreateOwnerParams) (Venue
 		&i.Email,
 		&i.PasswordHash,
 		&i.IsDemo,
+		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.ModifiedAt,
 	)
@@ -56,7 +57,7 @@ func (q *Queries) DeleteOwner(ctx context.Context, ownerUuid pgtype.UUID) error 
 }
 
 const getOwnerByEmail = `-- name: GetOwnerByEmail :one
-SELECT owner_uuid, name, mobile, email, password_hash, is_demo, created_at, modified_at FROM venue_owners
+SELECT owner_uuid, name, mobile, email, password_hash, is_demo, email_verified_at, created_at, modified_at FROM venue_owners
 WHERE LOWER(email) = LOWER($1)
 `
 
@@ -70,6 +71,7 @@ func (q *Queries) GetOwnerByEmail(ctx context.Context, lower string) (VenueOwner
 		&i.Email,
 		&i.PasswordHash,
 		&i.IsDemo,
+		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.ModifiedAt,
 	)
@@ -77,7 +79,7 @@ func (q *Queries) GetOwnerByEmail(ctx context.Context, lower string) (VenueOwner
 }
 
 const getOwnerByID = `-- name: GetOwnerByID :one
-SELECT owner_uuid, name, mobile, email, password_hash, is_demo, created_at, modified_at FROM venue_owners
+SELECT owner_uuid, name, mobile, email, password_hash, is_demo, email_verified_at, created_at, modified_at FROM venue_owners
 WHERE owner_uuid = $1
 `
 
@@ -91,8 +93,20 @@ func (q *Queries) GetOwnerByID(ctx context.Context, ownerUuid pgtype.UUID) (Venu
 		&i.Email,
 		&i.PasswordHash,
 		&i.IsDemo,
+		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.ModifiedAt,
 	)
 	return i, err
+}
+
+const setOwnerEmailVerified = `-- name: SetOwnerEmailVerified :exec
+UPDATE venue_owners
+SET email_verified_at = now(), modified_at = now()
+WHERE owner_uuid = $1
+`
+
+func (q *Queries) SetOwnerEmailVerified(ctx context.Context, ownerUuid pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, setOwnerEmailVerified, ownerUuid)
+	return err
 }

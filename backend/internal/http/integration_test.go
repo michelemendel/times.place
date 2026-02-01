@@ -60,7 +60,7 @@ func setupIntegrationServer(t *testing.T) *testServer {
 	e := echo.New()
 	e.HideBanner = true
 	e.Validator = NewCustomValidator()
-	RegisterRoutes(e, st, auth)
+	RegisterRoutes(e, st, auth, nil)
 
 	cleanup := func() {
 		_ = tx.Rollback(t.Context())
@@ -107,6 +107,18 @@ type authResp struct {
 	AccessToken string `json:"access_token"`
 }
 
+// setOwnerEmailVerified marks the owner as verified so mutation tests can create/update/delete (email verification is gated in handlers).
+func setOwnerEmailVerified(t *testing.T, s *testServer, ownerUUIDStr string) {
+	t.Helper()
+	ownerUUID, err := stringToUUID(ownerUUIDStr)
+	if err != nil {
+		t.Fatalf("invalid owner_uuid: %v", err)
+	}
+	if err := s.Store.Queries.SetOwnerEmailVerified(t.Context(), ownerUUID); err != nil {
+		t.Fatalf("set owner email verified: %v", err)
+	}
+}
+
 type venueResp struct {
 	VenueUUID string `json:"venue_uuid"`
 	Name      string `json:"name"`
@@ -134,6 +146,7 @@ func TestIntegration_AuthAndVenueCRUD_MinimalFlow(t *testing.T) {
 	if ar.AccessToken == "" {
 		t.Fatalf("expected non-empty access token")
 	}
+	setOwnerEmailVerified(t, s, ar.Owner.OwnerUUID)
 
 	authz := map[string]string{"Authorization": "Bearer " + ar.AccessToken}
 
@@ -214,6 +227,7 @@ func TestIntegration_TokenBasedAccessControl(t *testing.T) {
 		if ar.AccessToken == "" {
 			t.Fatalf("expected access token for %s", email)
 		}
+		setOwnerEmailVerified(t, s, ar.Owner.OwnerUUID)
 		return ar.AccessToken
 	}
 
@@ -280,6 +294,7 @@ func TestIntegration_FreeTierVenueLimit(t *testing.T) {
 	if err := json.Unmarshal(reg.Body.Bytes(), &ar); err != nil {
 		t.Fatalf("failed to unmarshal register response: %v", err)
 	}
+	setOwnerEmailVerified(t, s, ar.Owner.OwnerUUID)
 	authz := map[string]string{"Authorization": "Bearer " + ar.AccessToken}
 
 	// Create 2 venues (allowed)

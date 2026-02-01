@@ -1078,3 +1078,19 @@
   - New `deleteAccount()`: sends `DELETE /api/auth/me`, then clears access token and `currentOwnerStore` so the user is logged out after deletion.
 - **Routes/Pages** (`frontend/src/routes/my/+page.svelte`):
   - New "Delete account" section: warning copy ("Permanently delete your account and all your venues. This cannot be undone."), inline error display (`deleteError`), confirm dialog ("Permanently delete your account and all your venues? This cannot be undone."), loading state (`deleting`), calls `deleteAccount()` then redirects (e.g. home); surfaces API errors for failed deletion.
+
+### Summary (email verification UI)
+
+- **Email verification**: Added owner type field `email_verified`, verify-email page, verification banner and resend on My Venues, and disabled Add Venue buttons when email is not verified so users do not enter data that would be lost on 403.
+
+### Notes (email verification UI)
+
+- **Types** (`frontend/src/lib/types.ts`):
+  - Added optional `email_verified?: boolean` to `VenueOwner` (returned by `GET /api/auth/me`).
+- **API Client** (`frontend/src/lib/api/auth.js`):
+  - New `resendVerificationEmail()`: POST `/api/auth/resend-verification` (protected); used by the verification banner.
+- **Routes/Pages** (`frontend/src/routes/verify-email/+page.svelte`):
+  - New route `/verify-email?token=...`: reads token from query, calls GET `/api/auth/verify-email?token=...`, shows success or error; on success redirects to `/venue-owner` after 2 seconds.
+- **Routes/Pages** (`frontend/src/routes/venue-owner/+page.svelte`):
+  - When `owner.email_verified === false`: amber verification banner with "Verify your email to add or edit venues and events.", "Check your inbox … If you don't see it, check your spam or junk folder.", and "Resend verification email" button that calls `resendVerificationEmail()` and refreshes owner via `getAuthMe()`; success/error message shown inline.
+  - Add Venue disabled when unverified: reactive `addVenueDisabled = atVenueLimit || owner?.email_verified === false`; "Add Venue" and "Add Your First Venue" buttons are disabled and greyed out (`bg-gray-400 text-gray-200 cursor-not-allowed`) when `email_verified === false` so users do not fill the form only to get 403 on submit.

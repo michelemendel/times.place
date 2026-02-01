@@ -8,6 +8,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type EmailVerificationToken struct {
+	TokenUuid pgtype.UUID        `json:"token_uuid"`
+	OwnerUuid pgtype.UUID        `json:"owner_uuid"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Event struct {
 	EventUuid       pgtype.UUID        `json:"event_uuid"`
 	EventListUuid   pgtype.UUID        `json:"event_list_uuid"`
@@ -60,12 +68,13 @@ type Venue struct {
 }
 
 type VenueOwner struct {
-	OwnerUuid    pgtype.UUID        `json:"owner_uuid"`
-	Name         string             `json:"name"`
-	Mobile       string             `json:"mobile"`
-	Email        string             `json:"email"`
-	PasswordHash string             `json:"password_hash"`
-	IsDemo       bool               `json:"is_demo"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	ModifiedAt   pgtype.Timestamptz `json:"modified_at"`
+	OwnerUuid       pgtype.UUID        `json:"owner_uuid"`
+	Name            string             `json:"name"`
+	Mobile          string             `json:"mobile"`
+	Email           string             `json:"email"`
+	PasswordHash    string             `json:"password_hash"`
+	IsDemo          bool               `json:"is_demo"`
+	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	ModifiedAt      pgtype.Timestamptz `json:"modified_at"`
 }

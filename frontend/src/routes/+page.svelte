@@ -646,7 +646,7 @@
       {/if}
 
       <!-- Venue Name -->
-      <h2 class="text-3xl font-bold mb-3 text-gray-900">{selectedVenue.name}</h2>
+      <h2 class="text-[24px] md:text-3xl font-bold mb-3 text-gray-900">{selectedVenue.name}</h2>
 
       <!-- Address, Comment, and Map -->
       {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment}
@@ -717,7 +717,7 @@
         <!-- Single event list - no selector needed -->
         {#if selectedEventList}
           <div class="mt-6">
-            <h3 class="text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
+            <h3 class="text-[20px] md:text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
             {#if selectedEventList.comment}
               <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">{selectedEventList.comment}</p>
             {/if}
@@ -767,7 +767,7 @@
 
           {#if selectedEventList}
             <div>
-              <h3 class="text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
+              <h3 class="text-[20px] md:text-2xl font-semibold mb-1 text-gray-900">{selectedEventList.name}</h3>
               {#if selectedEventList.comment}
                 <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">{selectedEventList.comment}</p>
               {/if}

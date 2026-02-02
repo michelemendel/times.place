@@ -2,16 +2,19 @@
   import { onMount } from 'svelte';
   import { listVenues } from '$lib/api/admin';
 
+  /** @type {import('$lib/types').Venue[]} */
   let venues = [];
   let loading = true;
+  /** @type {string | null} */
   let error = null;
   let searchQuery = '';
 
   onMount(async () => {
     try {
+      // @ts-ignore - listVenues in admin might not return exactly Venue[] or is missing typedef
       venues = await listVenues();
     } catch (err) {
-      error = err.message;
+      error = err instanceof Error ? err.message : 'An error occurred';
     } finally {
       loading = false;
     }
@@ -20,8 +23,10 @@
   $: filteredVenues = venues.filter(
     (v) =>
       v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.owner_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      v.owner_email.toLowerCase().includes(searchQuery.toLowerCase()),
+      (v.owner_name &&
+        v.owner_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (v.owner_email &&
+        v.owner_email.toLowerCase().includes(searchQuery.toLowerCase())),
   );
 </script>
 
@@ -82,10 +87,6 @@
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >Address</th
             >
-            <th
-              class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >Actions</th
-            >
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
@@ -96,7 +97,7 @@
                 title={venue.name}
               >
                 <a
-                  href="/public/venues/{venue.venue_uuid}/event-lists"
+                  href="/?venue={venue.venue_uuid}"
                   target="_blank"
                   class="hover:underline text-blue-600"
                 >
@@ -104,30 +105,23 @@
                 </a>
               </td>
               <td class="px-6 py-4 text-sm text-gray-500 max-w-[200px]">
-                <div class="text-gray-900 truncate" title={venue.owner_name}>
-                  {venue.owner_name}
+                <div
+                  class="text-gray-900 truncate"
+                  title={venue.owner_name || ''}
+                >
+                  {venue.owner_name || 'Unknown'}
                 </div>
                 <div
                   class="text-xs text-gray-400 truncate"
-                  title={venue.owner_email}
+                  title={venue.owner_email || ''}
                 >
-                  {venue.owner_email}
+                  {venue.owner_email || ''}
                 </div>
               </td>
               <td
                 class="px-6 py-4 text-sm text-gray-500 max-w-[250px] truncate"
                 title={venue.address}>{venue.address}</td
               >
-              <td
-                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
-              >
-                <!-- Actions here if needed, e.g. View -->
-                <a
-                  href="/public/venues/{venue.venue_uuid}/event-lists"
-                  target="_blank"
-                  class="text-blue-600 hover:text-blue-900">View Public</a
-                >
-              </td>
             </tr>
           {/each}
         </tbody>

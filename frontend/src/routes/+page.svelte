@@ -66,7 +66,9 @@
    * @returns {string}
    */
   function getEventListTimestamp(el) {
-    return el?.modified_at ?? el?.modifiedAt ?? el?.created_at ?? el?.createdAt ?? '';
+    return (
+      el?.modified_at ?? el?.modifiedAt ?? el?.created_at ?? el?.createdAt ?? ''
+    );
   }
 
   // Private token from URL (only in browser to avoid prerender issues)
@@ -74,6 +76,42 @@
     browser && $page.url.searchParams
       ? $page.url.searchParams.get('token') || null
       : null;
+
+  /**
+   * Public venue/list params from URL
+   */
+  $: publicVenueUuid =
+    browser && $page.url.searchParams
+      ? $page.url.searchParams.get('venue') || null
+      : null;
+  $: publicListUuid =
+    browser && $page.url.searchParams
+      ? $page.url.searchParams.get('list') || null
+      : null;
+
+  /**
+   * Update browser URL with current selection
+   * @param {string | null} venueId
+   * @param {string | null} listId
+   */
+  function updateUrl(venueId, listId) {
+    if (!browser) return;
+    const url = new URL(window.location.href);
+    if (venueId) {
+      url.searchParams.set('venue', venueId);
+    } else {
+      url.searchParams.delete('venue');
+    }
+
+    if (listId) {
+      url.searchParams.set('list', listId);
+    } else {
+      url.searchParams.delete('list');
+    }
+
+    // Use pushState to update URL without reloading
+    window.history.pushState({}, '', url);
+  }
 
   /**
    * Load public venues list (optionally with search query).
@@ -232,6 +270,17 @@
     // If a token is present, resolve it and update selection.
     if (privateLinkToken) {
       await resolveTokenIfPresent();
+    } else if (publicVenueUuid) {
+      // If no token but public venue query param, select it
+      // Ensure venue is loaded if not already (might need search if pagination existed, but currently listPublicVenues returns all or filtered)
+      // Since we called loadVenues() above, we check if it's there.
+      // If it's not there (unlikely unless queried), we might need to fetch specific venue, but public API is list-based.
+      // Assuming listPublicVenues returns it.
+      await selectVenue(publicVenueUuid, false); // false = don't update URL since it's already there
+
+      if (publicListUuid) {
+        selectedEventListId = publicListUuid;
+      }
     }
 
     // Refetch venues when user returns to this tab so new venues show in dropdown
@@ -365,6 +414,13 @@
         (el) => el.event_list_uuid === selectedEventListId,
       ) || null
     : null;
+
+  // Update URL when event list changes (reactive)
+  $: {
+    if (selectedVenueId && !privateLinkToken) {
+      updateUrl(selectedVenueId, selectedEventListId);
+    }
+  }
 
   // Events for selected list
   /** @type {import('$lib/types').Event[]} */
@@ -510,10 +566,11 @@
 
   /**
    * @param {string | null} venueId
+   * @param {boolean} [shouldUpdateUrl=true]
    */
-  async function selectVenue(venueId) {
+  async function selectVenue(venueId, shouldUpdateUrl = true) {
     selectedVenueId = venueId || null;
-    selectedEventListId = null;
+    selectedEventListId = null; // Reset event list on venue change
     const venue = venueId ? venues.find((v) => v.venue_uuid === venueId) : null;
     venueSearchQuery = venue ? venue.name : '';
     showVenueDropdown = false;
@@ -521,6 +578,10 @@
 
     if (selectedVenueId) {
       await ensureEventListsForVenue(selectedVenueId);
+    }
+
+    if (shouldUpdateUrl && !privateLinkToken) {
+      updateUrl(selectedVenueId, null);
     }
   }
 
@@ -537,6 +598,7 @@
       selectedVenueId = null;
       selectedEventListId = null;
       await loadVenues();
+      updateUrl(null, null);
     } else {
       await loadVenues(newValue);
     }
@@ -609,6 +671,7 @@
     selectedEventListId = null;
     showVenueDropdown = false;
     await loadVenues();
+    updateUrl(null, null);
   }
 
   /**
@@ -644,6 +707,7 @@
   function handleEventListChange(event) {
     const target = /** @type {HTMLSelectElement} */ (event.target);
     selectedEventListId = target.value || null;
+    // URL update is handled by the reactive statement
   }
 </script>
 
@@ -867,7 +931,9 @@
               </h3>
               {#if getEventListTimestamp(selectedEventList)}
                 <p class="text-xs text-gray-600 mb-1 md:mb-2">
-                  Modified: {formatModifiedAt(getEventListTimestamp(selectedEventList))}
+                  Modified: {formatModifiedAt(
+                    getEventListTimestamp(selectedEventList),
+                  )}
                 </p>
               {/if}
               {#if selectedEventList.comment}
@@ -923,7 +989,9 @@
           {/if}
         {:else}
           <!-- Multiple event lists - show selector (same as venue-form preview) -->
-          <div class="mt-3 md:mt-6 min-w-0 max-w-full overflow-hidden px-2 md:px-3">
+          <div
+            class="mt-3 md:mt-6 min-w-0 max-w-full overflow-hidden px-2 md:px-3"
+          >
             <div class="no-print-event-list-selector">
               <label
                 for="event-list-select"
@@ -955,7 +1023,9 @@
                 </h3>
                 {#if getEventListTimestamp(selectedEventList)}
                   <p class="text-xs text-gray-600 mb-1 md:mb-2">
-                    Modified: {formatModifiedAt(getEventListTimestamp(selectedEventList))}
+                    Modified: {formatModifiedAt(
+                      getEventListTimestamp(selectedEventList),
+                    )}
                   </p>
                 {/if}
                 {#if selectedEventList.comment}

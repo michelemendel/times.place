@@ -142,6 +142,9 @@
   /** @type {HTMLInputElement | null} */
   let venueBannerInputEl = null;
 
+  /** Selected banner file name for display (empty when none or when banner came from server). */
+  let venueBannerFileName = '';
+
   // Event lists state (array of event list objects being edited)
   /** @type {any[]} */
   let eventListsData = [];
@@ -357,6 +360,7 @@
     venueGeolocation = venue.geolocation || '';
     venueComment = venue.comment || '';
     venueBannerImage = venue.banner_image || '';
+    venueBannerFileName = '';
     venueTimezone =
       venue.timezone !== undefined && venue.timezone !== null
         ? venue.timezone
@@ -837,10 +841,13 @@
     if (!file) return;
 
     if (file.size > BANNER_MAX_BYTES) {
-      alert(`Image must be under ${BANNER_MAX_MB} MB. Please choose a smaller image or remove the banner.`);
+      alert(
+        `Image must be under ${BANNER_MAX_MB} MB. Please choose a smaller image or remove the banner.`,
+      );
       return;
     }
 
+    venueBannerFileName = file.name;
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result;
@@ -856,6 +863,7 @@
    */
   function removeBannerImage() {
     venueBannerImage = '';
+    venueBannerFileName = '';
     if (venueBannerInputEl) {
       venueBannerInputEl.value = '';
     }
@@ -1576,7 +1584,7 @@
 
   {#if loadError}
     <div
-      class="mb-2 md:mb-4 rounded-md border border-red-200 bg-red-50 px-2 md:px-4 py-2 md:py-3 text-[10px] md:text-sm text-red-800"
+      class="mb-2 md:mb-4 rounded-md border border-red-200 bg-red-50 px-2 md:px-4 py-2 md:py-3 text-[10px] md:text-[14px] text-red-800"
     >
       {loadError}
     </div>
@@ -1584,14 +1592,18 @@
 
   {#if saveError}
     <div
-      class="mb-2 md:mb-4 rounded-md border border-red-200 bg-red-50 px-2 md:px-4 py-2 md:py-3 text-[10px] md:text-sm text-red-800"
+      class="mb-2 md:mb-4 rounded-md border border-red-200 bg-red-50 px-2 md:px-4 py-2 md:py-3 text-[10px] md:text-[14px] text-red-800"
     >
       {saveError}
     </div>
   {/if}
 
   {#if isLoading}
-    <div class="mb-2 md:mb-4 text-center text-[10px] md:text-base text-gray-600">Loading venue data...</div>
+    <div
+      class="mb-2 md:mb-4 text-center text-[10px] md:text-[14px] text-gray-600"
+    >
+      Loading venue data...
+    </div>
   {:else if dataLoaded}
     <div
       class="grid grid-cols-1 lg:grid-cols-2 gap-2 md:gap-6 w-full overflow-x-hidden max-w-full lg:h-[calc(100vh-6rem)] lg:min-h-0"
@@ -1635,16 +1647,21 @@
         </div>
         <!-- Editing Pane (scrolls beneath header on desktop, same as mobile) -->
         <div
-          class="bg-white rounded-xl shadow-lg p-2 md:p-6 space-y-2 md:space-y-6 overflow-y-auto overflow-x-hidden flex-1 min-h-0 w-full max-h-[calc(100vh-200px)] lg:max-h-none"
+          class="bg-white rounded-xl shadow-lg p-2 md:p-6 md:pt-20 space-y-2 md:space-y-6 overflow-y-auto overflow-x-hidden flex-1 min-h-0 w-full max-h-[calc(100vh-200px)] lg:max-h-none"
         >
           <!-- Basic Venue Information -->
-          <div class="space-y-2 md:space-y-4">
-            <h3 class="text-[14px] md:text-lg font-medium text-gray-800">Basic Information</h3>
+          <div
+            class="space-y-2 md:space-y-4 md:scroll-mt-28"
+            id="section-basic-info"
+          >
+            <h3 class="text-[12px] md:text-[14px] font-bold text-gray-800">
+              Basic Information
+            </h3>
 
             <div>
               <label
                 for="venue-name"
-                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
+                class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                 >Venue Name *</label
               >
               <div class="relative">
@@ -1653,7 +1670,7 @@
                   id="venue-name"
                   bind:value={venueName}
                   on:blur={validateVenueNameBlur}
-                  class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {venueNameError
+                  class="w-full px-2 md:px-3 py-0.5 md:py-1 pr-8 md:pr-9 text-[12px] md:text-[14px] border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {venueNameError
                     ? 'border-red-500'
                     : 'border-gray-300'}"
                   placeholder="Enter venue name"
@@ -1688,7 +1705,7 @@
             <div>
               <label
                 for="venue-address"
-                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
+                class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                 >Address (optional)</label
               >
               <div class="flex gap-2">
@@ -1697,7 +1714,7 @@
                     type="text"
                     id="venue-address"
                     bind:value={venueAddress}
-                    class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    class="w-full px-2 md:px-3 py-0.5 md:py-1 pr-8 md:pr-9 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter address"
                     on:keydown={(/** @type {KeyboardEvent} */ e) =>
                       e.key === 'Enter' && handleFindOnMap()}
@@ -1764,10 +1781,10 @@
             <div>
               <label
                 for="venue-geolocation"
-                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
+                class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                 >Geolocation (optional)</label
               >
-              <p class="text-xs text-gray-500 mb-2">
+              <p class="text-[10px] md:text-xs text-gray-500 mb-2">
                 Click on the map to set location, or use "Find on Map" button
                 above to search by address. Drag the marker to adjust.
               </p>
@@ -1782,7 +1799,7 @@
               <div class="mb-2">
                 <label
                   for="venue-geolocation"
-                  class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
+                  class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                   >Coordinates (latitude,longitude)</label
                 >
                 <div class="relative">
@@ -1790,7 +1807,7 @@
                     type="text"
                     id="venue-geolocation"
                     bind:value={venueGeolocation}
-                    class="w-full px-3 py-2 pr-9 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    class="w-full px-3 py-0.5 pr-9 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 md:py-1"
                     placeholder="latitude,longitude"
                     on:input={() => {
                       if (venueGeolocation) {
@@ -1826,7 +1843,7 @@
             <div>
               <label
                 for="venue-comment"
-                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
+                class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                 >Comment (optional)</label
               >
               <div class="relative">
@@ -1834,7 +1851,7 @@
                   id="venue-comment"
                   bind:value={venueComment}
                   rows="3"
-                  class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Optional comment about the venue"
                 ></textarea>
                 <button
@@ -1865,7 +1882,7 @@
               <div class="flex items-center gap-1 md:gap-2 mb-0.5 md:mb-1">
                 <label
                   for="venue-timezone"
-                  class="block text-[10px] md:text-sm font-medium text-gray-700"
+                  class="block text-[10px] md:text-[12px] font-medium text-gray-700"
                   >Timezone (optional, leave empty for your current timezone)</label
                 >
                 <div class="relative">
@@ -1970,7 +1987,7 @@
                 <select
                   id="venue-timezone"
                   bind:value={venueTimezone}
-                  class="flex-1 min-w-0 pl-2 md:pl-3 pr-8 md:pr-10 py-1.5 md:py-2 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23666%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpolyline%20points=%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-no-repeat bg-[length:1.25em] bg-[position:right_0.5rem_center] md:bg-[position:right_0.75rem_center]"
+                  class="flex-1 min-w-0 pl-2 md:pl-3 pr-8 md:pr-10 py-0.5 md:py-1 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23666%22%20stroke-width=%222%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpolyline%20points=%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-no-repeat bg-[length:1.25em] bg-[position:right_0.5rem_center] md:bg-[position:right_0.75rem_center]"
                 >
                   {#each timezones as tz}
                     {#if tz.group}
@@ -2011,33 +2028,61 @@
             <div>
               <label
                 for="venue-banner"
-                class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
-                >Banner Image (optional) — max {BANNER_MAX_MB} MB, preferred ratio 16:9</label
+                class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
+                >Banner Image (optional) — max {BANNER_MAX_MB} MB, preferred ratio
+                16:9</label
               >
-              <input
-                bind:this={venueBannerInputEl}
-                type="file"
-                id="venue-banner"
-                accept="image/*"
-                on:change={handleImageUpload}
-                class="w-full px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div class="flex gap-1 md:gap-2 items-center">
+                <label
+                  for="venue-banner"
+                  class="flex-1 min-w-0 px-2 md:px-3 py-0.5 md:py-1 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 cursor-pointer flex items-center text-gray-600 min-h-[1.5rem] md:min-h-[1.75rem]"
+                >
+                  <span class="truncate">
+                    {venueBannerFileName ||
+                      (venueBannerImage ? 'Image selected' : 'Choose image')}
+                  </span>
+                </label>
+                <input
+                  bind:this={venueBannerInputEl}
+                  type="file"
+                  id="venue-banner"
+                  accept="image/*"
+                  on:change={handleImageUpload}
+                  class="sr-only"
+                  aria-label="Banner image file"
+                />
+                {#if venueBannerImage}
+                  <button
+                    type="button"
+                    on:click={removeBannerImage}
+                    class="shrink-0 p-1.5 md:p-2 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    title="Remove banner image"
+                    aria-label="Remove banner image"
+                  >
+                    <svg
+                      class="w-3.5 h-3.5 md:w-4 md:h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      stroke-width="2"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                {/if}
+              </div>
               {#if venueBannerImage}
-                <div class="mt-2 flex items-start gap-2">
+                <div class="mt-2">
                   <BannerImage
                     src={venueBannerImage}
                     alt="Banner preview"
                     size="sm"
-                    wrapperClass="flex-1 min-w-0"
+                    wrapperClass="w-full max-w-full"
                   />
-                  <button
-                    type="button"
-                    on:click={removeBannerImage}
-                    class="shrink-0 px-2 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
-                    title="Remove banner image"
-                  >
-                    Remove banner
-                  </button>
                 </div>
               {/if}
             </div>
@@ -2046,18 +2091,22 @@
           <!-- Event Lists -->
           <div class="space-y-2 md:space-y-4">
             <div>
-              <h3 class="text-[14px] md:text-lg font-medium text-gray-800">Event Lists</h3>
+              <h3 class="text-[12px] md:text-[14px] font-bold text-gray-800">
+                Event Lists
+              </h3>
             </div>
 
             {#if eventListsData.length === 0}
-              <p class="text-[10px] md:text-sm text-gray-500 py-2 md:py-4 text-center">
+              <p
+                class="text-[10px] md:text-[14px] text-gray-500 py-2 md:py-4 text-center"
+              >
                 No event lists yet. Click "+ Add Event List" to create one.
               </p>
             {/if}
 
             {#each eventListsData as listData, listIndex (listData.event_list_uuid)}
               <div
-                class="border-2 border-gray-300 rounded-lg p-2 md:p-4 space-y-2 md:space-y-3 w-full min-w-0 overflow-x-hidden"
+                class="border-2 border-gray-500 rounded-lg p-2 md:p-4 space-y-2 md:space-y-3 w-full min-w-0 overflow-x-hidden"
               >
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
@@ -2089,7 +2138,7 @@
                 <div>
                   <label
                     for="event-list-name-{listData.event_list_uuid}"
-                    class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
+                    class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                     >Event List Name (optional)</label
                   >
                   <div class="relative">
@@ -2097,7 +2146,7 @@
                       type="text"
                       id="event-list-name-{listData.event_list_uuid}"
                       bind:value={listData.name}
-                      class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      class="w-full px-2 md:px-3 py-0.5 md:py-1 pr-8 md:pr-9 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="e.g. Week of Dec 2"
                     />
                     <button
@@ -2127,10 +2176,10 @@
                 <div>
                   <label
                     for="event-list-date-{listData.event_list_uuid}"
-                    class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
+                    class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                     >Date (optional)</label
                   >
-                  <div class="flex gap-2">
+                  <div class="flex gap-1">
                     <input
                       type="date"
                       id="event-list-date-{listData.event_list_uuid}"
@@ -2150,21 +2199,34 @@
                           );
                         });
                       }}
-                      class="flex-1 px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      class="flex-1 min-w-0 px-2 md:px-3 py-0.5 md:py-1 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     {#if listData.date && listData.date.trim()}
                       <button
                         type="button"
                         on:click={() =>
                           clearEventListDate(listData.event_list_uuid)}
-                        class="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200"
+                        class="shrink-0 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors self-center"
                         title="Clear date"
+                        aria-label="Clear date"
                       >
-                        Clear
+                        <svg
+                          class="w-3.5 h-3.5 md:w-4 md:h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          stroke-width="2"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
                       </button>
                     {/if}
                   </div>
-                  <p class="mt-1 text-xs text-gray-500">
+                  <p class="mt-1 text-[10px] md:text-xs text-gray-500">
                     Date is stored in ISO 8601 format (YYYY-MM-DD)
                   </p>
                 </div>
@@ -2172,7 +2234,7 @@
                 <div>
                   <label
                     for="event-list-comment-{listData.event_list_uuid}"
-                    class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
+                    class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                     >Comment (optional)</label
                   >
                   <div class="relative">
@@ -2180,7 +2242,7 @@
                       id="event-list-comment-{listData.event_list_uuid}"
                       bind:value={listData.comment}
                       rows="2"
-                      class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      class="w-full px-2 md:px-3 py-1.5 md:py-2 pr-8 md:pr-9 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Optional comment"
                     ></textarea>
                     <button
@@ -2208,11 +2270,13 @@
                 </div>
 
                 <div>
-                  <div class="block text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                  <div
+                    class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-1 md:mb-2"
+                  >
                     Visibility
                   </div>
                   <div class="flex gap-2 md:gap-4">
-                    <label class="flex items-center text-[10px] md:text-base">
+                    <label class="flex items-center text-[10px] md:text-[12px]">
                       <input
                         type="radio"
                         value="public"
@@ -2226,7 +2290,7 @@
                       />
                       <span>Public</span>
                     </label>
-                    <label class="flex items-center text-[10px] md:text-base">
+                    <label class="flex items-center text-[10px] md:text-[12px]">
                       <input
                         type="radio"
                         value="private"
@@ -2242,7 +2306,9 @@
                     </label>
                   </div>
                   {#if listData.private_link_token}
-                    <div class="mt-1 md:mt-2 p-1.5 md:p-2 bg-gray-50 rounded text-[9px] md:text-xs">
+                    <div
+                      class="mt-1 md:mt-2 p-1.5 md:p-2 bg-gray-50 rounded text-[9px] md:text-[14px]"
+                    >
                       <p class="text-gray-600 mb-1">
                         Share link (works for public and private):
                       </p>
@@ -2292,7 +2358,9 @@
                       </div>
                     </div>
                   {:else}
-                    <p class="mt-1 md:mt-2 text-[9px] md:text-xs text-gray-500">
+                    <p
+                      class="mt-1 md:mt-2 text-[10px] md:text-[12px] text-gray-500"
+                    >
                       Save the venue to get a shareable direct link for this
                       event list.
                     </p>
@@ -2300,12 +2368,16 @@
                 </div>
 
                 <div>
-                  <div class="block text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                  <div
+                    class="block text-[12px] md:text-[14px] font-bold text-gray-800 mb-1 md:mb-2"
+                  >
                     Events
                   </div>
 
                   {#if !listData.events || listData.events.length === 0}
-                    <p class="text-[10px] md:text-sm text-gray-500 py-1 md:py-2">
+                    <p
+                      class="text-[10px] md:text-[14px] text-gray-500 py-1 md:py-2"
+                    >
                       No events yet. Click "+ Add Event" to add one.
                     </p>
                   {/if}
@@ -2319,7 +2391,7 @@
                             on:click={() =>
                               moveEventUp(listData.event_list_uuid, eventIndex)}
                             disabled={eventIndex === 0}
-                            class="p-0.5 md:p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-[9px] md:text-xs"
+                            class="p-0.5 md:p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-[9px] md:text-[14px]"
                             title="Move up"
                           >
                             ↑
@@ -2332,7 +2404,7 @@
                               )}
                             disabled={eventIndex ===
                               (listData.events || []).length - 1}
-                            class="p-0.5 md:p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-[9px] md:text-xs"
+                            class="p-0.5 md:p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50 text-[9px] md:text-[14px]"
                             title="Move down"
                           >
                             ↓
@@ -2355,7 +2427,7 @@
                                 listData.event_list_uuid,
                                 event.event_uuid,
                               )}
-                            class="px-1.5 md:px-2 py-0.5 md:py-1 bg-red-600 hover:bg-red-700 text-white text-[9px] md:text-xs rounded transition-colors"
+                            class="px-1.5 md:px-2 py-0.5 md:py-1 bg-red-600 hover:bg-red-700 text-white text-[9px] md:text-[14px] rounded transition-colors"
                           >
                             Delete Event
                           </button>
@@ -2365,7 +2437,7 @@
                       <div>
                         <label
                           for="event-name-{event.event_uuid}"
-                          class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
+                          class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                           >Event Name</label
                         >
                         <div class="relative">
@@ -2375,7 +2447,7 @@
                             bind:value={event.event_name}
                             on:blur={() =>
                               validateEventNameBlur(event.event_uuid)}
-                            class="w-full px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[10px] md:text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {eventNameErrors[
+                            class="w-full px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[12px] md:text-[14px] border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 {eventNameErrors[
                               event.event_uuid
                             ]
                               ? 'border-red-500'
@@ -2417,7 +2489,7 @@
                       >
                         <label
                           for="event-time-{event.event_uuid}"
-                          class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
+                          class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                           >Time (HH:MM)</label
                         >
                         <div class="relative flex gap-1">
@@ -2436,8 +2508,7 @@
                                 venueTimezone,
                               );
                             }}
-                            class="flex-1 min-w-0 px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[10px] md:text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            style="box-sizing: border-box; max-width: 100%; min-width: 0; -webkit-appearance: none; appearance: none;"
+                            class="flex-1 min-w-0 px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[12px] md:text-[14px] border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300"
                           />
                           <button
                             type="button"
@@ -2477,16 +2548,17 @@
                       <div>
                         <label
                           for="event-duration-{event.event_uuid}"
-                          class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
+                          class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                           >Duration (minutes) (optional)</label
                         >
-                        <div class="flex gap-2">
+                        <div class="flex gap-1">
                           <input
                             type="number"
                             id="event-duration-{event.event_uuid}"
                             bind:value={event.duration_minutes}
                             min="1"
-                            class="flex-1 min-w-0 px-1.5 md:px-2 py-0.5 md:py-1 text-[10px] md:text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="flex-1 min-w-0 px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-3 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            style="box-sizing: border-box;"
                             placeholder="No duration"
                           />
                           {#if event.duration_minutes && event.duration_minutes !== '' && event.duration_minutes > 0}
@@ -2497,19 +2569,20 @@
                                   listData.event_list_uuid,
                                   event.event_uuid,
                                 )}
-                              class="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded transition-colors duration-200 shrink-0"
+                              class="shrink-0 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors self-center"
                               title="Clear duration"
+                              aria-label="Clear duration"
                             >
                               <svg
-                                class="w-4 h-4"
+                                class="w-3.5 h-3.5 md:w-4 md:h-4"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
+                                stroke-width="2"
                               >
                                 <path
                                   stroke-linecap="round"
                                   stroke-linejoin="round"
-                                  stroke-width="2"
                                   d="M6 18L18 6M6 6l12 12"
                                 />
                               </svg>
@@ -2521,7 +2594,7 @@
                       <div>
                         <label
                           for="event-comment-{event.event_uuid}"
-                          class="block text-[9px] md:text-xs font-medium text-gray-700 mb-0.5 md:mb-1"
+                          class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
                           >Comment (optional)</label
                         >
                         <div class="relative">
@@ -2529,7 +2602,7 @@
                             id="event-comment-{event.event_uuid}"
                             bind:value={event.comment}
                             rows="2"
-                            class="w-full px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[10px] md:text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="w-full px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[12px] md:text-[14px] border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Optional comment"
                           ></textarea>
                           <button
@@ -2559,7 +2632,7 @@
                   {/each}
                   <button
                     on:click={() => addEvent(listData.event_list_uuid)}
-                    class="mt-1 md:mt-2 px-1.5 md:px-2 py-0.5 md:py-1 bg-green-600 hover:bg-green-700 text-white text-[10px] md:text-sm rounded transition-colors"
+                    class="mt-1 md:mt-2 px-1.5 md:px-2 py-0.5 md:py-1 bg-green-600 hover:bg-green-700 text-white text-[10px] md:text-[14px] rounded transition-colors"
                   >
                     + Add Event
                   </button>
@@ -2568,7 +2641,7 @@
             {/each}
             <button
               on:click={addEventList}
-              class="px-2 md:px-3 py-0.5 md:py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] md:text-sm rounded-lg transition-colors"
+              class="px-2 md:px-3 py-0.5 md:py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] md:text-[14px] rounded-lg transition-colors"
             >
               + Add Event List
             </button>
@@ -2588,13 +2661,13 @@
           <div>
             <label
               for="preview-event-list"
-              class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
+              class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
               >Select Event List</label
             >
             <select
               id="preview-event-list"
               bind:value={previewEventListId}
-              class="w-full px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              class="w-full px-2 md:px-3 py-1.5 md:py-2 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               {#each eventListsData as listData}
                 <option value={listData.event_list_uuid}
@@ -2787,6 +2860,27 @@
     box-sizing: border-box !important;
     -webkit-appearance: none !important;
     appearance: none !important;
+  }
+
+  /* Match time input focus to other fields: remove native outline/ring, apply same ring as other inputs */
+  :global(input[type='time']:focus) {
+    outline: none !important;
+    border-color: rgb(59 130 246) !important; /* focus:border-blue-500 */
+    --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0
+      var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+    --tw-ring-shadow: var(--tw-ring-inset) 0 0 0
+      calc(2px + var(--tw-ring-offset-width)) rgb(59 130 246 / 0.5);
+    box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow),
+      var(--tw-shadow, 0 0 #0000) !important;
+  }
+
+  /* Chrome/Safari: prevent native sub-control focus styling (clock indicator can show its own outline) */
+  :global(input[type='time']::-webkit-calendar-picker-indicator) {
+    outline: none !important;
+  }
+
+  :global(input[type='time']::-webkit-calendar-picker-indicator:hover) {
+    cursor: pointer;
   }
 
   /* Ensure event containers don't overflow */

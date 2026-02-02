@@ -30,19 +30,19 @@
   );
 </script>
 
-<div class="space-y-6">
-  <div class="flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-gray-900">Manage Venues</h1>
-    <div class="relative">
+<div class="space-y-4">
+  <div class="space-y-2">
+    <h1 class="text-xl font-bold text-gray-900">Manage Venues</h1>
+    <div class="relative max-w-xs">
       <input
         type="text"
         placeholder="Search venues..."
         bind:value={searchQuery}
-        class="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        class="w-full pl-3 pr-8 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
       />
-      <span class="absolute right-3 top-2.5 text-gray-400">
+      <span class="absolute right-2 top-2 text-gray-400">
         <svg
-          class="h-5 w-5"
+          class="h-4 w-4"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -76,15 +76,15 @@
         <thead class="bg-gray-50">
           <tr>
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Venue Name</th
             >
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Owner</th
             >
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Address</th
             >
           </tr>
@@ -93,7 +93,7 @@
           {#each filteredVenues as venue (venue.venue_uuid)}
             <tr class="hover:bg-gray-50">
               <td
-                class="px-6 py-4 text-sm font-medium text-gray-900 max-w-[200px] truncate"
+                class="px-4 py-2 text-xs font-medium text-gray-900 max-w-[150px] truncate"
                 title={venue.name}
               >
                 <a
@@ -104,7 +104,7 @@
                   {venue.name}
                 </a>
               </td>
-              <td class="px-6 py-4 text-sm text-gray-500 max-w-[200px]">
+              <td class="px-4 py-2 text-xs text-gray-500 max-w-[200px]">
                 <div
                   class="text-gray-900 truncate"
                   title={venue.owner_name || ''}
@@ -112,14 +112,14 @@
                   {venue.owner_name || 'Unknown'}
                 </div>
                 <div
-                  class="text-xs text-gray-400 truncate"
+                  class="text-[10px] text-gray-400 truncate"
                   title={venue.owner_email || ''}
                 >
                   {venue.owner_email || ''}
                 </div>
               </td>
               <td
-                class="px-6 py-4 text-sm text-gray-500 max-w-[250px] truncate"
+                class="px-4 py-2 text-xs text-gray-500 max-w-[200px] truncate"
                 title={venue.address}>{venue.address}</td
               >
             </tr>

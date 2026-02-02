@@ -77,19 +77,19 @@
   );
 </script>
 
-<div class="space-y-6">
-  <div class="flex justify-between items-center">
-    <h1 class="text-2xl font-bold text-gray-900">Manage Owners</h1>
-    <div class="relative">
+<div class="space-y-4">
+  <div class="space-y-2">
+    <h1 class="text-xl font-bold text-gray-900">Manage Owners</h1>
+    <div class="relative max-w-xs">
       <input
         type="text"
         placeholder="Search owners..."
         bind:value={searchQuery}
-        class="pl-4 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        class="w-full pl-3 pr-8 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
       />
-      <span class="absolute right-3 top-2.5 text-gray-400">
+      <span class="absolute right-2 top-2 text-gray-400">
         <svg
-          class="h-5 w-5"
+          class="h-4 w-4"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -123,31 +123,31 @@
         <thead class="bg-gray-50">
           <tr>
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Name</th
             >
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Email</th
             >
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Venues</th
             >
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Limit</th
             >
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Role</th
             >
             <th
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Created</th
             >
             <th
-              class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Actions</th
             >
           </tr>
@@ -156,21 +156,21 @@
           {#each filteredOwners as owner (owner.owner_uuid)}
             <tr class="hover:bg-gray-50">
               <td
-                class="px-6 py-4 text-sm font-medium text-gray-900 max-w-[200px] truncate"
+                class="px-4 py-2 text-xs font-medium text-gray-900 max-w-[150px] truncate"
                 title={owner.name}>{owner.name}</td
               >
               <td
-                class="px-6 py-4 text-sm text-gray-500 max-w-[250px] truncate"
+                class="px-4 py-2 text-xs text-gray-500 max-w-[200px] truncate"
                 title={owner.email}>{owner.email}</td
               >
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+              <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500"
                 >{owner.venue_count}</td
               >
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
                 <input
                   type="number"
                   min="1"
-                  class="w-16 px-1 py-0.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                  class="w-12 px-1 py-0.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                   value={owner.venue_limit}
                   on:change={(e) =>
                     handleLimitUpdate(
@@ -179,27 +179,27 @@
                     )}
                 />
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
                 {#if owner.is_admin}
                   <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-800"
                   >
                     Admin
                   </span>
                 {/if}
                 {#if owner.is_demo}
                   <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-1"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800 ml-1"
                   >
                     Demo
                   </span>
                 {/if}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
                 {new Date(owner.created_at).toLocaleDateString()}
               </td>
               <td
-                class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                class="px-4 py-2 whitespace-nowrap text-right text-xs font-medium"
               >
                 {#if owner.owner_uuid !== $currentOwnerStore?.owner_uuid && !owner.is_demo}
                   <button

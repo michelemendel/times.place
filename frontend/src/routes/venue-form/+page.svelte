@@ -902,8 +902,16 @@
    * @param {{ event_list_uuid: string, private_link_token?: string | null }} listData
    */
   function copyShareLink(listData) {
-    if (!listData?.private_link_token || typeof window === 'undefined') return;
-    const url = `${window.location.origin}/?token=${listData.private_link_token}`;
+    if (typeof window === 'undefined') return;
+    const origin = window.location.origin;
+    const vId = venue?.venue_uuid || venueUuidFromUrl;
+    if (!vId || !listData?.event_list_uuid) return;
+
+    let url = `${origin}/?venue=${vId}&list=${listData.event_list_uuid}`;
+    if (listData.private_link_token) {
+      url += `&token=${listData.private_link_token}`;
+    }
+
     navigator.clipboard
       .writeText(url)
       .then(() => {
@@ -2305,7 +2313,7 @@
                       <span>Private</span>
                     </label>
                   </div>
-                  {#if listData.private_link_token}
+                  {#if listData.event_list_uuid && (venue?.venue_uuid || venueUuidFromUrl)}
                     <div
                       class="mt-1 md:mt-2 p-1.5 md:p-2 bg-gray-50 rounded text-[9px] md:text-[14px]"
                     >
@@ -2314,9 +2322,15 @@
                       </p>
                       <div class="flex items-center gap-2 flex-wrap">
                         <code class="text-blue-600 break-all flex-1 min-w-0">
-                          {typeof window !== 'undefined'
-                            ? `${window.location.origin}/?token=${listData.private_link_token}`
-                            : ''}
+                          {(() => {
+                            if (typeof window === 'undefined') return '';
+                            const vId = venue?.venue_uuid || venueUuidFromUrl;
+                            let url = `${window.location.origin}/?venue=${vId}&list=${listData.event_list_uuid}`;
+                            if (listData.private_link_token) {
+                              url += `&token=${listData.private_link_token}`;
+                            }
+                            return url;
+                          })()}
                         </code>
                         <button
                           type="button"

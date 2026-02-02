@@ -171,14 +171,12 @@
    */
   function getShareableLink(eventList) {
     if (typeof window === 'undefined') return '';
-
-    if (eventList.visibility === 'public') {
-      return `${window.location.origin}/?venue=${eventList.venue_uuid}&list=${eventList.event_list_uuid}`;
+    const origin = window.location.origin;
+    let url = `${origin}/?venue=${eventList.venue_uuid}&list=${eventList.event_list_uuid}`;
+    if (eventList.private_link_token) {
+      url += `&token=${eventList.private_link_token}`;
     }
-
-    const listWithToken = ensureEventListToken(eventList);
-    if (!listWithToken.private_link_token) return '';
-    return `${window.location.origin}/?token=${listWithToken.private_link_token}`;
+    return url;
   }
 
   /**

@@ -341,8 +341,19 @@ We require venue owners to verify their email before they can create or edit ven
 
 ### Manual handling of owners, their accounts and venues
 
+We implement a Backoffice to manage venue owners and their venues manually.
+
+- **Data Model**: Add `is_admin` boolean column to `venue_owners` table.
+- **Authorization**: `AdminOnlyMiddleware` ensures only users with `is_admin: true` can access `/api/admin/*` endpoints.
+- **Admin Setup**: Manual promotion of an existing account via SQL: `UPDATE venue_owners SET is_admin = true WHERE email = 'admin@example.com';`.
+- **Endpoints**:
+  - `GET /api/admin/owners`: List all owners with platform usage stats.
+  - `GET /api/admin/owners/:uuid`: Detail view and account management (verify email, deactivate).
+  - `GET /api/admin/venues`: List all venues across the platform.
+  - `DELETE /api/admin/owners/:uuid`: Remove an account and its venues.
+
 ### Viewing statistics (see intrumentation)
 
-## Instrumentation
+## Instrumentation and Observability
 
 ### Basic statistics (to save database cost)

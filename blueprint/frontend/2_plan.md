@@ -160,6 +160,7 @@ Local development uses a two-process setup:
 - **Backend**: Go/Echo API server on `http://localhost:8080`
 
 The SvelteKit dev server proxies `/api/*` requests to the backend, so:
+
 - Browser makes requests to `http://localhost:5173/api/...`
 - Vite proxies to `http://localhost:8080/api/...`
 - No CORS issues (same-origin from browser perspective)
@@ -168,6 +169,7 @@ The SvelteKit dev server proxies `/api/*` requests to the backend, so:
 ### Production Deployment
 
 In production (Render.com), a single Go binary serves both:
+
 - **Frontend**: Static SvelteKit build served from `/` (with SPA fallback)
 - **API**: All `/api/*` routes handled by Echo
 
@@ -235,8 +237,17 @@ Owners must verify their email before editing. The backend returns `email_verifi
 
 ### Manual handling of owners, their accounts and venues
 
+The Backoffice interface provides administrators with a dedicated section for platform management.
+
+- **Route**: Exposed under `/backoffice`, protected by client-side and server-side admin checks.
+- **Interface**:
+  - **Dashboard**: High-level statistics of users and venues.
+  - **Owner Management**: Searchable list of all owners with actions to manually verify emails, view all their venues, or delete accounts.
+  - **Venue Management**: Global list of all venues for oversight.
+- **Navigation**: A "Backoffice" link appears in the main navigation for authenticated admin users.
+
 ### Viewing statistics (see intrumentation)
 
-## Instrumentation
+## Instrumentation and Observability
 
 ### Basic statistics (to save database cost)

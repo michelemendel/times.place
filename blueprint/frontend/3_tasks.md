@@ -330,11 +330,15 @@ See 3_tasks.md under backend
 
 ## Backoffice
 
-- [ ] New URL endpoint for admins
-- [ ] Manual handling of owners, their accounts and venues
-- [ ] Viewing statistics
+- [ ] Client-side Admin Protection:
+  - [ ] Implement `isAdmin` flag in the owner store <!-- id: 200 -->
+  - [ ] Protect `/backoffice` routes with auth check <!-- id: 201 -->
+- [ ] UI Implementation:
+  - [ ] Create Backoffice Dashboard with platform stats <!-- id: 202 -->
+  - [ ] Implement Owner Management table: list, search, manual verification, deletion <!-- id: 203 -->
+  - [ ] Implement Global Venue Management list <!-- id: 204 -->
+  - [ ] Add "Backoffice" link to main navigation for admin users <!-- id: 205 -->
 
-## Instrumentation
+## Instrumentation and Observability
 
 - [ ] Basic statistics (to save database cost)
-

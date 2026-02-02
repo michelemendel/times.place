@@ -93,7 +93,7 @@
 - [ ] Verify production routing:
   - [x] `/` serves frontend `index.html` (SPA fallback)
   - [x] `/api/...` serves API
-    **How to check:** Call a public API endpoint (no auth). Expect 200 + JSON, not HTML.
+        **How to check:** Call a public API endpoint (no auth). Expect 200 + JSON, not HTML.
     - **Local:** `curl -s http://localhost:8080/api/public/venues` → JSON array (e.g. `[]`). Or `make bverify-api`.
     - **Production:** `curl -s https://<your-render-url>/api/public/venues` → same. If you get HTML, the `/api` prefix is not routed to the API.
 
@@ -118,10 +118,15 @@
 
 ## Backoffice
 
-- [ ] New URL endpoint for admins.
-- [ ] Set up handling of owners, their accounts and venues
-- [ ] Set up handling of some statistics
+- [ ] Database migration: add `is_admin` boolean to `venue_owners` table <!-- id: 100 -->
+- [ ] Implement `AdminOnlyMiddleware` for route protection <!-- id: 101 -->
+- [ ] Admin API Handlers:
+  - [ ] `GET /api/admin/owners`: List all owners with platform usage stats <!-- id: 102 -->
+  - [ ] `GET /api/admin/owners/:uuid`: Detail account management <!-- id: 103 -->
+  - [ ] `GET /api/admin/venues`: Global platform venue overview <!-- id: 104 -->
+  - [ ] `DELETE /api/admin/owners/:uuid`: Full account deletion <!-- id: 105 -->
+- [ ] Register admin routes in `routes.go` <!-- id: 106 -->
 
-## Instrumentation
+## Instrumentation and Observability
 
 - [ ] Basic statistics (to save database cost)

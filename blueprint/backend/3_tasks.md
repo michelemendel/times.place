@@ -118,14 +118,14 @@
 
 ## Backoffice
 
-- [ ] Database migration: add `is_admin` boolean to `venue_owners` table <!-- id: 100 -->
-- [ ] Implement `AdminOnlyMiddleware` for route protection <!-- id: 101 -->
-- [ ] Admin API Handlers:
-  - [ ] `GET /api/admin/owners`: List all owners with platform usage stats <!-- id: 102 -->
-  - [ ] `GET /api/admin/owners/:uuid`: Detail account management <!-- id: 103 -->
-  - [ ] `GET /api/admin/venues`: Global platform venue overview <!-- id: 104 -->
-  - [ ] `DELETE /api/admin/owners/:uuid`: Full account deletion <!-- id: 105 -->
-- [ ] Register admin routes in `routes.go` <!-- id: 106 -->
+- [x] Database migration: add `is_admin` boolean to `venue_owners` table <!-- id: 100 -->
+- [x] Implement `AdminOnlyMiddleware` for route protection <!-- id: 101 -->
+- [x] Admin API Handlers:
+  - [x] `GET /api/admin/owners`: List all owners with platform usage stats <!-- id: 102 -->
+  - [x] `GET /api/admin/owners/:uuid`: Detail account management <!-- id: 103 -->
+  - [x] `GET /api/admin/venues`: Global platform venue overview <!-- id: 104 -->
+  - [x] `DELETE /api/admin/owners/:uuid`: Full account deletion <!-- id: 105 -->
+- [x] Register admin routes in `routes.go` <!-- id: 106 -->
 
 ## Instrumentation and Observability
 

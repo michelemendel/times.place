@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	sqlc "github.com/michelemendel/times.place/db/sqlc"
 	"github.com/michelemendel/times.place/internal/store"
 	"github.com/michelemendel/times.place/utils"
 )
@@ -38,6 +39,7 @@ func (h *AdminHandler) ListOwners(c echo.Context) error {
 			"email":       o.Email,
 			"is_admin":    o.IsAdmin,
 			"is_demo":     o.IsDemo,
+			"venue_limit": o.VenueLimit,
 			"created_at":  timestamptzToString(o.CreatedAt),
 			"venue_count": o.VenueCount,
 		}
@@ -67,6 +69,7 @@ func (h *AdminHandler) GetOwner(c echo.Context) error {
 		"mobile":      owner.Mobile,
 		"is_admin":    owner.IsAdmin,
 		"is_demo":     owner.IsDemo,
+		"venue_limit": owner.VenueLimit,
 		"created_at":  timestamptzToString(owner.CreatedAt),
 		"modified_at": timestamptzToString(owner.ModifiedAt),
 	}
@@ -131,6 +134,39 @@ func (h *AdminHandler) DeleteOwner(c echo.Context) error {
 	// Also delete venues? Handled by DB CASCADE DELETE
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+type UpdateOwnerVenueLimitRequest struct {
+	VenueLimit int32 `json:"venue_limit" validate:"required,min=1"`
+}
+
+// UpdateOwnerVenueLimit handles PATCH /api/admin/owners/:uuid/venue-limit
+func (h *AdminHandler) UpdateOwnerVenueLimit(c echo.Context) error {
+	idStr := c.Param("uuid")
+	uuid, err := utils.StringToUUID(idStr)
+	if err != nil {
+		return ValidationError(c, "Invalid owner UUID")
+	}
+
+	var req UpdateOwnerVenueLimitRequest
+	if err := c.Bind(&req); err != nil {
+		return ValidationError(c, "Invalid request body")
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return ValidationError(c, err.Error())
+	}
+
+	ctx := c.Request().Context()
+	err = h.store.Queries.UpdateOwnerVenueLimit(ctx, sqlc.UpdateOwnerVenueLimitParams{
+		OwnerUuid:  uuid,
+		VenueLimit: req.VenueLimit,
+	})
+	if err != nil {
+		return InternalError(c, "Failed to update venue limit")
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Venue limit updated"})
 }
 
 // Helper to reuse timestamptzToString from auth_handlers if possible, or duplicate/move it

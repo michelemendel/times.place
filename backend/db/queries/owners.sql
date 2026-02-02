@@ -1,6 +1,6 @@
 -- name: CreateOwner :one
-INSERT INTO venue_owners (name, email, mobile, password_hash)
-VALUES ($1, $2, $3, $4)
+INSERT INTO venue_owners (name, email, mobile, password_hash, venue_limit)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetOwnerByID :one

@@ -13,6 +13,7 @@ CREATE TABLE venue_owners (
     password_hash text NOT NULL,
     is_admin boolean NOT NULL DEFAULT false,
     is_demo boolean NOT NULL DEFAULT false,
+    venue_limit integer NOT NULL DEFAULT 2,
     email_verified_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
     modified_at timestamptz NOT NULL DEFAULT now()

@@ -75,6 +75,7 @@ type VenueOwner struct {
 	PasswordHash    string             `json:"password_hash"`
 	IsAdmin         bool               `json:"is_admin"`
 	IsDemo          bool               `json:"is_demo"`
+	VenueLimit      int32              `json:"venue_limit"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt      pgtype.Timestamptz `json:"modified_at"`

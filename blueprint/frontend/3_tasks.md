@@ -330,14 +330,14 @@ See 3_tasks.md under backend
 
 ## Backoffice
 
-- [ ] Client-side Admin Protection:
-  - [ ] Implement `isAdmin` flag in the owner store <!-- id: 200 -->
-  - [ ] Protect `/backoffice` routes with auth check <!-- id: 201 -->
-- [ ] UI Implementation:
-  - [ ] Create Backoffice Dashboard with platform stats <!-- id: 202 -->
-  - [ ] Implement Owner Management table: list, search, manual verification, deletion <!-- id: 203 -->
-  - [ ] Implement Global Venue Management list <!-- id: 204 -->
-  - [ ] Add "Backoffice" link to main navigation for admin users <!-- id: 205 -->
+- [x] Client-side Admin Protection:
+  - [x] Implement `isAdmin` flag in the owner store <!-- id: 200 -->
+  - [x] Protect `/backoffice` routes with auth check <!-- id: 201 -->
+- [x] UI Implementation:
+  - [x] Create Backoffice Dashboard with platform stats <!-- id: 202 -->
+  - [x] Implement Owner Management table: list, search, manual verification, deletion <!-- id: 203 -->
+  - [x] Implement Global Venue Management list <!-- id: 204 -->
+  - [x] Add "Backoffice" link to main navigation for admin users <!-- id: 205 -->
 
 ## Instrumentation and Observability
 

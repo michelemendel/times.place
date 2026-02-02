@@ -56,7 +56,7 @@ type VenueResponse struct {
 	Comment          string `json:"comment"`
 	Timezone         string `json:"timezone"`
 	PrivateLinkToken string `json:"private_link_token"`
-	OwnerName        string `json:"owner_name,omitempty"` // Set by public endpoints; empty for owner endpoints
+	OwnerName        string `json:"owner_name,omitempty"`  // Set by public endpoints; empty for owner endpoints
 	OwnerEmail       string `json:"owner_email,omitempty"` // Set by public endpoints; empty for owner endpoints
 	CreatedAt        string `json:"created_at"`
 	ModifiedAt       string `json:"modified_at"`
@@ -135,7 +135,7 @@ func (h *VenueHandler) List(c echo.Context) error {
 	for i, venue := range venues {
 		response[i] = OwnerVenueWithEventListsResponse{
 			VenueResponse: venueToResponse(venue),
-			EventLists:   []EventListResponse{},
+			EventLists:    []EventListResponse{},
 		}
 		eventLists, err := h.store.Queries.ListEventListsByVenueAndOwner(ctx, sqlc.ListEventListsByVenueAndOwnerParams{
 			VenueUuid: venue.VenueUuid,
@@ -186,14 +186,20 @@ func (h *VenueHandler) Create(c echo.Context) error {
 		return ValidationError(c, "Invalid owner UUID")
 	}
 
-	// Enforce free-tier venue limit
-	limit := FreeTierMaxVenues()
+	// Fetch owner to get their specific venue limit
+	owner, err := h.store.Queries.GetOwnerByID(ctx, ownerUUID)
+	if err != nil {
+		return InternalError(c, "Failed to fetch owner details")
+	}
+
+	// Enforce per-user venue limit
+	limit := int64(owner.VenueLimit)
 	count, err := h.store.Queries.CountVenuesByOwner(ctx, ownerUUID)
 	if err != nil {
 		return InternalError(c, "Failed to check venue count")
 	}
 	if count >= limit {
-		return ForbiddenError(c, "Free tier allows at most "+strconv.FormatInt(limit, 10)+" venues. Upgrade to add more.")
+		return ForbiddenError(c, "You have reached your limit of "+strconv.FormatInt(limit, 10)+" venues. Upgrade to add more.")
 	}
 
 	// Parse private link token (generate if not provided)

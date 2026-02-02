@@ -23,7 +23,7 @@ func (q *Queries) AdminDeleteOwner(ctx context.Context, ownerUuid pgtype.UUID) e
 
 const getOwnerDetails = `-- name: GetOwnerDetails :one
 SELECT 
-    owner_uuid, name, email, is_admin, is_demo, created_at, modified_at, mobile
+    owner_uuid, name, email, is_admin, is_demo, venue_limit, created_at, modified_at, mobile
 FROM venue_owners
 WHERE owner_uuid = $1
 `
@@ -34,6 +34,7 @@ type GetOwnerDetailsRow struct {
 	Email      string             `json:"email"`
 	IsAdmin    bool               `json:"is_admin"`
 	IsDemo     bool               `json:"is_demo"`
+	VenueLimit int32              `json:"venue_limit"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	ModifiedAt pgtype.Timestamptz `json:"modified_at"`
 	Mobile     string             `json:"mobile"`
@@ -48,6 +49,7 @@ func (q *Queries) GetOwnerDetails(ctx context.Context, ownerUuid pgtype.UUID) (G
 		&i.Email,
 		&i.IsAdmin,
 		&i.IsDemo,
+		&i.VenueLimit,
 		&i.CreatedAt,
 		&i.ModifiedAt,
 		&i.Mobile,
@@ -111,6 +113,7 @@ SELECT
     o.email, 
     o.is_admin, 
     o.is_demo, 
+    o.venue_limit,
     o.created_at,
     (SELECT COUNT(*) FROM venues v WHERE v.owner_uuid = o.owner_uuid) AS venue_count
 FROM venue_owners o
@@ -123,6 +126,7 @@ type ListDetailsAllOwnersRow struct {
 	Email      string             `json:"email"`
 	IsAdmin    bool               `json:"is_admin"`
 	IsDemo     bool               `json:"is_demo"`
+	VenueLimit int32              `json:"venue_limit"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	VenueCount int64              `json:"venue_count"`
 }
@@ -142,6 +146,7 @@ func (q *Queries) ListDetailsAllOwners(ctx context.Context) ([]ListDetailsAllOwn
 			&i.Email,
 			&i.IsAdmin,
 			&i.IsDemo,
+			&i.VenueLimit,
 			&i.CreatedAt,
 			&i.VenueCount,
 		); err != nil {
@@ -168,5 +173,21 @@ type SetOwnerAdminParams struct {
 
 func (q *Queries) SetOwnerAdmin(ctx context.Context, arg SetOwnerAdminParams) error {
 	_, err := q.db.Exec(ctx, setOwnerAdmin, arg.OwnerUuid, arg.IsAdmin)
+	return err
+}
+
+const updateOwnerVenueLimit = `-- name: UpdateOwnerVenueLimit :exec
+UPDATE venue_owners
+SET venue_limit = $2, modified_at = now()
+WHERE owner_uuid = $1
+`
+
+type UpdateOwnerVenueLimitParams struct {
+	OwnerUuid  pgtype.UUID `json:"owner_uuid"`
+	VenueLimit int32       `json:"venue_limit"`
+}
+
+func (q *Queries) UpdateOwnerVenueLimit(ctx context.Context, arg UpdateOwnerVenueLimitParams) error {
+	_, err := q.db.Exec(ctx, updateOwnerVenueLimit, arg.OwnerUuid, arg.VenueLimit)
 	return err
 }

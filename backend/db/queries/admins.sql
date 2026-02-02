@@ -5,6 +5,7 @@ SELECT
     o.email, 
     o.is_admin, 
     o.is_demo, 
+    o.venue_limit,
     o.created_at,
     (SELECT COUNT(*) FROM venues v WHERE v.owner_uuid = o.owner_uuid) AS venue_count
 FROM venue_owners o
@@ -12,7 +13,7 @@ ORDER BY o.created_at DESC;
 
 -- name: GetOwnerDetails :one
 SELECT 
-    owner_uuid, name, email, is_admin, is_demo, created_at, modified_at, mobile
+    owner_uuid, name, email, is_admin, is_demo, venue_limit, created_at, modified_at, mobile
 FROM venue_owners
 WHERE owner_uuid = $1;
 
@@ -35,4 +36,9 @@ WHERE owner_uuid = $1;
 -- name: SetOwnerAdmin :exec
 UPDATE venue_owners
 SET is_admin = $2
+WHERE owner_uuid = $1;
+
+-- name: UpdateOwnerVenueLimit :exec
+UPDATE venue_owners
+SET venue_limit = $2, modified_at = now()
 WHERE owner_uuid = $1;

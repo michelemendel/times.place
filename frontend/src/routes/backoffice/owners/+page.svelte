@@ -1,10 +1,12 @@
 <script>
   import { onMount } from 'svelte';
-  import { listOwners, deleteOwner } from '$lib/api/admin';
+  import { listOwners, deleteOwner, updateVenueLimit } from '$lib/api/admin';
   import { currentOwnerStore } from '$lib/stores';
 
+  /** @type {any[]} */
   let owners = [];
   let loading = true;
+  /** @type {string | null} */
   let error = null;
   let searchQuery = '';
 
@@ -12,12 +14,43 @@
     try {
       owners = await listOwners();
     } catch (err) {
-      error = err.message;
+      error = err instanceof Error ? err.message : 'An error occurred';
     } finally {
       loading = false;
     }
   });
 
+  /**
+   * @param {string} uuid
+   * @param {number} limit
+   */
+  async function handleLimitUpdate(uuid, limit) {
+    if (limit < 1) return;
+    try {
+      await updateVenueLimit(uuid, limit);
+      // Find and update the owner in the local list to ensure reactivity
+      const index = owners.findIndex((o) => o.owner_uuid === uuid);
+      if (index !== -1) {
+        owners[index].venue_limit = limit;
+        owners = [...owners];
+      }
+    } catch (err) {
+      alert(
+        `Failed to update limit: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
+      // Refresh list to revert UI if needed
+      try {
+        owners = await listOwners();
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  /**
+   * @param {string} uuid
+   * @param {string} name
+   */
   async function handleDelete(uuid, name) {
     if (
       !confirm(
@@ -31,7 +64,9 @@
       await deleteOwner(uuid);
       owners = owners.filter((o) => o.owner_uuid !== uuid);
     } catch (err) {
-      alert(`Failed to delete owner: ${err.message}`);
+      alert(
+        `Failed to delete owner: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -101,6 +136,10 @@
             >
             <th
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >Limit</th
+            >
+            <th
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >Role</th
             >
             <th
@@ -127,6 +166,19 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                 >{owner.venue_count}</td
               >
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <input
+                  type="number"
+                  min="1"
+                  class="w-16 px-1 py-0.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                  value={owner.venue_limit}
+                  on:change={(e) =>
+                    handleLimitUpdate(
+                      owner.owner_uuid,
+                      parseInt(e.currentTarget.value),
+                    )}
+                />
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {#if owner.is_admin}
                   <span

@@ -69,6 +69,7 @@ type OwnerResponse struct {
 	Mobile        string `json:"mobile"`
 	EmailVerified bool   `json:"email_verified"`
 	IsAdmin       bool   `json:"is_admin"`
+	VenueLimit    int32  `json:"venue_limit"`
 	CreatedAt     string `json:"created_at"`
 	ModifiedAt    string `json:"modified_at"`
 }
@@ -120,6 +121,7 @@ func ownerToResponse(owner sqlc.VenueOwner) OwnerResponse {
 		Mobile:        owner.Mobile,
 		EmailVerified: owner.EmailVerifiedAt.Valid,
 		IsAdmin:       owner.IsAdmin,
+		VenueLimit:    owner.VenueLimit,
 		CreatedAt:     timestamptzToString(owner.CreatedAt),
 		ModifiedAt:    timestamptzToString(owner.ModifiedAt),
 	}
@@ -222,6 +224,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		Email:        req.Email,
 		Mobile:       req.Mobile,
 		PasswordHash: passwordHash,
+		VenueLimit:   int32(FreeTierMaxVenues()),
 	})
 	if err != nil {
 		return InternalError(c, "Failed to create account")
@@ -491,7 +494,7 @@ func (h *AuthHandler) Me(c echo.Context) error {
 
 	// Venue count and limit (for frontend upgrade prompt)
 	venueCount, _ := h.store.Queries.CountVenuesByOwner(ctx, ownerUUID)
-	venueLimit := FreeTierMaxVenues()
+	venueLimit := int64(owner.VenueLimit)
 
 	// Return response
 	return c.JSON(http.StatusOK, map[string]any{

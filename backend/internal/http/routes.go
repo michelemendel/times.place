@@ -81,6 +81,7 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 	admin.GET("/owners/:uuid", adminHandler.GetOwner)
 	admin.GET("/venues", adminHandler.ListVenues)
 	admin.DELETE("/owners/:uuid", adminHandler.DeleteOwner)
+	admin.PATCH("/owners/:uuid/venue-limit", adminHandler.UpdateOwnerVenueLimit)
 
 	// Serve frontend static files (if available).
 	// This must be registered AFTER all API routes

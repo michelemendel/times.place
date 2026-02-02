@@ -12,9 +12,9 @@ import (
 )
 
 const createOwner = `-- name: CreateOwner :one
-INSERT INTO venue_owners (name, email, mobile, password_hash)
-VALUES ($1, $2, $3, $4)
-RETURNING owner_uuid, name, mobile, email, password_hash, is_admin, is_demo, email_verified_at, created_at, modified_at
+INSERT INTO venue_owners (name, email, mobile, password_hash, venue_limit)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING owner_uuid, name, mobile, email, password_hash, is_admin, is_demo, venue_limit, email_verified_at, created_at, modified_at
 `
 
 type CreateOwnerParams struct {
@@ -22,6 +22,7 @@ type CreateOwnerParams struct {
 	Email        string `json:"email"`
 	Mobile       string `json:"mobile"`
 	PasswordHash string `json:"password_hash"`
+	VenueLimit   int32  `json:"venue_limit"`
 }
 
 func (q *Queries) CreateOwner(ctx context.Context, arg CreateOwnerParams) (VenueOwner, error) {
@@ -30,6 +31,7 @@ func (q *Queries) CreateOwner(ctx context.Context, arg CreateOwnerParams) (Venue
 		arg.Email,
 		arg.Mobile,
 		arg.PasswordHash,
+		arg.VenueLimit,
 	)
 	var i VenueOwner
 	err := row.Scan(
@@ -40,6 +42,7 @@ func (q *Queries) CreateOwner(ctx context.Context, arg CreateOwnerParams) (Venue
 		&i.PasswordHash,
 		&i.IsAdmin,
 		&i.IsDemo,
+		&i.VenueLimit,
 		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.ModifiedAt,
@@ -58,7 +61,7 @@ func (q *Queries) DeleteOwner(ctx context.Context, ownerUuid pgtype.UUID) error 
 }
 
 const getOwnerByEmail = `-- name: GetOwnerByEmail :one
-SELECT owner_uuid, name, mobile, email, password_hash, is_admin, is_demo, email_verified_at, created_at, modified_at FROM venue_owners
+SELECT owner_uuid, name, mobile, email, password_hash, is_admin, is_demo, venue_limit, email_verified_at, created_at, modified_at FROM venue_owners
 WHERE LOWER(email) = LOWER($1)
 `
 
@@ -73,6 +76,7 @@ func (q *Queries) GetOwnerByEmail(ctx context.Context, lower string) (VenueOwner
 		&i.PasswordHash,
 		&i.IsAdmin,
 		&i.IsDemo,
+		&i.VenueLimit,
 		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.ModifiedAt,
@@ -81,7 +85,7 @@ func (q *Queries) GetOwnerByEmail(ctx context.Context, lower string) (VenueOwner
 }
 
 const getOwnerByID = `-- name: GetOwnerByID :one
-SELECT owner_uuid, name, mobile, email, password_hash, is_admin, is_demo, email_verified_at, created_at, modified_at FROM venue_owners
+SELECT owner_uuid, name, mobile, email, password_hash, is_admin, is_demo, venue_limit, email_verified_at, created_at, modified_at FROM venue_owners
 WHERE owner_uuid = $1
 `
 
@@ -96,6 +100,7 @@ func (q *Queries) GetOwnerByID(ctx context.Context, ownerUuid pgtype.UUID) (Venu
 		&i.PasswordHash,
 		&i.IsAdmin,
 		&i.IsDemo,
+		&i.VenueLimit,
 		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.ModifiedAt,

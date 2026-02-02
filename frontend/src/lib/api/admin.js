@@ -5,7 +5,7 @@ import { api } from './client.js';
  * @returns {Promise<any[]>}
  */
 export async function listOwners() {
-  return await api.getJSON('/api/admin/owners');
+  return api.getJSON('/api/admin/owners');
 }
 
 /**
@@ -14,7 +14,7 @@ export async function listOwners() {
  * @returns {Promise<any>}
  */
 export async function getOwner(uuid) {
-  return await api.getJSON(`/api/admin/owners/${uuid}`);
+  return api.getJSON(`/api/admin/owners/${uuid}`);
 }
 
 /**
@@ -23,7 +23,7 @@ export async function getOwner(uuid) {
  * @returns {Promise<void>}
  */
 export async function deleteOwner(uuid) {
-  return await api.delete(`/api/admin/owners/${uuid}`);
+  await api.delete(`/api/admin/owners/${uuid}`);
 }
 
 /**
@@ -31,5 +31,17 @@ export async function deleteOwner(uuid) {
  * @returns {Promise<any[]>}
  */
 export async function listVenues() {
-  return await api.getJSON('/api/admin/venues');
+  return api.getJSON('/api/admin/venues');
+}
+
+/**
+ * Update venue limit (admin only)
+ * @param {string} uuid
+ * @param {number} venueLimit
+ * @returns {Promise<void>}
+ */
+export async function updateVenueLimit(uuid, venueLimit) {
+  await api.patch(`/api/admin/owners/${uuid}/venue-limit`, {
+    venue_limit: venueLimit,
+  });
 }

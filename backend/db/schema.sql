@@ -11,6 +11,7 @@ CREATE TABLE venue_owners (
     mobile text NOT NULL,
     email text NOT NULL UNIQUE,
     password_hash text NOT NULL,
+    is_admin boolean NOT NULL DEFAULT false,
     is_demo boolean NOT NULL DEFAULT false,
     email_verified_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),

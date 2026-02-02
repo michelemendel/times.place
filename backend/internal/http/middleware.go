@@ -5,6 +5,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/michelemendel/times.place/internal/service"
+	"github.com/michelemendel/times.place/internal/store"
+	"github.com/michelemendel/times.place/utils"
 )
 
 // ContextKeyOwnerUUID is the key for storing owner UUID in Echo context
@@ -39,6 +41,38 @@ func JWTAuthMiddleware(authService *service.AuthService) echo.MiddlewareFunc {
 
 			// Store owner UUID in context
 			c.Set(ContextKeyOwnerUUID, ownerUUID)
+
+			return next(c)
+		}
+	}
+}
+
+// AdminOnlyMiddleware ensures the authenticated user is an admin
+func AdminOnlyMiddleware(store *store.Store) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ownerUUIDStr, err := GetOwnerUUIDFromContext(c)
+			if err != nil {
+				return err
+			}
+
+			// 2. Convert to pgtype.UUID
+			ownerUUID, err := utils.StringToUUID(ownerUUIDStr)
+			if err != nil {
+				return UnauthorizedError(c, "Invalid owner UUID")
+			}
+
+			// 3. Fetch owner from DB
+			owner, err := store.Queries.GetOwnerByID(c.Request().Context(), ownerUUID)
+			if err != nil {
+				// If owner not found (deleted?) implies unauthorized
+				return UnauthorizedError(c, "User not found")
+			}
+
+			// 4. Check is_admin flag
+			if !owner.IsAdmin {
+				return ForbiddenError(c, "Admin access required")
+			}
 
 			return next(c)
 		}

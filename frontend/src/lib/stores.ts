@@ -7,3 +7,6 @@ import type { VenueOwner } from './types';
 // backend manages refresh tokens via HttpOnly cookies.
 export const currentOwnerStore = writable<VenueOwner | null>(null);
 
+// Flag to indicate if the initial auth check has completed
+export const authInitialized = writable<boolean>(false);
+

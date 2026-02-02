@@ -166,7 +166,6 @@ The server will:
 ### Typical Workflow
 
 1. **Start devcontainer** (if not already running)
-
    - **If using Cursor**: Click "Reopen in Container" when prompted (no need to run `make bdevcontainerup`)
    - **If using external terminal/scripts**: Run `make bdevcontainerup`
 
@@ -204,36 +203,34 @@ The server will:
    You can run the application in two modes:
 
    **Development Mode (Recommended for local development):**
-   
    - Frontend runs on Vite dev server with Hot Module Replacement (HMR)
    - Backend runs separately serving only API routes
    - Best for active frontend development
-   
+
    ```bash
    # Terminal 1: Start backend (API only)
    make bstart
-   
+
    # Terminal 2: Start frontend dev server
    make fstart
    ```
-   
+
    The frontend dev server (on `http://localhost:5173`) will proxy `/api/*` requests to the backend (on `http://localhost:8080`).
 
    **Production Mode (Backend serves frontend):**
-   
    - Frontend is built and served by the backend
    - Single server on port 8080
    - Matches production deployment setup
    - Useful for testing production-like behavior locally
-   
+
    ```bash
    # Build frontend, then start backend serving it
    make fbuild
    make pstart
    ```
-   
+
    The application will be available at `http://localhost:8080` with both API (`/api/*`) and frontend routes served by the backend.
-   
+
    **Note:** `make pstart` expects the frontend to already be built (run `make fbuild` first) and then starts the backend, which will serve the built frontend from `frontend/build/`.
 
 ### Database Connection
@@ -260,6 +257,7 @@ The server will:
 **Using GUI Tools (pgAdmin, DBeaver, TablePlus, etc.):**
 
 **Recommended: Use proxy port (works reliably with Cursor port forwarding):**
+
 - Host: `localhost`
 - Port: `5433` (proxy port through backend container)
 - Database: `timesplace`
@@ -267,6 +265,7 @@ The server will:
 - Password: `timesplace`
 
 **Alternative: Direct port (may work from host CLI, but pgAdmin may have issues):**
+
 - Host: `localhost`
 - Port: `5432` (direct postgres port)
 - Database: `timesplace`
@@ -427,6 +426,31 @@ Check:
      - If you need containerd for k8s, you can use `make bdevcontainerup` but won't be able to use "Reopen in Container"
    - **Common issue**: If you see warnings about Docker CLI plugin symlinks pointing to Docker Desktop instead of Rancher Desktop, see troubleshooting section #1 above
 
+## Backoffice Administration
+
+The platform includes a Backoffice interface for manual administration of owners and venues, accessible at `/backoffice` for admin users.
+
+### Promoting a User to Admin
+
+By design, there is no public sign-up for admin accounts. To grant admin privileges, you must manually update the `is_admin` flag in the database for an existing user.
+
+1.  **Register** a standard account via the frontend.
+2.  **Run the SQL command** to promote the user:
+
+    ```bash
+    # If running with devcontainer:
+    make devshell
+    psql "$DATABASE_URL" -c "UPDATE venue_owners SET is_admin = true WHERE email = 'YOUR_EMAIL@example.com';"
+    ```
+
+    Or using a local `psql` connection:
+
+    ```sql
+    UPDATE venue_owners SET is_admin = true WHERE email = 'YOUR_EMAIL@example.com';
+    ```
+
+3.  **Access the Backoffice**: Log out and log back in (or refresh). A **Backoffice** link will appear in the user menu.
+
 ## GitHub Actions & Render Deploy Hook
 
 The CI workflow (`.github/workflows/ci.yml`) runs build and tests on every push and PR. On **push to `main`**, it also triggers a Render deploy via a deploy hook.
@@ -526,6 +550,7 @@ go test ./... -cover
 ```
 
 **Key Points:**
+
 - Tests run against a live database (not mocks)
 - Test isolation via database transactions (automatic rollback)
 - Test data seeding utilities in `backend/internal/testdata/`

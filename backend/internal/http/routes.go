@@ -74,6 +74,14 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 	public.GET("/event-lists/by-token/:token", publicHandler.GetEventListByToken)
 	public.GET("/event-lists/:event_list_uuid/events", publicHandler.GetEventsByEventList)
 
+	// Admin routes (protected by JWT + Admin check)
+	admin := api.Group("/admin", JWTAuthMiddleware(authService), AdminOnlyMiddleware(store))
+	adminHandler := NewAdminHandler(store)
+	admin.GET("/owners", adminHandler.ListOwners)
+	admin.GET("/owners/:uuid", adminHandler.GetOwner)
+	admin.GET("/venues", adminHandler.ListVenues)
+	admin.DELETE("/owners/:uuid", adminHandler.DeleteOwner)
+
 	// Serve frontend static files (if available).
 	// This must be registered AFTER all API routes
 	if err := setupFrontendRoutes(e); err != nil {

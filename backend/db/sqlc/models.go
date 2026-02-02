@@ -73,6 +73,7 @@ type VenueOwner struct {
 	Mobile          string             `json:"mobile"`
 	Email           string             `json:"email"`
 	PasswordHash    string             `json:"password_hash"`
+	IsAdmin         bool               `json:"is_admin"`
 	IsDemo          bool               `json:"is_demo"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`

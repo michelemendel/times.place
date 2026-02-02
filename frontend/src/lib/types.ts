@@ -3,6 +3,7 @@ export interface VenueOwner {
   name: string;
   mobile: string;
   email: string;
+  is_admin?: boolean;
   /** Whether the owner has verified their email; required for creating/editing venues and events. */
   email_verified?: boolean;
   /**

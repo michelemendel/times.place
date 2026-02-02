@@ -55,7 +55,7 @@ type RefreshRequest struct {
 
 type AuthResponse struct {
 	Owner       OwnerResponse `json:"owner"`
-	AccessToken string       `json:"access_token"`
+	AccessToken string        `json:"access_token"`
 }
 
 type RefreshResponse struct {
@@ -68,6 +68,7 @@ type OwnerResponse struct {
 	Email         string `json:"email"`
 	Mobile        string `json:"mobile"`
 	EmailVerified bool   `json:"email_verified"`
+	IsAdmin       bool   `json:"is_admin"`
 	CreatedAt     string `json:"created_at"`
 	ModifiedAt    string `json:"modified_at"`
 }
@@ -118,6 +119,7 @@ func ownerToResponse(owner sqlc.VenueOwner) OwnerResponse {
 		Email:         owner.Email,
 		Mobile:        owner.Mobile,
 		EmailVerified: owner.EmailVerifiedAt.Valid,
+		IsAdmin:       owner.IsAdmin,
 		CreatedAt:     timestamptzToString(owner.CreatedAt),
 		ModifiedAt:    timestamptzToString(owner.ModifiedAt),
 	}
@@ -128,7 +130,7 @@ func (h *AuthHandler) setRefreshTokenCookie(c echo.Context, token string) {
 	cookieDomain := os.Getenv("COOKIE_DOMAIN")
 	cookieSecure := os.Getenv("COOKIE_SECURE") == "true"
 	cookieSameSite := http.SameSiteLaxMode
-	
+
 	sameSiteStr := os.Getenv("COOKIE_SAME_SITE")
 	switch strings.ToLower(sameSiteStr) {
 	case "strict":
@@ -148,11 +150,11 @@ func (h *AuthHandler) setRefreshTokenCookie(c echo.Context, token string) {
 		Secure:   cookieSecure,
 		SameSite: cookieSameSite,
 	}
-	
+
 	if cookieDomain != "" {
 		cookie.Domain = cookieDomain
 	}
-	
+
 	c.SetCookie(cookie)
 }
 
@@ -175,13 +177,13 @@ func (h *AuthHandler) getRefreshTokenFromRequest(c echo.Context) string {
 	if err == nil && cookie != nil && cookie.Value != "" {
 		return cookie.Value
 	}
-	
+
 	// Fallback to request body
 	var req RefreshRequest
 	if err := c.Bind(&req); err == nil && req.RefreshToken != "" {
 		return req.RefreshToken
 	}
-	
+
 	return ""
 }
 
@@ -239,7 +241,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	// Store refresh token
 	tokenHash := h.authService.HashRefreshToken(refreshToken)
 	expiresAt := time.Now().Add(service.RefreshTokenLifetime)
-	
+
 	ownerUUID, _ := stringToUUID(uuidToString(owner.OwnerUuid))
 	_, err = h.store.Queries.CreateRefreshToken(ctx, sqlc.CreateRefreshTokenParams{
 		OwnerUuid: ownerUUID,
@@ -333,7 +335,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	// Store refresh token
 	tokenHash := h.authService.HashRefreshToken(refreshToken)
 	expiresAt := time.Now().Add(service.RefreshTokenLifetime)
-	
+
 	ownerUUID, _ := stringToUUID(uuidToString(owner.OwnerUuid))
 	_, err = h.store.Queries.CreateRefreshToken(ctx, sqlc.CreateRefreshTokenParams{
 		OwnerUuid: ownerUUID,
@@ -421,8 +423,8 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 
 	// Mark old token as replaced
 	err = h.store.Queries.RotateRefreshToken(ctx, sqlc.RotateRefreshTokenParams{
-		RefreshTokenUuid:        tokenRecord.RefreshTokenUuid,
-		ReplacedByTokenUuid:     newTokenRecord.RefreshTokenUuid,
+		RefreshTokenUuid:    tokenRecord.RefreshTokenUuid,
+		ReplacedByTokenUuid: newTokenRecord.RefreshTokenUuid,
 	})
 	if err != nil {
 		// Log error but continue (token rotation is best-effort)
@@ -451,7 +453,7 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 	if refreshToken != "" {
 		ctx := c.Request().Context()
 		tokenHash := h.authService.HashRefreshToken(refreshToken)
-		
+
 		// Revoke token
 		err := h.store.Queries.RevokeRefreshTokenByHash(ctx, tokenHash)
 		if err != nil {
@@ -493,7 +495,7 @@ func (h *AuthHandler) Me(c echo.Context) error {
 
 	// Return response
 	return c.JSON(http.StatusOK, map[string]any{
-		"owner":        ownerToResponse(owner),
+		"owner":       ownerToResponse(owner),
 		"venue_count": venueCount,
 		"venue_limit": venueLimit,
 	})

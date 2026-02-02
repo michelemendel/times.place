@@ -3,7 +3,7 @@
   import { page } from '$app/stores';
   import '../app.css';
   import { dev } from '$app/environment';
-  import { currentOwnerStore } from '$lib/stores';
+  import { currentOwnerStore, authInitialized } from '$lib/stores';
   import { goto } from '$app/navigation';
   import { getCurrentOwner } from '$lib/api/auth.js';
   import { browser } from '$app/environment';
@@ -54,6 +54,8 @@
         // If /api/auth/me fails, user is not authenticated
         // This is expected for unauthenticated users, so we silently ignore
         // The error could be 401 (no valid token) or network error
+      } finally {
+        authInitialized.set(true);
       }
 
       // Set up offline detection
@@ -194,6 +196,14 @@
               role="menu"
             >
               {#if $currentOwnerStore}
+                {#if $currentOwnerStore.is_admin}
+                  <a
+                    href="/backoffice"
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    role="menuitem"
+                    on:click={closeUserMenu}>Backoffice</a
+                  >
+                {/if}
                 <a
                   href="/venue-owner"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -307,6 +317,13 @@
               on:click={closeMobileMenu}>Price</a
             >
             {#if $currentOwnerStore}
+              {#if $currentOwnerStore.is_admin}
+                <a
+                  href="/backoffice"
+                  class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
+                  on:click={closeMobileMenu}>Backoffice</a
+                >
+              {/if}
               <a
                 href="/venue-owner"
                 class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"

@@ -53,6 +53,15 @@ type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token,omitempty"` // Optional fallback if not in cookie
 }
 
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetPasswordRequest struct {
+	Token    string `json:"token" validate:"required"`
+	Password string `json:"password" validate:"required,min=6"`
+}
+
 type AuthResponse struct {
 	Owner       OwnerResponse `json:"owner"`
 	AccessToken string        `json:"access_token"`
@@ -624,4 +633,102 @@ func (h *AuthHandler) ResendVerification(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusAccepted, map[string]string{"message": "Verification email sent"})
+}
+
+// RequestPasswordReset handles POST /api/auth/forgot-password
+func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
+	var req ForgotPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return ValidationError(c, "Invalid request body")
+	}
+	if err := c.Validate(&req); err != nil {
+		return ValidationError(c, err.Error())
+	}
+
+	ctx := c.Request().Context()
+	owner, err := h.store.Queries.GetOwnerByEmail(ctx, req.Email)
+	if err != nil {
+		// Do not reveal if email exists
+		return c.JSON(http.StatusAccepted, map[string]string{"message": "If that email is registered, you will receive a reset link shortly."})
+	}
+
+	// Generate reset token
+	rawToken, err := utils.GenerateToken()
+	if err != nil {
+		return InternalError(c, "Failed to generate reset token")
+	}
+	tokenHash := h.authService.HashRefreshToken(rawToken) // Reuse hash helper
+	expiresAt := time.Now().Add(1 * time.Hour)
+
+	// Delete old tokens for this owner
+	_ = h.store.Queries.DeletePasswordResetTokensByOwner(ctx, owner.OwnerUuid)
+
+	_, err = h.store.Queries.CreatePasswordResetToken(ctx, sqlc.CreatePasswordResetTokenParams{
+		TokenHash: tokenHash,
+		OwnerUuid: owner.OwnerUuid,
+		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+	})
+	if err != nil {
+		return InternalError(c, "Failed to store reset token")
+	}
+
+	if h.mailer != nil {
+		baseURL := os.Getenv("RESET_PASSWORD_BASE_URL")
+		if baseURL == "" {
+			baseURL = "http://localhost:5173"
+		}
+		link := baseURL + "/reset-password?token=" + url.QueryEscape(rawToken)
+		if sendErr := h.mailer.SendPasswordResetEmail(owner.Email, link); sendErr != nil {
+			log.Printf("failed to send password reset email: %v", sendErr)
+		}
+	}
+
+	return c.JSON(http.StatusAccepted, map[string]string{"message": "If that email is registered, you will receive a reset link shortly."})
+}
+
+// ResetPassword handles POST /api/auth/reset-password
+func (h *AuthHandler) ResetPassword(c echo.Context) error {
+	var req ResetPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return ValidationError(c, "Invalid request body")
+	}
+	if err := c.Validate(&req); err != nil {
+		return ValidationError(c, err.Error())
+	}
+
+	ctx := c.Request().Context()
+	tokenHash := h.authService.HashRefreshToken(req.Token)
+
+	tokenRecord, err := h.store.Queries.GetPasswordResetTokenByHash(ctx, tokenHash)
+	if err != nil {
+		return ValidationError(c, "Invalid or expired reset link")
+	}
+
+	if time.Now().After(tokenRecord.ExpiresAt.Time) {
+		_ = h.store.Queries.DeletePasswordResetTokenByHash(ctx, tokenHash)
+		return ValidationError(c, "Invalid or expired reset link")
+	}
+
+	// Hash new password
+	passwordHash, err := h.authService.HashPassword(req.Password)
+	if err != nil {
+		return InternalError(c, "Failed to process password")
+	}
+
+	// Update password
+	err = h.store.Queries.UpdateOwnerPassword(ctx, sqlc.UpdateOwnerPasswordParams{
+		PasswordHash: passwordHash,
+		OwnerUuid:    tokenRecord.OwnerUuid,
+	})
+	if err != nil {
+		return InternalError(c, "Failed to update password")
+	}
+
+	// Revoke token
+	_ = h.store.Queries.DeletePasswordResetTokenByHash(ctx, tokenHash)
+
+	// Optional: revoke all refresh tokens for this user? Probably a good idea.
+	_ = h.store.Queries.RevokeAllTokensForOwner(ctx, tokenRecord.OwnerUuid)
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
 }

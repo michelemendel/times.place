@@ -45,3 +45,15 @@ export async function updateVenueLimit(uuid, venueLimit) {
     venue_limit: venueLimit,
   });
 }
+
+/**
+ * Reset owner password (admin only)
+ * @param {string} uuid
+ * @param {string} password
+ * @returns {Promise<void>}
+ */
+export async function resetOwnerPassword(uuid, password) {
+  await api.postJSON(`/api/admin/owners/${uuid}/reset-password`, {
+    password,
+  });
+}

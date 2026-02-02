@@ -29,7 +29,11 @@
 
   function validateEmailBlur() {
     const em = normalizeEmail(email);
-    emailError = !em ? 'Email is required' : !em.includes('@') ? 'Please enter a valid email address' : '';
+    emailError = !em
+      ? 'Email is required'
+      : !em.includes('@')
+        ? 'Please enter a valid email address'
+        : '';
   }
 
   function validatePasswordBlur() {
@@ -39,7 +43,11 @@
   /** Set all required-field errors (e.g. after failed submit) so user sees which fields are missing */
   function setRequiredFieldErrors() {
     const em = normalizeEmail(email);
-    emailError = !em ? 'Email is required' : !em.includes('@') ? 'Please enter a valid email address' : '';
+    emailError = !em
+      ? 'Email is required'
+      : !em.includes('@')
+        ? 'Please enter a valid email address'
+        : '';
     passwordError = !password ? 'Password is required' : '';
   }
 
@@ -102,7 +110,10 @@
       <div class="max-w-xl mx-auto">
         <form class="space-y-5" on:submit={handleSubmit}>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Email *</label>
+            <label
+              class="block text-sm font-medium text-gray-700 mb-1"
+              for="email">Email *</label
+            >
             <input
               id="email"
               type="email"
@@ -120,7 +131,18 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Password *</label>
+            <div class="flex items-center justify-between mb-1">
+              <label
+                class="block text-sm font-medium text-gray-700"
+                for="password">Password *</label
+              >
+              <a
+                href="/forgot-password"
+                class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Forgot password?
+              </a>
+            </div>
             <input
               id="password"
               type="password"
@@ -138,18 +160,24 @@
           </div>
 
           {#if error}
-            <div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div
+              class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            >
               {error}
             </div>
           {/if}
 
           {#if success}
-            <div class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            <div
+              class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+            >
               {success}
             </div>
           {/if}
 
-          <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div
+            class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"
+          >
             <button
               type="submit"
               disabled={isLoading}
@@ -157,7 +185,10 @@
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
-            <a class="text-sm text-blue-600 hover:text-blue-800 font-medium" href="/registration">
+            <a
+              class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              href="/registration"
+            >
               Need an account? Register as a venue owner
             </a>
           </div>

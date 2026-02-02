@@ -1,6 +1,11 @@
 <script>
   import { onMount } from 'svelte';
-  import { listOwners, deleteOwner, updateVenueLimit } from '$lib/api/admin';
+  import {
+    listOwners,
+    deleteOwner,
+    updateVenueLimit,
+    resetOwnerPassword,
+  } from '$lib/api/admin';
   import { currentOwnerStore } from '$lib/stores';
 
   /** @type {any[]} */
@@ -66,6 +71,30 @@
     } catch (err) {
       alert(
         `Failed to delete owner: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  /**
+   * @param {string} uuid
+   * @param {string} name
+   */
+  async function handleResetPassword(uuid, name) {
+    const newPassword = prompt(
+      `Enter new password for ${name} (min 6 characters):`,
+    );
+    if (!newPassword) return;
+    if (newPassword.length < 6) {
+      alert('Password must be at least 6 characters.');
+      return;
+    }
+
+    try {
+      await resetOwnerPassword(uuid, newPassword);
+      alert(`Password for ${name} has been updated.`);
+    } catch (err) {
+      alert(
+        `Failed to reset password: ${err instanceof Error ? err.message : 'Unknown error'}`,
       );
     }
   }
@@ -202,6 +231,13 @@
                 class="px-4 py-2 whitespace-nowrap text-right text-xs font-medium"
               >
                 {#if owner.owner_uuid !== $currentOwnerStore?.owner_uuid && !owner.is_demo}
+                  <button
+                    on:click={() =>
+                      handleResetPassword(owner.owner_uuid, owner.name)}
+                    class="text-blue-600 hover:text-blue-900 focus:outline-none mr-3"
+                  >
+                    Reset Password
+                  </button>
                   <button
                     on:click={() => handleDelete(owner.owner_uuid, owner.name)}
                     class="text-red-600 hover:text-red-900 focus:outline-none"

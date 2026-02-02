@@ -4,4 +4,6 @@ package mailer
 type Sender interface {
 	// SendVerificationEmail sends an email with a verification link to the given address.
 	SendVerificationEmail(to, verificationLink string) error
+	// SendPasswordResetEmail sends an email with a password reset link to the given address.
+	SendPasswordResetEmail(to, resetLink string) error
 }

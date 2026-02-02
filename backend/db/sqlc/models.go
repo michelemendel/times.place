@@ -41,6 +41,13 @@ type EventList struct {
 	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
 }
 
+type PasswordResetToken struct {
+	TokenHash string             `json:"token_hash"`
+	OwnerUuid pgtype.UUID        `json:"owner_uuid"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type RefreshToken struct {
 	RefreshTokenUuid    pgtype.UUID        `json:"refresh_token_uuid"`
 	OwnerUuid           pgtype.UUID        `json:"owner_uuid"`

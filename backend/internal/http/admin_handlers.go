@@ -5,19 +5,22 @@ import (
 
 	"github.com/labstack/echo/v4"
 	sqlc "github.com/michelemendel/times.place/db/sqlc"
+	"github.com/michelemendel/times.place/internal/service"
 	"github.com/michelemendel/times.place/internal/store"
 	"github.com/michelemendel/times.place/utils"
 )
 
 // AdminHandler handles admin-only endpoints
 type AdminHandler struct {
-	store *store.Store
+	store       *store.Store
+	authService *service.AuthService
 }
 
 // NewAdminHandler creates a new admin handler
-func NewAdminHandler(store *store.Store) *AdminHandler {
+func NewAdminHandler(store *store.Store, authService *service.AuthService) *AdminHandler {
 	return &AdminHandler{
-		store: store,
+		store:       store,
+		authService: authService,
 	}
 }
 
@@ -167,6 +170,47 @@ func (h *AdminHandler) UpdateOwnerVenueLimit(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "Venue limit updated"})
+}
+
+type AdminResetPasswordRequest struct {
+	Password string `json:"password" validate:"required,min=6"`
+}
+
+// AdminResetPassword handles POST /api/admin/owners/:uuid/reset-password
+func (h *AdminHandler) AdminResetPassword(c echo.Context) error {
+	idStr := c.Param("uuid")
+	uuid, err := utils.StringToUUID(idStr)
+	if err != nil {
+		return ValidationError(c, "Invalid owner UUID")
+	}
+
+	var req AdminResetPasswordRequest
+	if err := c.Bind(&req); err != nil {
+		return ValidationError(c, "Invalid request body")
+	}
+	if err := c.Validate(&req); err != nil {
+		return ValidationError(c, err.Error())
+	}
+
+	// Hash password
+	passwordHash, err := h.authService.HashPassword(req.Password)
+	if err != nil {
+		return InternalError(c, "Failed to process password")
+	}
+
+	ctx := c.Request().Context()
+	err = h.store.Queries.UpdateOwnerPassword(ctx, sqlc.UpdateOwnerPasswordParams{
+		PasswordHash: passwordHash,
+		OwnerUuid:    uuid,
+	})
+	if err != nil {
+		return InternalError(c, "Failed to update password")
+	}
+
+	// Revoke all refresh tokens for this user
+	_ = h.store.Queries.RevokeAllTokensForOwner(ctx, uuid)
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Password updated successfully"})
 }
 
 // Helper to reuse timestamptzToString from auth_handlers if possible, or duplicate/move it

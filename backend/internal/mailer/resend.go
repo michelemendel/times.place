@@ -71,7 +71,48 @@ func (r *ResendSender) SendVerificationEmail(to, verificationLink string) error 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("resend API returned %d", resp.StatusCode)
+		var errData map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&errData)
+		return fmt.Errorf("resend API returned %d: %v", resp.StatusCode, errData)
+	}
+	return nil
+}
+
+// SendPasswordResetEmail sends a password reset email with the given link.
+func (r *ResendSender) SendPasswordResetEmail(to, resetLink string) error {
+	if r.apiKey == "" {
+		return fmt.Errorf("RESEND_API_KEY is not set")
+	}
+	subject := "Reset your password – Times.Place"
+	html := fmt.Sprintf(`<p>You requested to reset your password. Please click the link below:</p>
+<p><a href="%s">%s</a></p>
+<p>This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.</p>`,
+		resetLink, resetLink)
+	body := sendEmailRequest{
+		From:    r.from,
+		To:      []string{to},
+		Subject: subject,
+		HTML:    html,
+	}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, resendAPIURL, bytes.NewReader(raw))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+r.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := r.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		var errData map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&errData)
+		return fmt.Errorf("resend API returned %d: %v", resp.StatusCode, errData)
 	}
 	return nil
 }

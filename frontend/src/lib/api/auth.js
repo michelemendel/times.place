@@ -122,7 +122,27 @@ export async function deleteAccount() {
 }
 
 /**
- * Request a new verification email. Requires authenticated user.
+ * Request a password reset email
+ * @param {string} email - Owner email
+ * @returns {Promise<{message: string}>}
+ */
+export async function forgotPassword(email) {
+  const response = await api.postJSON('/api/auth/forgot-password', { email });
+  return response;
+}
+
+/**
+ * Reset password using a token
+ * @param {string} token - Reset token from email
+ * @param {string} password - New password
+ * @returns {Promise<{message: string}>}
+ */
+export async function resetPassword(token, password) {
+  const response = await api.postJSON('/api/auth/reset-password', { token, password });
+  return response;
+}
+/**
+ * Request a new verification email for the current owner
  * @returns {Promise<{message: string}>}
  */
 export async function resendVerificationEmail() {

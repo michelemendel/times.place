@@ -105,3 +105,14 @@ CREATE INDEX refresh_tokens_token_hash_idx ON refresh_tokens(token_hash);
 CREATE INDEX email_verification_tokens_token_hash_idx ON email_verification_tokens(token_hash);
 CREATE INDEX email_verification_tokens_owner_uuid_idx ON email_verification_tokens(owner_uuid);
 CREATE INDEX email_verification_tokens_expires_at_idx ON email_verification_tokens(expires_at);
+
+-- Create password_reset_tokens table
+CREATE TABLE password_reset_tokens (
+    token_hash text PRIMARY KEY,
+    owner_uuid uuid NOT NULL REFERENCES venue_owners(owner_uuid) ON DELETE CASCADE,
+    expires_at timestamptz NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Index for looking up tokens by owner
+CREATE INDEX idx_password_reset_tokens_owner_uuid ON password_reset_tokens(owner_uuid);

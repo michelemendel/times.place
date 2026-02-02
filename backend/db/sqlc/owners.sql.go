@@ -118,3 +118,19 @@ func (q *Queries) SetOwnerEmailVerified(ctx context.Context, ownerUuid pgtype.UU
 	_, err := q.db.Exec(ctx, setOwnerEmailVerified, ownerUuid)
 	return err
 }
+
+const updateOwnerPassword = `-- name: UpdateOwnerPassword :exec
+UPDATE venue_owners
+SET password_hash = $1, modified_at = now()
+WHERE owner_uuid = $2
+`
+
+type UpdateOwnerPasswordParams struct {
+	PasswordHash string      `json:"password_hash"`
+	OwnerUuid    pgtype.UUID `json:"owner_uuid"`
+}
+
+func (q *Queries) UpdateOwnerPassword(ctx context.Context, arg UpdateOwnerPasswordParams) error {
+	_, err := q.db.Exec(ctx, updateOwnerPassword, arg.PasswordHash, arg.OwnerUuid)
+	return err
+}

@@ -26,6 +26,8 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 	auth.POST("/refresh", authHandler.Refresh)
 	auth.POST("/logout", authHandler.Logout)
 	auth.GET("/verify-email", authHandler.VerifyEmail)
+	auth.POST("/forgot-password", authHandler.RequestPasswordReset)
+	auth.POST("/reset-password", authHandler.ResetPassword)
 
 	// Protected auth routes
 	auth.GET("/me", authHandler.Me, JWTAuthMiddleware(authService))
@@ -76,12 +78,13 @@ func RegisterRoutes(e *echo.Echo, store *store.Store, authService *service.AuthS
 
 	// Admin routes (protected by JWT + Admin check)
 	admin := api.Group("/admin", JWTAuthMiddleware(authService), AdminOnlyMiddleware(store))
-	adminHandler := NewAdminHandler(store)
+	adminHandler := NewAdminHandler(store, authService)
 	admin.GET("/owners", adminHandler.ListOwners)
 	admin.GET("/owners/:uuid", adminHandler.GetOwner)
 	admin.GET("/venues", adminHandler.ListVenues)
 	admin.DELETE("/owners/:uuid", adminHandler.DeleteOwner)
 	admin.PATCH("/owners/:uuid/venue-limit", adminHandler.UpdateOwnerVenueLimit)
+	admin.POST("/owners/:uuid/reset-password", adminHandler.AdminResetPassword)
 
 	// Serve frontend static files (if available).
 	// This must be registered AFTER all API routes

@@ -19,3 +19,8 @@ WHERE owner_uuid = $1;
 -- name: DeleteOwner :exec
 DELETE FROM venue_owners
 WHERE owner_uuid = $1;
+
+-- name: UpdateOwnerPassword :exec
+UPDATE venue_owners
+SET password_hash = $1, modified_at = now()
+WHERE owner_uuid = $2;

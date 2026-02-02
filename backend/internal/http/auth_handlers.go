@@ -291,7 +291,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		if err == nil && h.mailer != nil {
 			baseURL := os.Getenv("VERIFICATION_BASE_URL")
 			if baseURL == "" {
-				baseURL = "http://localhost:5173"
+				log.Printf("ERROR: VERIFICATION_BASE_URL is not set")
 			}
 			link := baseURL + "/verify-email?token=" + url.QueryEscape(rawToken)
 			if sendErr := h.mailer.SendVerificationEmail(owner.Email, link); sendErr != nil {
@@ -623,7 +623,7 @@ func (h *AuthHandler) ResendVerification(c echo.Context) error {
 	if h.mailer != nil {
 		baseURL := os.Getenv("VERIFICATION_BASE_URL")
 		if baseURL == "" {
-			baseURL = "http://localhost:5173"
+			log.Printf("ERROR: VERIFICATION_BASE_URL is not set")
 		}
 		link := baseURL + "/verify-email?token=" + url.QueryEscape(rawToken)
 		if sendErr := h.mailer.SendVerificationEmail(owner.Email, link); sendErr != nil {
@@ -675,7 +675,7 @@ func (h *AuthHandler) RequestPasswordReset(c echo.Context) error {
 	if h.mailer != nil {
 		baseURL := os.Getenv("RESET_PASSWORD_BASE_URL")
 		if baseURL == "" {
-			baseURL = "http://localhost:5173"
+			log.Printf("ERROR: RESET_PASSWORD_BASE_URL is not set")
 		}
 		link := baseURL + "/reset-password?token=" + url.QueryEscape(rawToken)
 		if sendErr := h.mailer.SendPasswordResetEmail(owner.Email, link); sendErr != nil {

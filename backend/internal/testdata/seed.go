@@ -352,15 +352,15 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 1: Shacharis - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList1UUID, "Shacharis", "2025-12-25T06:00:00+02:00").Scan(&data.Event1UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList1UUID, "Shacharis", "06:00:00").Scan(&data.Event1UUID)
 	if err == sql.ErrNoRows {
 		// Event doesn't exist, insert it
 		data.Event1UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event1UUID, data.EventList1UUID, "Shacharis", "2025-12-25T06:00:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event1UUID, data.EventList1UUID, "Shacharis", nil, "06:00:00",
 			"we start on time", 0, 0, now, now)
 		if err != nil {
 			return nil, err
@@ -371,15 +371,15 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 2: Mincha - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList1UUID, "Mincha", "2025-12-25T16:30:00+02:00").Scan(&data.Event2UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList1UUID, "Mincha", "16:30:00").Scan(&data.Event2UUID)
 	if err == sql.ErrNoRows {
 		// Event doesn't exist, insert it
 		data.Event2UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event2UUID, data.EventList1UUID, "Mincha", "2025-12-25T16:30:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event2UUID, data.EventList1UUID, "Mincha", nil, "16:30:00",
 			"", 0, 1, now, now)
 		if err != nil {
 			return nil, err
@@ -390,15 +390,15 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 3: Kabbalat Shabbat - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList2UUID, "Kabbalat Shabbat", "2025-12-26T17:30:00+02:00").Scan(&data.Event3UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList2UUID, "Kabbalat Shabbat", "17:30:00").Scan(&data.Event3UUID)
 	if err == sql.ErrNoRows {
 		// Event doesn't exist, insert it
 		data.Event3UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event3UUID, data.EventList2UUID, "Kabbalat Shabbat", "2025-12-26T17:30:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event3UUID, data.EventList2UUID, "Kabbalat Shabbat", nil, "17:30:00",
 			"", 60, 0, now, now)
 		if err != nil {
 			return nil, err
@@ -409,15 +409,15 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 4: Shabbat Morning - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList2UUID, "Shabbat Morning", "2025-12-27T09:00:00+02:00").Scan(&data.Event4UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList2UUID, "Shabbat Morning", "09:00:00").Scan(&data.Event4UUID)
 	if err == sql.ErrNoRows {
 		// Event doesn't exist, insert it
 		data.Event4UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event4UUID, data.EventList2UUID, "Shabbat Morning", "2025-12-27T09:00:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event4UUID, data.EventList2UUID, "Shabbat Morning", nil, "09:00:00",
 			"", 120, 1, now, now)
 		if err != nil {
 			return nil, err
@@ -428,14 +428,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 5: Welcome (Ben's house Birthday) - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList3UUID, "Welcome", "2025-12-25T19:00:00+02:00").Scan(&data.Event5UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList3UUID, "Welcome", "19:00:00").Scan(&data.Event5UUID)
 	if err == sql.ErrNoRows {
 		data.Event5UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event5UUID, data.EventList3UUID, "Welcome", "2025-12-25T19:00:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event5UUID, data.EventList3UUID, "Welcome", nil, "19:00:00",
 			"There will be barbecue and cake", 0, 0, now, now)
 		if err != nil {
 			return nil, err
@@ -472,14 +472,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 10: Algebra - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList5UUID, "Algebra", "2025-12-25T09:00:00+02:00").Scan(&data.Event10UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList5UUID, "Algebra", "09:00:00").Scan(&data.Event10UUID)
 	if err == sql.ErrNoRows {
 		data.Event10UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event10UUID, data.EventList5UUID, "Algebra", "2025-12-25T09:00:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event10UUID, data.EventList5UUID, "Algebra", nil, "09:00:00",
 			"", 45, 0, now, now)
 		if err != nil {
 			return nil, err
@@ -490,14 +490,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 11: Calculus - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList5UUID, "Calculus", "2025-12-25T10:00:00+02:00").Scan(&data.Event11UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList5UUID, "Calculus", "10:00:00").Scan(&data.Event11UUID)
 	if err == sql.ErrNoRows {
 		data.Event11UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event11UUID, data.EventList5UUID, "Calculus", "2025-12-25T10:00:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event11UUID, data.EventList5UUID, "Calculus", nil, "10:00:00",
 			"", 45, 1, now, now)
 		if err != nil {
 			return nil, err
@@ -508,14 +508,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 12: Lunch - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList5UUID, "Lunch", "2025-12-25T11:00:00+02:00").Scan(&data.Event12UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList5UUID, "Lunch", "11:00:00").Scan(&data.Event12UUID)
 	if err == sql.ErrNoRows {
 		data.Event12UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event12UUID, data.EventList5UUID, "Lunch", "2025-12-25T11:00:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event12UUID, data.EventList5UUID, "Lunch", nil, "11:00:00",
 			"", 50, 2, now, now)
 		if err != nil {
 			return nil, err
@@ -526,14 +526,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 13: Fourier Transformations - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList5UUID, "Fourier Transformations", "2025-12-25T12:00:00+02:00").Scan(&data.Event13UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList5UUID, "Fourier Transformations", "12:00:00").Scan(&data.Event13UUID)
 	if err == sql.ErrNoRows {
 		data.Event13UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event13UUID, data.EventList5UUID, "Fourier Transformations", "2025-12-25T12:00:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event13UUID, data.EventList5UUID, "Fourier Transformations", nil, "12:00:00",
 			"", 45, 3, now, now)
 		if err != nil {
 			return nil, err
@@ -544,14 +544,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 7: שחרית (Shacharit) - הדגמה: אוהל אברהם - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList4UUID, "שחרית", "2025-12-25T06:30:00+02:00").Scan(&data.Event7UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList4UUID, "שחרית", "06:30:00").Scan(&data.Event7UUID)
 	if err == sql.ErrNoRows {
 		data.Event7UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event7UUID, data.EventList4UUID, "שחרית", "2025-12-25T06:30:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event7UUID, data.EventList4UUID, "שחרית", nil, "06:30:00",
 			"", 0, 0, now, now)
 		if err != nil {
 			return nil, err
@@ -562,14 +562,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 8: מנחה (Mincha) - הדגמה: אוהל אברהם - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList4UUID, "מנחה", "2025-12-25T16:30:00+02:00").Scan(&data.Event8UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList4UUID, "מנחה", "16:30:00").Scan(&data.Event8UUID)
 	if err == sql.ErrNoRows {
 		data.Event8UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event8UUID, data.EventList4UUID, "מנחה", "2025-12-25T16:30:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event8UUID, data.EventList4UUID, "מנחה", nil, "16:30:00",
 			"", 0, 1, now, now)
 		if err != nil {
 			return nil, err
@@ -580,14 +580,14 @@ func SeedTestData(ctx context.Context, db Execer) (*TestData, error) {
 
 	// Event 9: מעריב (Ma'ariv) - הדגמה: אוהל אברהם - insert or get existing
 	err = db.QueryRowContext(ctx, `
-		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND datetime = $3
-	`, data.EventList4UUID, "מעריב", "2025-12-25T18:00:00+02:00").Scan(&data.Event9UUID)
+		SELECT event_uuid FROM events WHERE event_list_uuid = $1 AND event_name = $2 AND event_time = $3
+	`, data.EventList4UUID, "מעריב", "18:00:00").Scan(&data.Event9UUID)
 	if err == sql.ErrNoRows {
 		data.Event9UUID = uuid.New()
 		_, err = db.ExecContext(ctx, `
-			INSERT INTO events (event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, data.Event9UUID, data.EventList4UUID, "מעריב", "2025-12-25T18:00:00+02:00",
+			INSERT INTO events (event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		`, data.Event9UUID, data.EventList4UUID, "מעריב", nil, "18:00:00",
 			"", 0, 2, now, now)
 		if err != nil {
 			return nil, err

@@ -30,9 +30,9 @@ type VenueWithEventListsResponse struct {
 }
 
 type EventListWithVenueAndEventsResponse struct {
-	Venue      VenueResponse   `json:"venue"`
-	EventList  EventListResponse `json:"event_list"`
-	Events     []EventResponse `json:"events"`
+	Venue     VenueResponse     `json:"venue"`
+	EventList EventListResponse `json:"event_list"`
+	Events    []EventResponse   `json:"events"`
 }
 
 // Helper functions to convert public query results
@@ -277,7 +277,7 @@ func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
 	row := h.store.DB().QueryRow(ctx,
 		"SELECT v.venue_uuid, v.name, v.banner_image, v.address, v.geolocation, v.comment, v.timezone, v.private_link_token, v.created_at, v.modified_at, o.name AS owner_name, o.email AS owner_email FROM venues v INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid WHERE v.venue_uuid = $1",
 		venueUUID)
-	
+
 	var v sqlc.GetVenueByTokenRow
 	err = row.Scan(
 		&v.VenueUuid,
@@ -304,7 +304,7 @@ func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
 	// Get events for this event list (public access - no owner check)
 	// Query events directly by event_list_uuid
 	eventRows, err := h.store.DB().Query(ctx,
-		"SELECT event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at FROM events WHERE event_list_uuid = $1 ORDER BY sort_order ASC, datetime ASC",
+		"SELECT event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at FROM events WHERE event_list_uuid = $1 ORDER BY sort_order ASC, event_date ASC, event_time ASC",
 		eventList.EventListUuid)
 	if err != nil {
 		return InternalError(c, "Failed to get events")
@@ -318,7 +318,8 @@ func (h *PublicHandler) GetEventListByToken(c echo.Context) error {
 			&e.EventUuid,
 			&e.EventListUuid,
 			&e.EventName,
-			&e.Datetime,
+			&e.EventDate,
+			&e.EventTime,
 			&e.Comment,
 			&e.DurationMinutes,
 			&e.SortOrder,
@@ -362,7 +363,7 @@ func (h *PublicHandler) GetEventsByEventList(c echo.Context) error {
 	row := h.store.DB().QueryRow(ctx,
 		"SELECT event_list_uuid, venue_uuid, name, date, comment, visibility, private_link_token, sort_order, created_at, modified_at FROM event_lists WHERE event_list_uuid = $1",
 		eventListUUID)
-	
+
 	var el sqlc.EventList
 	err = row.Scan(
 		&el.EventListUuid,
@@ -390,7 +391,7 @@ func (h *PublicHandler) GetEventsByEventList(c echo.Context) error {
 
 	// Get events for this event list (public access - no owner check)
 	eventRows, err := h.store.DB().Query(ctx,
-		"SELECT event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at FROM events WHERE event_list_uuid = $1 ORDER BY sort_order ASC, datetime ASC",
+		"SELECT event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at FROM events WHERE event_list_uuid = $1 ORDER BY sort_order ASC, event_date ASC, event_time ASC",
 		eventListUUID)
 	if err != nil {
 		return InternalError(c, "Failed to get events")
@@ -404,7 +405,8 @@ func (h *PublicHandler) GetEventsByEventList(c echo.Context) error {
 			&e.EventUuid,
 			&e.EventListUuid,
 			&e.EventName,
-			&e.Datetime,
+			&e.EventDate,
+			&e.EventTime,
 			&e.Comment,
 			&e.DurationMinutes,
 			&e.SortOrder,

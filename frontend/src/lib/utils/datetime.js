@@ -71,6 +71,28 @@ export function formatEventTime(unixTimestamp, options = {}) {
 }
 
 /**
+ * Format a time string (HH:MM or HH:MM:SS) to display only the time portion
+ *
+ * @param {string} timeStr - HH:MM or HH:MM:SS format
+ * @param {object} options - Optional formatting options
+ * @param {boolean} [options.hour12] - Use 12-hour format
+ * @param {string} [options.locale] - Override locale
+ * @param {string} [options.timeZone] - Override timezone
+ * @returns {string} Formatted time string
+ */
+export function formatTimeString(timeStr, options = {}) {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':').map(Number);
+  if (parts.some(isNaN)) return timeStr;
+
+  const [h, m, s = 0] = parts;
+  const date = new Date();
+  date.setHours(h, m, s, 0);
+
+  return formatEventTime(date.getTime() / 1000, options);
+}
+
+/**
  * Format an event list date (ISO 8601 date string) for display
  *
  * @param {string} isoDateString - ISO 8601 date string (e.g., "2024-12-25")

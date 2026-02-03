@@ -11,12 +11,17 @@
   import { listEventsForEventList } from '$lib/api/events.js';
 
   /**
-   * Format event time from RFC3339 string
-   * @param {string} rfc3339
-   * @param {string} [venueTimezone] - Optional venue timezone to use for display
+   * Format event time from components
+   * @param {string} dateStr
+   * @param {string} timeStr
+   * @param {string} [venueTimezone]
    * @returns {string}
    */
-  function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
+  function formatEventTimeFromComponents(dateStr, timeStr, venueTimezone) {
+    if (!timeStr) return '';
+    // Use the first available date for display purposes if event_date is missing
+    const date = dateStr || '1970-01-01';
+    const rfc3339 = `${date}T${timeStr}Z`;
     const unixTimestamp = Math.floor(new Date(rfc3339).getTime() / 1000);
     return formatEventTime(
       unixTimestamp,
@@ -533,8 +538,9 @@
                       >
                         <span class="text-gray-900">{event.event_name}</span>
                         <span class="text-gray-600 font-medium">
-                          {formatEventTimeFromRFC3339(
-                            event.datetime,
+                          {formatEventTimeFromComponents(
+                            event.event_date,
+                            event.event_time,
                             venue?.timezone,
                           )}
                         </span>

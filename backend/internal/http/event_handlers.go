@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -26,16 +27,18 @@ func NewEventHandler(store *store.Store) *EventHandler {
 // Request/Response types
 
 type CreateEventRequest struct {
-	EventName       string `json:"event_name" validate:"required"`
-	Datetime        string `json:"datetime" validate:"required"` // RFC3339 timestamp
-	Comment         string `json:"comment"`
-	DurationMinutes *int   `json:"duration_minutes"`
-	SortOrder       *int32 `json:"sort_order"`
+	EventName       string  `json:"event_name" validate:"required"`
+	EventDate       *string `json:"event_date"`                     // YYYY-MM-DD
+	EventTime       string  `json:"event_time" validate:"required"` // HH:MM or HH:MM:SS
+	Comment         string  `json:"comment"`
+	DurationMinutes *int    `json:"duration_minutes"`
+	SortOrder       *int32  `json:"sort_order"`
 }
 
 type UpdateEventRequest struct {
 	EventName       *string `json:"event_name"`
-	Datetime        *string `json:"datetime"` // RFC3339 timestamp
+	EventDate       *string `json:"event_date"` // YYYY-MM-DD
+	EventTime       *string `json:"event_time"` // HH:MM or HH:MM:SS
 	Comment         *string `json:"comment"`
 	DurationMinutes *int    `json:"duration_minutes"`
 	SortOrder       *int32  `json:"sort_order"`
@@ -45,7 +48,8 @@ type EventResponse struct {
 	EventUuid       string `json:"event_uuid"`
 	EventListUuid   string `json:"event_list_uuid"`
 	EventName       string `json:"event_name"`
-	Datetime        string `json:"datetime"` // RFC3339 timestamp
+	EventDate       string `json:"event_date,omitempty"` // YYYY-MM-DD
+	EventTime       string `json:"event_time"`           // HH:MM:SS
 	Comment         string `json:"comment"`
 	DurationMinutes *int   `json:"duration_minutes"`
 	SortOrder       int32  `json:"sort_order"`
@@ -75,13 +79,49 @@ func intToInt4(i *int) pgtype.Int4 {
 	}
 }
 
+// stringToTime converts string time (HH:MM or HH:MM:SS) to pgtype.Time
+func stringToTime(timeStr string) (pgtype.Time, error) {
+	if timeStr == "" {
+		return pgtype.Time{Valid: false}, nil
+	}
+
+	layout := "15:04"
+	if len(timeStr) > 5 {
+		layout = "15:04:05"
+	}
+
+	t, err := time.Parse(layout, timeStr)
+	if err != nil {
+		return pgtype.Time{}, err
+	}
+
+	// Convert to microseconds since midnight
+	micros := int64(t.Hour())*3600000000 + int64(t.Minute())*60000000 + int64(t.Second())*1000000
+	return pgtype.Time{
+		Microseconds: micros,
+		Valid:        true,
+	}, nil
+}
+
+// timeToString converts pgtype.Time to string (HH:MM:SS format)
+func timeToString(t pgtype.Time) string {
+	if !t.Valid {
+		return ""
+	}
+	h := t.Microseconds / 3600000000
+	m := (t.Microseconds % 3600000000) / 60000000
+	s := (t.Microseconds % 60000000) / 1000000
+	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
+}
+
 // eventToResponse converts sqlc.Event to EventResponse
 func eventToResponse(event sqlc.Event) EventResponse {
 	return EventResponse{
 		EventUuid:       uuidToString(event.EventUuid),
 		EventListUuid:   uuidToString(event.EventListUuid),
 		EventName:       event.EventName,
-		Datetime:        timestamptzToString(event.Datetime),
+		EventDate:       dateToString(event.EventDate),
+		EventTime:       timeToString(event.EventTime),
 		Comment:         textToString(event.Comment),
 		DurationMinutes: int4ToInt(event.DurationMinutes),
 		SortOrder:       event.SortOrder,
@@ -199,10 +239,20 @@ func (h *EventHandler) Create(c echo.Context) error {
 		return InternalError(c, "Failed to validate event list ownership")
 	}
 
-	// Parse datetime (RFC3339)
-	datetime, err := time.Parse(time.RFC3339, req.Datetime)
+	// Parse date
+	var eventDate pgtype.Date
+	if req.EventDate != nil {
+		d, err := stringToDate(*req.EventDate)
+		if err != nil {
+			return ValidationError(c, "Invalid event_date format (expected: YYYY-MM-DD)")
+		}
+		eventDate = d
+	}
+
+	// Parse time
+	eventTime, err := stringToTime(req.EventTime)
 	if err != nil {
-		return ValidationError(c, "Invalid datetime format (expected: RFC3339)")
+		return ValidationError(c, "Invalid event_time format (expected: HH:MM or HH:MM:SS)")
 	}
 
 	// Prepare comment
@@ -224,7 +274,8 @@ func (h *EventHandler) Create(c echo.Context) error {
 	event, err := h.store.Queries.CreateEvent(ctx, sqlc.CreateEventParams{
 		EventListUuid:   eventListUUID,
 		EventName:       req.EventName,
-		Datetime:        pgtype.Timestamptz{Time: datetime, Valid: true},
+		EventDate:       eventDate,
+		EventTime:       eventTime,
 		Comment:         comment,
 		DurationMinutes: intToInt4(req.DurationMinutes),
 		SortOrder:       sortOrder,
@@ -346,13 +397,22 @@ func (h *EventHandler) Update(c echo.Context) error {
 		eventName = *req.EventName
 	}
 
-	datetime := existingEvent.Datetime
-	if req.Datetime != nil {
-		parsedDatetime, err := time.Parse(time.RFC3339, *req.Datetime)
+	eventDate := existingEvent.EventDate
+	if req.EventDate != nil {
+		d, err := stringToDate(*req.EventDate)
 		if err != nil {
-			return ValidationError(c, "Invalid datetime format (expected: RFC3339)")
+			return ValidationError(c, "Invalid event_date format (expected: YYYY-MM-DD)")
 		}
-		datetime = pgtype.Timestamptz{Time: parsedDatetime, Valid: true}
+		eventDate = d
+	}
+
+	eventTime := existingEvent.EventTime
+	if req.EventTime != nil {
+		t, err := stringToTime(*req.EventTime)
+		if err != nil {
+			return ValidationError(c, "Invalid event_time format (expected: HH:MM or HH:MM:SS)")
+		}
+		eventTime = t
 	}
 
 	var comment pgtype.Text
@@ -384,7 +444,8 @@ func (h *EventHandler) Update(c echo.Context) error {
 		EventUuid:       eventUUID,
 		OwnerUuid:       ownerUUID,
 		EventName:       eventName,
-		Datetime:        datetime,
+		EventDate:       eventDate,
+		EventTime:       eventTime,
 		Comment:         comment,
 		DurationMinutes: durationMinutes,
 		SortOrder:       sortOrder,

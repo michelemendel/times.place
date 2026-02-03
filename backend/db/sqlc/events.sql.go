@@ -15,30 +15,33 @@ const createEvent = `-- name: CreateEvent :one
 INSERT INTO events (
     event_list_uuid,
     event_name,
-    datetime,
+    event_date,
+    event_time,
     comment,
     duration_minutes,
     sort_order
 ) VALUES (
-    $1, $2, $3, $4, $5, $6
+    $1, $2, $3, $4, $5, $6, $7
 )
-RETURNING event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at
+RETURNING event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at
 `
 
 type CreateEventParams struct {
-	EventListUuid   pgtype.UUID        `json:"event_list_uuid"`
-	EventName       string             `json:"event_name"`
-	Datetime        pgtype.Timestamptz `json:"datetime"`
-	Comment         pgtype.Text        `json:"comment"`
-	DurationMinutes pgtype.Int4        `json:"duration_minutes"`
-	SortOrder       int32              `json:"sort_order"`
+	EventListUuid   pgtype.UUID `json:"event_list_uuid"`
+	EventName       string      `json:"event_name"`
+	EventDate       pgtype.Date `json:"event_date"`
+	EventTime       pgtype.Time `json:"event_time"`
+	Comment         pgtype.Text `json:"comment"`
+	DurationMinutes pgtype.Int4 `json:"duration_minutes"`
+	SortOrder       int32       `json:"sort_order"`
 }
 
 func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event, error) {
 	row := q.db.QueryRow(ctx, createEvent,
 		arg.EventListUuid,
 		arg.EventName,
-		arg.Datetime,
+		arg.EventDate,
+		arg.EventTime,
 		arg.Comment,
 		arg.DurationMinutes,
 		arg.SortOrder,
@@ -48,7 +51,8 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		&i.EventUuid,
 		&i.EventListUuid,
 		&i.EventName,
-		&i.Datetime,
+		&i.EventDate,
+		&i.EventTime,
 		&i.Comment,
 		&i.DurationMinutes,
 		&i.SortOrder,
@@ -80,7 +84,7 @@ func (q *Queries) DeleteEvent(ctx context.Context, arg DeleteEventParams) error 
 }
 
 const getEventByIDAndOwner = `-- name: GetEventByIDAndOwner :one
-SELECT e.event_uuid, e.event_list_uuid, e.event_name, e.datetime, e.comment, e.duration_minutes, e.sort_order, e.created_at, e.modified_at FROM events e
+SELECT e.event_uuid, e.event_list_uuid, e.event_name, e.event_date, e.event_time, e.comment, e.duration_minutes, e.sort_order, e.created_at, e.modified_at FROM events e
 INNER JOIN event_lists el ON e.event_list_uuid = el.event_list_uuid
 INNER JOIN venues v ON el.venue_uuid = v.venue_uuid
 WHERE e.event_uuid = $1 AND v.owner_uuid = $2
@@ -98,7 +102,8 @@ func (q *Queries) GetEventByIDAndOwner(ctx context.Context, arg GetEventByIDAndO
 		&i.EventUuid,
 		&i.EventListUuid,
 		&i.EventName,
-		&i.Datetime,
+		&i.EventDate,
+		&i.EventTime,
 		&i.Comment,
 		&i.DurationMinutes,
 		&i.SortOrder,
@@ -109,11 +114,11 @@ func (q *Queries) GetEventByIDAndOwner(ctx context.Context, arg GetEventByIDAndO
 }
 
 const listEventsByEventListAndOwner = `-- name: ListEventsByEventListAndOwner :many
-SELECT e.event_uuid, e.event_list_uuid, e.event_name, e.datetime, e.comment, e.duration_minutes, e.sort_order, e.created_at, e.modified_at FROM events e
+SELECT e.event_uuid, e.event_list_uuid, e.event_name, e.event_date, e.event_time, e.comment, e.duration_minutes, e.sort_order, e.created_at, e.modified_at FROM events e
 INNER JOIN event_lists el ON e.event_list_uuid = el.event_list_uuid
 INNER JOIN venues v ON el.venue_uuid = v.venue_uuid
 WHERE e.event_list_uuid = $1 AND v.owner_uuid = $2
-ORDER BY e.sort_order ASC, e.datetime ASC
+ORDER BY e.sort_order ASC, e.event_date ASC, e.event_time ASC
 `
 
 type ListEventsByEventListAndOwnerParams struct {
@@ -134,7 +139,8 @@ func (q *Queries) ListEventsByEventListAndOwner(ctx context.Context, arg ListEve
 			&i.EventUuid,
 			&i.EventListUuid,
 			&i.EventName,
-			&i.Datetime,
+			&i.EventDate,
+			&i.EventTime,
 			&i.Comment,
 			&i.DurationMinutes,
 			&i.SortOrder,
@@ -155,10 +161,11 @@ const updateEvent = `-- name: UpdateEvent :one
 UPDATE events
 SET
     event_name = COALESCE($3, event_name),
-    datetime = COALESCE($4, datetime),
-    comment = $5,
-    duration_minutes = $6,
-    sort_order = COALESCE($7, sort_order)
+    event_date = $4,
+    event_time = COALESCE($5, event_time),
+    comment = $6,
+    duration_minutes = $7,
+    sort_order = COALESCE($8, sort_order)
 WHERE event_uuid = $1
   AND EXISTS (
     SELECT 1 FROM event_lists el
@@ -166,17 +173,18 @@ WHERE event_uuid = $1
     WHERE el.event_list_uuid = events.event_list_uuid
       AND v.owner_uuid = $2
   )
-RETURNING event_uuid, event_list_uuid, event_name, datetime, comment, duration_minutes, sort_order, created_at, modified_at
+RETURNING event_uuid, event_list_uuid, event_name, event_date, event_time, comment, duration_minutes, sort_order, created_at, modified_at
 `
 
 type UpdateEventParams struct {
-	EventUuid       pgtype.UUID        `json:"event_uuid"`
-	OwnerUuid       pgtype.UUID        `json:"owner_uuid"`
-	EventName       string             `json:"event_name"`
-	Datetime        pgtype.Timestamptz `json:"datetime"`
-	Comment         pgtype.Text        `json:"comment"`
-	DurationMinutes pgtype.Int4        `json:"duration_minutes"`
-	SortOrder       int32              `json:"sort_order"`
+	EventUuid       pgtype.UUID `json:"event_uuid"`
+	OwnerUuid       pgtype.UUID `json:"owner_uuid"`
+	EventName       string      `json:"event_name"`
+	EventDate       pgtype.Date `json:"event_date"`
+	EventTime       pgtype.Time `json:"event_time"`
+	Comment         pgtype.Text `json:"comment"`
+	DurationMinutes pgtype.Int4 `json:"duration_minutes"`
+	SortOrder       int32       `json:"sort_order"`
 }
 
 func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event, error) {
@@ -184,7 +192,8 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		arg.EventUuid,
 		arg.OwnerUuid,
 		arg.EventName,
-		arg.Datetime,
+		arg.EventDate,
+		arg.EventTime,
 		arg.Comment,
 		arg.DurationMinutes,
 		arg.SortOrder,
@@ -194,7 +203,8 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		&i.EventUuid,
 		&i.EventListUuid,
 		&i.EventName,
-		&i.Datetime,
+		&i.EventDate,
+		&i.EventTime,
 		&i.Comment,
 		&i.DurationMinutes,
 		&i.SortOrder,

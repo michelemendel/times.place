@@ -20,7 +20,8 @@ type Event struct {
 	EventUuid       pgtype.UUID        `json:"event_uuid"`
 	EventListUuid   pgtype.UUID        `json:"event_list_uuid"`
 	EventName       string             `json:"event_name"`
-	Datetime        pgtype.Timestamptz `json:"datetime"`
+	EventDate       pgtype.Date        `json:"event_date"`
+	EventTime       pgtype.Time        `json:"event_time"`
 	Comment         pgtype.Text        `json:"comment"`
 	DurationMinutes pgtype.Int4        `json:"duration_minutes"`
 	SortOrder       int32              `json:"sort_order"`

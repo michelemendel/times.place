@@ -62,7 +62,8 @@ CREATE TABLE events (
     event_uuid uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     event_list_uuid uuid NOT NULL REFERENCES event_lists(event_list_uuid) ON DELETE CASCADE,
     event_name text NOT NULL DEFAULT '',
-    datetime timestamptz NOT NULL,
+    event_date date,
+    event_time time NOT NULL,
     comment text,
     duration_minutes int,
     sort_order int NOT NULL DEFAULT 0,
@@ -95,7 +96,7 @@ CREATE INDEX event_lists_venue_uuid_sort_order_idx ON event_lists(venue_uuid, so
 
 -- Indexes for events
 CREATE INDEX events_event_list_uuid_idx ON events(event_list_uuid);
-CREATE INDEX events_event_list_uuid_sort_order_idx ON events(event_list_uuid, sort_order);
+CREATE INDEX events_event_list_uuid_sort_order_idx ON events(event_list_uuid, sort_order, event_date, event_time);
 
 -- Indexes for refresh_tokens
 CREATE INDEX refresh_tokens_owner_uuid_idx ON refresh_tokens(owner_uuid);

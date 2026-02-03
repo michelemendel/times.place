@@ -48,6 +48,8 @@ export interface EventList {
   visibility: 'public' | 'private';
   private_link_token?: string;
   sort_order: number;
+  /** Client-side only; added when loading venue data for convenience */
+  events: Event[];
   created_at: string;
   modified_at: string;
 }
@@ -56,9 +58,14 @@ export interface Event {
   event_uuid: string;
   event_list_uuid: string;
   event_name: string;
-  datetime: string; // RFC3339
+  event_date: string; // YYYY-MM-DD
+  event_time: string; // HH:MM:SS
   comment?: string;
   duration_minutes?: number | null;
+  /** UI-only property: HH:MM for input binding */
+  time?: string;
+  /** UI-only property: YYYY-MM-DD for input binding */
+  date?: string;
   sort_order: number;
   created_at: string;
   modified_at: string;

@@ -3,7 +3,12 @@
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/stores';
   import { dev, browser } from '$app/environment';
-  import { formatEventTime, formatModifiedAt } from '$lib/utils/datetime.js';
+  import {
+    formatEventTime,
+    formatModifiedAt,
+    formatTimeString,
+    formatEventListDate,
+  } from '$lib/utils/datetime.js';
   import BannerImage from '$lib/BannerImage.svelte';
   import {
     listPublicVenues,
@@ -545,21 +550,20 @@
     return Math.floor(new Date(rfc3339).getTime() / 1000);
   }
 
-  // Format event time from RFC3339 string
+  // Format event time from HH:MM:SS string
   /**
-   * @param {string} rfc3339
+   * @param {string} timeStr
    * @param {string} [venueTimezone] - Optional venue timezone to use for display
    * @returns {string}
    */
-  function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
-    const unixTimestamp = rfc3339ToUnixTimestamp(rfc3339);
+  function formatEventTimeString(timeStr, venueTimezone) {
     const timezoneToUse =
       venueTimezone && typeof venueTimezone === 'string' && venueTimezone.trim()
         ? venueTimezone.trim()
         : undefined;
 
-    return formatEventTime(
-      unixTimestamp,
+    return formatTimeString(
+      timeStr,
       timezoneToUse ? { timeZone: timezoneToUse } : {},
     );
   }
@@ -756,7 +760,11 @@
         {#if venueSearchQuery}
           <button
             type="button"
-            on:click={clearVenueSearch}
+            on:click={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              clearVenueSearch();
+            }}
             class="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600"
             aria-label="Clear search"
           >
@@ -837,7 +845,7 @@
         </h2>
 
         <!-- Address, Comment, and Map -->
-        {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment}
+        {#if selectedVenue.address || selectedVenue.geolocation || selectedVenue.comment || selectedVenue.owner_name || selectedVenue.owner_email}
           <div
             class="mb-1 md:mb-3 grid grid-cols-1 md:grid-cols-2 gap-1 md:gap-4 min-w-0 max-w-full overflow-hidden"
           >
@@ -967,11 +975,18 @@
                         {/if}
                       </div>
                       <div class="text-right flex-shrink-0 min-w-0">
+                        {#if event.event_date}
+                          <p
+                            class="text-[10px] md:text-xs text-gray-500 mb-0.5"
+                          >
+                            {formatEventListDate(event.event_date)}
+                          </p>
+                        {/if}
                         <p
                           class="text-[14px] md:text-base font-semibold text-blue-600"
                         >
-                          {formatEventTimeFromRFC3339(
-                            event.datetime,
+                          {formatEventTimeString(
+                            event.event_time,
                             selectedVenue?.timezone,
                           )}
                         </p>
@@ -1061,11 +1076,18 @@
                           {/if}
                         </div>
                         <div class="text-right flex-shrink-0 min-w-0">
+                          {#if event.event_date}
+                            <p
+                              class="text-[10px] md:text-xs text-gray-500 mb-0.5"
+                            >
+                              {formatEventListDate(event.event_date)}
+                            </p>
+                          {/if}
                           <p
                             class="text-[14px] md:text-base font-semibold text-blue-600"
                           >
-                            {formatEventTimeFromRFC3339(
-                              event.datetime,
+                            {formatEventTimeString(
+                              event.event_time,
                               selectedVenue?.timezone,
                             )}
                           </p>

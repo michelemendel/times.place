@@ -12,12 +12,17 @@
   import BannerImage from '$lib/BannerImage.svelte';
 
   /**
-   * Format event time from RFC3339 string
-   * @param {string} rfc3339
-   * @param {string} [venueTimezone] - Optional venue timezone to use for display
+   * Format event time from components
+   * @param {string} dateStr
+   * @param {string} timeStr
+   * @param {string} [venueTimezone]
    * @returns {string}
    */
-  function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
+  function formatEventTimeFromComponents(dateStr, timeStr, venueTimezone) {
+    if (!timeStr) return '';
+    // Use the first available date for display purposes if event_date is missing
+    const date = dateStr || '1970-01-01';
+    const rfc3339 = `${date}T${timeStr}Z`;
     const unixTimestamp = Math.floor(new Date(rfc3339).getTime() / 1000);
     return formatEventTime(
       unixTimestamp,
@@ -72,7 +77,11 @@
       // Fetch events
       const events = await getPublicEventsForEventList(eventListUuid);
       listEvents = (events ?? []).slice().sort((a, b) => {
-        return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
+        // Sort by date first, then by time
+        const dateA = a.event_date || '';
+        const dateB = b.event_date || '';
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        return (a.event_time || '').localeCompare(b.event_time || '');
       });
     } catch (e) {
       venue = null;
@@ -196,6 +205,26 @@
             {venue.address}
           </p>
         {/if}
+        {#if venue.owner_name}
+          <p
+            class="text-[10px] md:text-sm text-gray-600 mb-0 md:mb-1 text-left"
+          >
+            <span class="font-medium text-gray-700">Admin:</span>
+            {venue.owner_name}
+          </p>
+        {/if}
+        {#if venue.owner_email}
+          <p
+            class="text-[10px] md:text-sm text-gray-600 mb-0 md:mb-1 text-left"
+          >
+            <a
+              href="mailto:{venue.owner_email}"
+              class="text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              {venue.owner_email}
+            </a>
+          </p>
+        {/if}
       </div>
 
       <!-- Event List Header -->
@@ -259,7 +288,11 @@
               </div>
               <div class="text-right ml-2 md:ml-4 flex-shrink-0">
                 <p class="text-[14px] md:text-base font-semibold text-blue-600">
-                  {formatEventTimeFromRFC3339(event.datetime, venue?.timezone)}
+                  {formatEventTimeFromComponents(
+                    event.event_date,
+                    event.event_time,
+                    venue?.timezone,
+                  )}
                 </p>
                 {#if event.duration_minutes}
                   <p class="text-[9px] md:text-xs text-gray-500 mt-0.5">

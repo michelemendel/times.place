@@ -39,14 +39,17 @@ export async function getEvent(eventUuid) {
  * Create a new event under an event list.
  *
  * Backend expects:
- * - datetime: RFC3339 string
+ * - event_name: string
+ * - event_date: string (YYYY-MM-DD or empty)
+ * - event_time: string (HH:MM)
  * - duration_minutes: integer or null
  * - sort_order: int32 or omitted
  *
  * @param {string} eventListUuid
  * @param {Object} data
  * @param {string} data.event_name
- * @param {string} data.datetime
+ * @param {string} [data.event_date]
+ * @param {string} data.event_time
  * @param {string} [data.comment]
  * @param {number | null} [data.duration_minutes]
  * @param {number} [data.sort_order]
@@ -55,7 +58,8 @@ export async function getEvent(eventUuid) {
 export async function createEvent(eventListUuid, data) {
   const payload = {
     event_name: data.event_name,
-    datetime: data.datetime,
+    event_date: data.event_date ?? null,
+    event_time: data.event_time,
     comment: data.comment ?? '',
     duration_minutes:
       data.duration_minutes === null || data.duration_minutes === undefined
@@ -78,7 +82,8 @@ export async function createEvent(eventListUuid, data) {
  * @param {string} eventUuid
  * @param {Partial<{
  *   event_name: string;
- *   datetime: string;
+ *   event_date: string;
+ *   event_time: string;
  *   comment: string;
  *   duration_minutes: number | null;
  *   sort_order: number;
@@ -89,7 +94,8 @@ export async function updateEvent(eventUuid, data) {
   const payload = {};
 
   if (data.event_name !== undefined) payload.event_name = data.event_name;
-  if (data.datetime !== undefined) payload.datetime = data.datetime;
+  if (data.event_date !== undefined) payload.event_date = data.event_date ?? null;
+  if (data.event_time !== undefined) payload.event_time = data.event_time;
   if (data.comment !== undefined) payload.comment = data.comment;
   if (data.duration_minutes !== undefined) {
     payload.duration_minutes =

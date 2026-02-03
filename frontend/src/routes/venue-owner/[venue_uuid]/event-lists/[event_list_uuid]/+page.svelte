@@ -7,19 +7,18 @@
   import { getVenue } from '$lib/api/venues.js';
   import { getEventList } from '$lib/api/eventLists.js';
   import { listEventsForEventList } from '$lib/api/events.js';
-  import { formatEventListDate, formatEventTime } from '$lib/utils/datetime.js';
+  import { formatEventListDate, formatTimeString } from '$lib/utils/datetime.js';
   import BannerImage from '$lib/BannerImage.svelte';
 
   /**
-   * Format event time from RFC3339 string
-   * @param {string} rfc3339
-   * @param {string} [venueTimezone] - Optional venue timezone to use for display
+   * Format HH:MM:SS time string to user-friendly format
+   * @param {string} timeStr - "HH:MM:SS"
+   * @param {string} [venueTimezone] - Optional venue timezone
    * @returns {string}
    */
-  function formatEventTimeFromRFC3339(rfc3339, venueTimezone) {
-    const unixTimestamp = Math.floor(new Date(rfc3339).getTime() / 1000);
-    return formatEventTime(
-      unixTimestamp,
+  function formatEventTimeString(timeStr, venueTimezone) {
+    return formatTimeString(
+      timeStr,
       venueTimezone ? { timeZone: venueTimezone } : {},
     );
   }
@@ -69,7 +68,13 @@
 
       const events = await listEventsForEventList(eventListUuid);
       listEvents = (events ?? []).slice().sort((a, b) => {
-        return new Date(a.datetime).getTime() - new Date(b.datetime).getTime();
+        // Sort by date (if present) and then by time
+        if (a.event_date !== b.event_date) {
+          const dateA = a.event_date || '0000-00-00';
+          const dateB = b.event_date || '0000-00-00';
+          return dateA.localeCompare(dateB);
+        }
+        return a.event_time.localeCompare(b.event_time);
       });
     } catch (e) {
       venue = null;
@@ -259,8 +264,13 @@
                 {/if}
               </div>
               <div class="text-right ml-2 md:ml-4">
+                {#if event.event_date}
+                  <p class="text-[10px] md:text-xs text-gray-500 mb-0.5">
+                    {formatEventListDate(event.event_date)}
+                  </p>
+                {/if}
                 <p class="text-[14px] md:text-base font-semibold text-blue-600">
-                  {formatEventTimeFromRFC3339(event.datetime, venue?.timezone)}
+                  {formatEventTimeString(event.event_time, venue?.timezone)}
                 </p>
                 {#if event.duration_minutes}
                   <p class="text-[9px] md:text-xs text-gray-500 mt-0.5">

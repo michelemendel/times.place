@@ -18,8 +18,12 @@
     updateEvent,
     deleteEvent as deleteEventApi,
   } from '$lib/api/events.js';
-  import { parseISODate } from '$lib/utils/datetime.js';
-  import { formatEventTime } from '$lib/utils/datetime.js';
+  import {
+    parseISODate,
+    formatEventTime,
+    formatTimeString,
+    formatEventListDate,
+  } from '$lib/utils/datetime.js';
   import { ApiError } from '$lib/api/client.js';
   import BannerImage from '$lib/BannerImage.svelte';
 
@@ -319,7 +323,8 @@
           el.date !== undefined && el.date !== null ? el.date : '';
         const eventsWithTime = events.map((e) => ({
           ...e,
-          time: extractTimeFromRFC3339(e.datetime),
+          time: e.event_time ? e.event_time.substring(0, 5) : '00:00', // Extract HH:MM from HH:MM:SS
+          date: e.event_date || '',
           duration_minutes:
             e.duration_minutes && e.duration_minutes > 0
               ? e.duration_minutes
@@ -367,93 +372,6 @@
         : '';
     venueNameError = '';
     eventNameErrors = {};
-  }
-
-  /**
-   * Extract time (HH:MM) from RFC3339 datetime string
-   * @param {string} rfc3339
-   */
-  function extractTimeFromRFC3339(rfc3339) {
-    try {
-      const date = new Date(rfc3339);
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${hours}:${minutes}`;
-    } catch (e) {
-      return '00:00';
-    }
-  }
-
-  /**
-   * Convert time string (HH:MM) and event list date to RFC3339 datetime
-   * If venueTimezone is provided, interprets the time as being in that timezone
-   * Otherwise, interprets the time as being in the browser's local timezone
-   * @param {string} timeStr
-   * @param {string} dateStr
-   * @param {string} [venueTimezone] - Optional venue timezone (IANA timezone string)
-   */
-  function combineTimeAndDate(timeStr, dateStr, venueTimezone) {
-    try {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      const dateTimeStr = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
-
-      if (venueTimezone && venueTimezone.trim()) {
-        // If venue timezone is set, we need to create a UTC timestamp that,
-        // when displayed in the venue timezone, shows the desired wall-clock time
-        // We do this by iteratively adjusting until we get the right display time
-
-        // Start with a guess: create date as if it's in UTC
-        let testDate = new Date(dateTimeStr + 'Z');
-        const maxIterations = 10;
-        let iterations = 0;
-
-        while (iterations < maxIterations) {
-          // Format this UTC time in the venue timezone
-          const formatter = new Intl.DateTimeFormat('en-US', {
-            timeZone: venueTimezone.trim(),
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-          });
-
-          const parts = formatter.formatToParts(testDate);
-          const hourPart = parts.find((p) => p.type === 'hour');
-          const minutePart = parts.find((p) => p.type === 'minute');
-          if (!hourPart || !minutePart) {
-            // If we can't parse the parts, break the loop
-            break;
-          }
-          const venueHour = parseInt(hourPart?.value || '0');
-          const venueMinute = parseInt(minutePart?.value || '0');
-
-          // Check if we have the right time
-          if (venueHour === hours && venueMinute === minutes) {
-            return testDate.toISOString();
-          }
-
-          // Calculate the difference in minutes
-          const desiredMinutes = hours * 60 + minutes;
-          const currentMinutes = venueHour * 60 + venueMinute;
-          const diffMinutes = desiredMinutes - currentMinutes;
-
-          // Adjust the UTC time
-          testDate = new Date(testDate.getTime() + diffMinutes * 60 * 1000);
-          iterations++;
-        }
-
-        // If we couldn't converge, return the best guess
-        return testDate.toISOString();
-      } else {
-        // No venue timezone - interpret as local time (browser timezone)
-        const date = new Date(dateTimeStr);
-        return date.toISOString();
-      }
-    } catch (e) {
-      return new Date().toISOString();
-    }
   }
 
   /**
@@ -611,20 +529,15 @@
     if (listIndex === -1) return;
     const list = eventListsData[listIndex];
 
-    // For new events without a date, use today's date as placeholder for datetime
-    // The time field will be preserved separately
-    const placeholderDate =
-      list.date && list.date.trim()
-        ? list.date
-        : new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
-
     const tempEventId = `temp-event-${Date.now()}-${Math.random()}`;
     const newEvent = {
       event_uuid: tempEventId,
       event_list_uuid: listUuid,
       event_name: '',
-      datetime: combineTimeAndDate('12:00', placeholderDate, venueTimezone),
+      event_date: '',
+      event_time: '12:00:00',
       time: '12:00',
+      date: '',
       comment: '',
       duration_minutes: '',
       sort_order: list.events.length,
@@ -713,6 +626,8 @@
       ...originalEvent,
       event_uuid: tempEventId,
       event_name: '',
+      event_date: '',
+      date: '',
       sort_order:
         originalEvent.sort_order !== undefined
           ? originalEvent.sort_order + 1
@@ -966,7 +881,7 @@
       }
     }
 
-    // Validate event times and update datetimes
+    // Validate event times
     for (const list of eventListsData) {
       for (const event of list.events) {
         const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
@@ -974,15 +889,6 @@
           saveError = `Invalid time format for event "${event.event_name?.trim() || 'this event'}". Please use HH:MM format.`;
           return;
         }
-        const dateToUse =
-          list.date && list.date.trim()
-            ? list.date
-            : new Date().toISOString().split('T')[0];
-        event.datetime = combineTimeAndDate(
-          event.time,
-          dateToUse,
-          venueTimezone,
-        );
       }
     }
 
@@ -1126,7 +1032,8 @@
             // Create new event
             await createEvent(eventListUuid, {
               event_name: sanitizeInput(eventData.event_name.trim()),
-              datetime: eventData.datetime,
+              event_date: eventData.date || '', // Send empty string for no date
+              event_time: eventData.time,
               comment: sanitizeInput(eventData.comment || ''),
               duration_minutes: duration,
               sort_order: eventIndex,
@@ -1135,7 +1042,8 @@
             // Update existing event
             await updateEvent(eventData.event_uuid, {
               event_name: sanitizeInput(eventData.event_name.trim()),
-              datetime: eventData.datetime,
+              event_date: eventData.date || '', // Send empty string to clear date
+              event_time: eventData.time,
               comment: sanitizeInput(eventData.comment || ''),
               duration_minutes: duration,
               sort_order: eventIndex,
@@ -1535,13 +1443,20 @@
     }
   });
 
+  /** @type {import('$lib/types').EventList | null} */
+  let previewEventList = null;
+
   // Get preview event list
-  $: previewEventList = previewEventListId
-    ? eventListsData.find((el) => el.event_list_uuid === previewEventListId)
-    : null;
+  $: {
+    eventListsData; // trigger reactivity on deep changes
+    const found = previewEventListId
+      ? eventListsData.find((el) => el.event_list_uuid === previewEventListId)
+      : null;
+    previewEventList = found ? { ...found } : null;
+  }
 
   // Get preview events
-  $: previewEvents = previewEventList ? previewEventList.events : [];
+  $: previewEvents = previewEventList ? [...previewEventList.events] : [];
 
   // Get venue owner for preview
   $: previewVenueOwner = currentOwner;
@@ -2192,21 +2107,6 @@
                       type="date"
                       id="event-list-date-{listData.event_list_uuid}"
                       bind:value={listData.date}
-                      on:input={() => {
-                        // Update datetime for all events in this list when date changes
-                        // If no date is provided, use today's date as placeholder
-                        const dateToUse =
-                          listData.date && listData.date.trim()
-                            ? listData.date
-                            : new Date().toISOString().split('T')[0];
-                        listData.events.forEach((/** @type {any} */ event) => {
-                          event.datetime = combineTimeAndDate(
-                            event.time,
-                            dateToUse,
-                            venueTimezone,
-                          );
-                        });
-                      }}
                       class="flex-1 min-w-0 px-2 md:px-3 py-0.5 md:py-1 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     {#if listData.date && listData.date.trim()}
@@ -2382,6 +2282,10 @@
                 </div>
 
                 <div>
+                  <p class="text-[10px] md:text-[12px] text-red-600 mb-2">
+                    Recommendation: Not to confuse users, don't set date for
+                    both the event list (above) and for events (below).
+                  </p>
                   <div
                     class="block text-[12px] md:text-[14px] font-bold text-gray-800 mb-1 md:mb-2"
                   >
@@ -2497,6 +2401,50 @@
                         {/if}
                       </div>
 
+                      <div>
+                        <label
+                          for="event-date-{event.event_uuid}"
+                          class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
+                          >Date (optional)</label
+                        >
+                        <div class="flex gap-1">
+                          <input
+                            type="date"
+                            id="event-date-{event.event_uuid}"
+                            bind:value={event.date}
+                            on:input={() => (eventListsData = eventListsData)}
+                            class="flex-1 min-w-0 px-1.5 md:px-2 py-0.5 md:py-1 pr-10 text-[12px] md:text-[14px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            style="box-sizing: border-box;"
+                            placeholder="Optional"
+                          />
+                          {#if event.date && event.date !== ''}
+                            <button
+                              type="button"
+                              on:click={() => {
+                                event.date = '';
+                              }}
+                              class="shrink-0 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors self-center"
+                              title="Clear date"
+                              aria-label="Clear date"
+                            >
+                              <svg
+                                class="w-3.5 h-3.5 md:w-4 md:h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                stroke-width="2"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          {/if}
+                        </div>
+                      </div>
+
                       <div
                         class="w-full min-w-0"
                         style="max-width: 100%; overflow: hidden; box-sizing: border-box;"
@@ -2511,32 +2459,13 @@
                             type="time"
                             id="event-time-{event.event_uuid}"
                             bind:value={event.time}
-                            on:input={() => {
-                              const dateToUse =
-                                listData.date && listData.date.trim()
-                                  ? listData.date
-                                  : new Date().toISOString().split('T')[0];
-                              event.datetime = combineTimeAndDate(
-                                event.time,
-                                dateToUse,
-                                venueTimezone,
-                              );
-                            }}
-                            class="flex-1 min-w-0 px-1.5 md:px-2 py-0.5 md:py-1 pr-6 md:pr-8 text-[12px] md:text-[14px] border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300"
+                            on:input={() => (eventListsData = eventListsData)}
+                            class="flex-1 min-w-0 px-1.5 md:px-2 py-0.5 md:py-1 pr-10 text-[12px] md:text-[14px] border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300"
                           />
                           <button
                             type="button"
                             on:click={() => {
                               event.time = '00:00';
-                              const dateToUse =
-                                listData.date && listData.date.trim()
-                                  ? listData.date
-                                  : new Date().toISOString().split('T')[0];
-                              event.datetime = combineTimeAndDate(
-                                '00:00',
-                                dateToUse,
-                                venueTimezone,
-                              );
                             }}
                             class="shrink-0 p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors self-center"
                             title="Clear time"
@@ -2733,28 +2662,33 @@
                   {/if}
 
                   {#if previewVenueOwner}
-                    <p class="text-sm text-gray-600 mb-2">
-                      <span class="font-medium text-gray-700">Admin:</span>
-                      {#if previewVenueOwner.name}
+                    {#if previewVenueOwner.name}
+                      <p class="text-sm text-gray-600 mb-2">
+                        <span class="font-medium text-gray-700">Admin:</span>
                         <span class="ml-2">{previewVenueOwner.name}</span>
-                      {/if}
-                      {#if previewVenueOwner.email}
+                      </p>
+                    {/if}
+                    {#if previewVenueOwner.email}
+                      <p class="text-sm text-gray-600 mb-2">
                         <a
                           href="mailto:{previewVenueOwner.email}"
-                          class="ml-2 text-blue-600 hover:text-blue-800 hover:underline"
+                          class="text-blue-600 hover:text-blue-800 hover:underline"
                         >
                           {previewVenueOwner.email}
                         </a>
-                      {/if}
-                      {#if previewVenueOwner.mobile}
+                      </p>
+                    {/if}
+                    {#if previewVenueOwner.mobile}
+                      <p class="text-sm text-gray-600 mb-2">
+                        <span class="font-medium text-gray-700">Mobile:</span>
                         <a
                           href="tel:{previewVenueOwner.mobile}"
                           class="ml-2 text-blue-600 hover:text-blue-800 hover:underline"
                         >
                           {previewVenueOwner.mobile}
                         </a>
-                      {/if}
-                    </p>
+                      </p>
+                    {/if}
                   {/if}
 
                   {#if venueComment}
@@ -2769,8 +2703,26 @@
             {#if previewEventList}
               <div class="mt-6">
                 <h3 class="text-2xl font-semibold mb-1 text-gray-900">
-                  {previewEventList.name}
+                  {previewEventList.name || 'Untitled Event List'}
                 </h3>
+                {#if previewEventList.date}
+                  <p class="text-sm text-gray-600 mb-2">
+                    <svg
+                      class="w-4 h-4 inline mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    {formatEventListDate(previewEventList.date)}
+                  </p>
+                {/if}
                 {#if previewEventList.comment}
                   <p class="text-xs text-gray-600 mb-4 whitespace-pre-line">
                     {previewEventList.comment}
@@ -2800,28 +2752,19 @@
                           {/if}
                         </div>
                         <div class="text-right">
-                          {#if previewEventList.date && previewEventList.date.trim()}
-                            <p class="text-base font-semibold text-blue-600">
-                              {formatEventTime(
-                                Math.floor(
-                                  new Date(
-                                    combineTimeAndDate(
-                                      event.time,
-                                      previewEventList.date,
-                                      venueTimezone,
-                                    ),
-                                  ).getTime() / 1000,
-                                ),
-                                venueTimezone
-                                  ? { timeZone: venueTimezone }
-                                  : {},
-                              )}
-                            </p>
-                          {:else}
-                            <p class="text-base font-semibold text-gray-400">
-                              {event.time}
+                          {#if event.date}
+                            <p
+                              class="text-[10px] md:text-xs text-gray-500 mb-0.5"
+                            >
+                              {formatEventListDate(event.date)}
                             </p>
                           {/if}
+                          <p class="text-base font-semibold text-blue-600">
+                            {formatTimeString(
+                              event.time || '00:00',
+                              venueTimezone ? { timeZone: venueTimezone } : {},
+                            )}
+                          </p>
                           {#if event.duration_minutes}
                             <p class="text-xs text-gray-500 mt-0.5">
                               {event.duration_minutes} min

@@ -240,11 +240,12 @@ devshell:
 
 # Backend Database (goose) targets
 # These work both from host (via docker exec) and inside the devcontainer (direct execution)
+# Require DATABASE_URL (e.g. in backend/.env or devcontainer env); no default.
 
 dbup:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Running migrations (inside devcontainer)..."; \
-		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" up; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$$DATABASE_URL" up; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
 		if [ -z "$$CONTAINER_NAME" ]; then \
@@ -254,13 +255,13 @@ dbup:
 			exit 1; \
 		fi; \
 		echo "Running migrations (from host via docker exec)..."; \
-		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" up"; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$$DATABASE_URL\" up"; \
 	fi
 
 dbdown:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Rolling back last migration (inside devcontainer)..."; \
-		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" down; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$$DATABASE_URL" down; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
 		if [ -z "$$CONTAINER_NAME" ]; then \
@@ -270,13 +271,13 @@ dbdown:
 			exit 1; \
 		fi; \
 		echo "Rolling back last migration (from host via docker exec)..."; \
-		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" down"; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$$DATABASE_URL\" down"; \
 	fi
 
 dbreset:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Rolling back ALL migrations (inside devcontainer)..."; \
-		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" reset; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$$DATABASE_URL" reset; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
 		if [ -z "$$CONTAINER_NAME" ]; then \
@@ -286,13 +287,13 @@ dbreset:
 			exit 1; \
 		fi; \
 		echo "Rolling back ALL migrations (from host via docker exec)..."; \
-		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" reset"; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$$DATABASE_URL\" reset"; \
 	fi
 
 dbstatus:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Migration status (inside devcontainer):"; \
-		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" status; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$$DATABASE_URL" status; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
 		if [ -z "$$CONTAINER_NAME" ]; then \
@@ -302,7 +303,7 @@ dbstatus:
 			exit 1; \
 		fi; \
 		echo "Migration status (from host via docker exec):"; \
-		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" status"; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$$DATABASE_URL\" status"; \
 	fi
 
 dbverify:
@@ -310,13 +311,13 @@ dbverify:
 		echo "Verifying database schema (inside devcontainer)..."; \
 		echo ""; \
 		echo "=== Migration Status ==="; \
-		cd /workspace/backend && goose -dir db/migrations postgres "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" status; \
+		cd /workspace/backend && goose -dir db/migrations postgres "$$DATABASE_URL" status; \
 		echo ""; \
 		echo "=== Tables ==="; \
-		psql "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" -c '\dt'; \
+		psql "$$DATABASE_URL" -c '\dt'; \
 		echo ""; \
 		echo "=== Indexes ==="; \
-		psql "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}" -c 'SELECT schemaname, tablename, indexname FROM pg_indexes WHERE schemaname = '\''public'\'' ORDER BY tablename, indexname;'; \
+		psql "$$DATABASE_URL" -c 'SELECT schemaname, tablename, indexname FROM pg_indexes WHERE schemaname = '\''public'\'' ORDER BY tablename, indexname;'; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
 		if [ -z "$$CONTAINER_NAME" ]; then \
@@ -328,13 +329,13 @@ dbverify:
 		echo "Verifying database schema (from host via docker exec)..."; \
 		echo ""; \
 		echo "=== Migration Status ==="; \
-		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" status"; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && goose -dir db/migrations postgres \"$$DATABASE_URL\" status"; \
 		echo ""; \
 		echo "=== Tables ==="; \
-		docker exec $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" -c '\dt'"; \
+		docker exec $$CONTAINER_NAME bash -c "psql \"$$DATABASE_URL\" -c '\dt'"; \
 		echo ""; \
 		echo "=== Indexes ==="; \
-		docker exec $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\" -c 'SELECT schemaname, tablename, indexname FROM pg_indexes WHERE schemaname = '\''public'\'' ORDER BY tablename, indexname;'"; \
+		docker exec $$CONTAINER_NAME bash -c "psql \"$$DATABASE_URL\" -c 'SELECT schemaname, tablename, indexname FROM pg_indexes WHERE schemaname = '\''public'\'' ORDER BY tablename, indexname;'"; \
 	fi
 
 goosecreate:
@@ -463,7 +464,7 @@ dbhost:
 dbconnect:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Connecting to Postgres database (inside devcontainer)..."; \
-		psql "$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}"; \
+		psql "$$DATABASE_URL"; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
 		if [ -z "$$CONTAINER_NAME" ]; then \
@@ -473,7 +474,7 @@ dbconnect:
 			exit 1; \
 		fi; \
 		echo "Connecting to Postgres database (from host via docker exec)..."; \
-		docker exec -it $$CONTAINER_NAME bash -c "psql \"$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\""; \
+		docker exec -it $$CONTAINER_NAME bash -c "psql \"$$DATABASE_URL\""; \
 	fi
 
 # Connect to Render.com Postgres. Requires DATABASE_URL_RENDER_COM in backend/.env (external URL from Render dashboard).
@@ -498,7 +499,7 @@ btest:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Resetting test database..."; \
 		TEST_DB_URL="$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}"; \
-		MAIN_DB_URL="$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}"; \
+		MAIN_DB_URL="$$DATABASE_URL"; \
 		psql "$$MAIN_DB_URL" -c "DROP DATABASE IF EXISTS timesplace_test;" || true; \
 		psql "$$MAIN_DB_URL" -c "CREATE DATABASE timesplace_test;"; \
 		echo "Running migrations on test database..."; \
@@ -514,7 +515,7 @@ btest:
 			exit 1; \
 		fi; \
 		echo "Resetting test database..."; \
-		docker exec $$CONTAINER_NAME bash -c "TEST_DB_URL=\"\$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}\"; MAIN_DB_URL=\"\$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\"; psql \"\$$MAIN_DB_URL\" -c 'DROP DATABASE IF EXISTS timesplace_test;' || true; psql \"\$$MAIN_DB_URL\" -c 'CREATE DATABASE timesplace_test;'"; \
+		docker exec $$CONTAINER_NAME bash -c "TEST_DB_URL=\"\$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}\"; MAIN_DB_URL=\"\$$DATABASE_URL\"; psql \"\$$MAIN_DB_URL\" -c 'DROP DATABASE IF EXISTS timesplace_test;' || true; psql \"\$$MAIN_DB_URL\" -c 'CREATE DATABASE timesplace_test;'"; \
 		echo "Running migrations on test database..."; \
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && TEST_DB_URL=\"\$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}\"; goose -dir db/migrations postgres \"\$$TEST_DB_URL\" up"; \
 		echo "Running backend tests..."; \
@@ -525,7 +526,7 @@ btestcover:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Resetting test database..."; \
 		TEST_DB_URL="$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}"; \
-		MAIN_DB_URL="$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}"; \
+		MAIN_DB_URL="$$DATABASE_URL"; \
 		psql "$$MAIN_DB_URL" -c "DROP DATABASE IF EXISTS timesplace_test;" || true; \
 		psql "$$MAIN_DB_URL" -c "CREATE DATABASE timesplace_test;"; \
 		echo "Running migrations on test database..."; \
@@ -541,7 +542,7 @@ btestcover:
 			exit 1; \
 		fi; \
 		echo "Resetting test database..."; \
-		docker exec $$CONTAINER_NAME bash -c "TEST_DB_URL=\"\$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}\"; MAIN_DB_URL=\"\$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}\"; psql \"\$$MAIN_DB_URL\" -c 'DROP DATABASE IF EXISTS timesplace_test;' || true; psql \"\$$MAIN_DB_URL\" -c 'CREATE DATABASE timesplace_test;'"; \
+		docker exec $$CONTAINER_NAME bash -c "TEST_DB_URL=\"\$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}\"; MAIN_DB_URL=\"\$$DATABASE_URL\"; psql \"\$$MAIN_DB_URL\" -c 'DROP DATABASE IF EXISTS timesplace_test;' || true; psql \"\$$MAIN_DB_URL\" -c 'CREATE DATABASE timesplace_test;'"; \
 		echo "Running migrations on test database..."; \
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && TEST_DB_URL=\"\$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}\"; goose -dir db/migrations postgres \"\$$TEST_DB_URL\" up"; \
 		echo "Running backend tests with coverage..."; \

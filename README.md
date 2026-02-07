@@ -71,7 +71,7 @@ The `blueprint/` folder contains the core SDD documentation that guides all deve
 - **Git**
 - **Go** (for backend development)
 - **Node.js + npm** (for frontend development)
-- **Container runtime**: Rancher Desktop (recommended on macOS) or Docker Desktop
+- **Container runtime**: Docker or a Docker-compatible runtime (e.g. Docker Desktop, OrbStack)
 - **Cursor** + Dev Containers support if you want to use the Dev Container workflow
 
 ### CLI tools (backend)

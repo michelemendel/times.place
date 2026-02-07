@@ -9,7 +9,7 @@
 - **Migrations**: goose
 - **DB access**: sqlc (no ORM; do not use gorm)
 - **UUIDs**: `github.com/google/uuid` in application code; keep DB-specific UUID handling at the DB boundary (pgx/pgtype or adapter)
-- **Containerized dev**: Dev Container (primary workflow) for consistent local development, using Rancher Desktop on macOS
+- **Containerized dev**: Dev Container (primary workflow) for consistent local development, using Docker or a Docker-compatible runtime
 
 ## Architecture
 
@@ -176,9 +176,9 @@ Benefits:
 - `sqlc` binary
 - Postgres service container
 
-### Rancher Desktop notes
+### Container runtime notes
 
-- Use standard Docker-compatible configuration; Dev Containers should work with Rancher Desktop as the container runtime.
+- Use standard Docker-compatible configuration; Dev Containers work with any runtime that exposes the Docker API (e.g. Docker Desktop, OrbStack, etc.).
 
 ### Environment variables (local development)
 

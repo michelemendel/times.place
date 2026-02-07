@@ -1094,3 +1094,20 @@
 - **Routes/Pages** (`frontend/src/routes/venue-owner/+page.svelte`):
   - When `owner.email_verified === false`: amber verification banner with "Verify your email to add or edit venues and events.", "Check your inbox … If you don't see it, check your spam or junk folder.", and "Resend verification email" button that calls `resendVerificationEmail()` and refreshes owner via `getAuthMe()`; success/error message shown inline.
   - Add Venue disabled when unverified: reactive `addVenueDisabled = atVenueLimit || owner?.email_verified === false`; "Add Venue" and "Add Your First Venue" buttons are disabled and greyed out (`bg-gray-400 text-gray-200 cursor-not-allowed`) when `email_verified === false` so users do not fill the form only to get 403 on submit.
+
+## 2026-02-07
+
+### Summary
+
+- **Backoffice layout and tables**: Narrower sidebar, main content allowed to shrink so tables can scroll horizontally; Owners and Venues tables given minimum widths and horizontal scroll; Venues table gained Public and Private event count columns.
+
+### Notes
+
+- **Routes/Pages** (`frontend/src/routes/backoffice/+layout.svelte`):
+  - Sidebar width reduced from `md:w-48` to `md:w-36` to free space for main content.
+  - Main content given `min-w-0` so the flex child can shrink and `overflow-x-auto` on table wrappers shows horizontal scrollbars when needed.
+- **Routes/Pages** (`frontend/src/routes/backoffice/owners/+page.svelte`):
+  - Table given `min-w-[52rem] w-full` so it keeps a minimum width and the wrapper scrolls horizontally on narrow viewports; prevents Actions column and Reset Password/Delete from being cut off.
+- **Routes/Pages** (`frontend/src/routes/backoffice/venues/+page.svelte`):
+  - Table given `min-w-[40rem] w-full` for horizontal scroll consistency with Owners.
+  - Added two columns: **Public** (number of public events) and **Private** (number of private events), using `venue.public_events_count` and `venue.private_events_count` from the admin API, with `?? 0` fallback.

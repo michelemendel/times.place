@@ -72,7 +72,7 @@
     <div
       class="overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm"
     >
-      <table class="min-w-full divide-y divide-gray-200">
+      <table class="min-w-[40rem] w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
             <th
@@ -86,6 +86,14 @@
             <th
               class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >Address</th
+            >
+            <th
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
+              >Public</th
+            >
+            <th
+              class="px-4 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
+              >Private</th
             >
           </tr>
         </thead>
@@ -122,6 +130,12 @@
                 class="px-4 py-2 text-xs text-gray-500 max-w-[200px] truncate"
                 title={venue.address}>{venue.address}</td
               >
+              <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
+                {venue.public_events_count ?? 0}
+              </td>
+              <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
+                {venue.private_events_count ?? 0}
+              </td>
             </tr>
           {/each}
         </tbody>

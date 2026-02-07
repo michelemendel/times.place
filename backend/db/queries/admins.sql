@@ -24,7 +24,13 @@ SELECT
     v.address, 
     v.owner_uuid,
     o.name AS owner_name,
-    o.email AS owner_email
+    o.email AS owner_email,
+    (SELECT COUNT(*) FROM events e
+     INNER JOIN event_lists el ON e.event_list_uuid = el.event_list_uuid
+     WHERE el.venue_uuid = v.venue_uuid AND el.visibility = 'public')::bigint AS public_events_count,
+    (SELECT COUNT(*) FROM events e
+     INNER JOIN event_lists el ON e.event_list_uuid = el.event_list_uuid
+     WHERE el.venue_uuid = v.venue_uuid AND el.visibility = 'private')::bigint AS private_events_count
 FROM venues v
 JOIN venue_owners o ON v.owner_uuid = o.owner_uuid
 ORDER BY v.created_at DESC;

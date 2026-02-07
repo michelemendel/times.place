@@ -8,9 +8,9 @@ This guide covers local development setup and workflow for the times.place backe
 - **PostgreSQL** (provided via devcontainer)
 - **goose** (database migrations) - installed in devcontainer
 - **sqlc** (SQL code generation) - installed in devcontainer
-- **Docker/Rancher Desktop** (for devcontainer)
-  - **Rancher Desktop**: Must be in `dockerd (moby)` mode for VS Code/Cursor Dev Containers support
-  - **Note**: While Rancher Desktop supports containerd mode with `nerdctl`, VS Code/Cursor's Dev Containers extension requires the Docker API socket, which is only available in dockerd mode
+- **Docker or Docker-compatible runtime** (for devcontainer)
+  - Must expose the Docker API for VS Code/Cursor Dev Containers (e.g. dockerd mode)
+  - **Note**: Some runtimes support containerd/nerdctl; VS Code/Cursor's Dev Containers extension requires the Docker API socket (typically dockerd mode)
 
 ## Local Development Setup
 
@@ -45,7 +45,7 @@ The project uses a Dev Container for consistent development environments.
 
 **Recommended: Using VS Code/Cursor**
 
-1. **Ensure Rancher Desktop is in dockerd mode**: Preferences → Container Engine → Select "dockerd (moby)"
+1. **Ensure your container runtime exposes the Docker API** (e.g. dockerd mode; see your runtime’s preferences)
 2. Open the project in VS Code/Cursor
 3. When prompted, click "Reopen in Container" (or use Command Palette: "Dev Containers: Reopen in Container")
 4. The devcontainer will start automatically, including the Postgres service
@@ -376,25 +376,13 @@ Ensure:
 
 Check:
 
-1. **Docker/Rancher Desktop is running**
-   - For Rancher Desktop: Make sure it's fully started (wait 10-30 seconds after launching)
+1. **Docker (or your container runtime) is running**
+   - Make sure it's fully started (some runtimes need 10–30 seconds after launching)
    - Verify Docker is accessible: `docker info`
-   - **Note**: `make bdevcontainerup` works with both containerd and dockerd modes, but VS Code/Cursor "Reopen in Container" requires dockerd mode
-   - **Fix Docker CLI plugin symlinks** (if Rancher Desktop reports incorrect symlinks):
-     - Rancher Desktop may show warnings that symlinks point to Docker Desktop instead of Rancher Desktop
-     - This happens when Docker Desktop was previously installed
-     - **Fix**: Remove the old symlinks and create new ones pointing to Rancher Desktop:
-       ```bash
-       # Remove old symlinks (may require sudo if protected)
-       rm ~/.docker/cli-plugins/docker-buildx ~/.docker/cli-plugins/docker-compose
-       # Create correct symlinks to Rancher Desktop
-       ln -sf ~/.rd/bin/docker-buildx ~/.docker/cli-plugins/docker-buildx
-       ln -sf ~/.rd/bin/docker-compose ~/.docker/cli-plugins/docker-compose
-       ```
-     - If removal fails due to permissions, you may need to:
-       - Quit Docker Desktop completely (if still running)
-       - Use `sudo` to remove the symlinks
-       - Or let Rancher Desktop fix them automatically (check Rancher Desktop settings)
+   - **Note**: `make bdevcontainerup` works with both containerd and dockerd modes, but VS Code/Cursor "Reopen in Container" requires the Docker API (e.g. dockerd mode)
+   - **Fix Docker CLI plugin symlinks** (if your runtime reports incorrect symlinks, e.g. pointing to a different installation):
+     - Remove the old symlinks and create new ones pointing to your current Docker runtime (paths depend on your installation; check your runtime’s docs).
+     - If removal fails due to permissions, quit any other Docker/container app, use `sudo` if needed, or use your runtime’s built-in option to fix symlinks.
 
 2. **Container orchestration tool**
    - The Makefile uses `docker compose` by default
@@ -404,10 +392,10 @@ Check:
      - If you need containerd for k8s, you can still use `make bdevcontainerup` (you may need to alias `docker` to `nerdctl` or modify the Makefile), but "Reopen in Container" won't work
      - For full Dev Containers support (including "Reopen in Container"), use dockerd mode
 
-3. **Socket permission issues (Rancher Desktop)**
+3. **Socket permission issues**
    - If you see "permission denied" errors:
-     - Make sure Rancher Desktop is fully initialized (wait a bit longer)
-     - Try restarting Rancher Desktop
+     - Make sure your container runtime is fully initialized (wait a bit longer)
+     - Try restarting the runtime
      - Verify Docker is running: `docker info`
 
 4. **Ports `8080` and `5432` are not in use by other services**
@@ -416,15 +404,15 @@ Check:
 5. **Try rebuilding**: `make bdevcontainerrebuild`
 
 6. **VS Code/Cursor "Reopen in Container"**
-   - **Requirement**: Rancher Desktop must be in `dockerd (moby)` mode (not containerd)
-   - Configure Rancher Desktop: Preferences → Container Engine → Select "dockerd (moby)"
-   - Restart Rancher Desktop after changing the mode
-   - **Why dockerd?**: VS Code/Cursor's Dev Containers extension requires the Docker API socket, which is only available in dockerd mode. Containerd mode uses `nerdctl` which doesn't expose the Docker API socket that Dev Containers expects.
+   - **Requirement**: Your runtime must expose the Docker API (e.g. `dockerd (moby)` mode, not containerd-only).
+   - Configure your runtime: enable dockerd / Docker API (exact steps depend on the runtime).
+   - Restart the runtime after changing the mode.
+   - **Why?** VS Code/Cursor's Dev Containers extension needs the Docker API socket; containerd-only/nerdctl setups often don’t expose it.
    - **Important distinction**:
      - `make bdevcontainerup` works with both containerd and dockerd modes
-     - Only "Reopen in Container" requires dockerd mode
+     - Only "Reopen in Container" requires the Docker API (dockerd mode)
      - If you need containerd for k8s, you can use `make bdevcontainerup` but won't be able to use "Reopen in Container"
-   - **Common issue**: If you see warnings about Docker CLI plugin symlinks pointing to Docker Desktop instead of Rancher Desktop, see troubleshooting section #1 above
+   - **Common issue**: If you see warnings about Docker CLI plugin symlinks pointing to the wrong installation, see troubleshooting section #1 above
 
 ## Backoffice Administration
 

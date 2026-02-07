@@ -21,7 +21,8 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      # Bind mount: data in project dir so it persists when switching Docker hosts
+      - ../.postgres-data:/var/lib/postgresql/data
       - ./.devcontainer/init-test-db.sh:/docker-entrypoint-initdb.d/init-test-db.sh:ro
     environment:
       POSTGRES_USER: timesplace
@@ -37,5 +38,4 @@ services:
       timeout: 5s
       retries: 5
 
-volumes:
-  postgres-data:
+volumes: {}

@@ -148,7 +148,7 @@
     <div
       class="overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm"
     >
-      <table class="min-w-full divide-y divide-gray-200">
+      <table class="min-w-[52rem] w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
             <th

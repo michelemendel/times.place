@@ -559,7 +559,7 @@ btestcover:
 #   - Running CI/CD or scripts that need to start/stop containers
 #   - Prefer command-line control over Cursor's automatic management
 #
-# Uses docker compose (requires dockerd mode in Rancher Desktop or Docker Desktop)
+# Uses docker compose (requires Docker API, e.g. dockerd mode)
 
 devcontainerup:
 	@echo "Starting devcontainer..."

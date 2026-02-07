@@ -64,19 +64,27 @@ SELECT
     v.address, 
     v.owner_uuid,
     o.name AS owner_name,
-    o.email AS owner_email
+    o.email AS owner_email,
+    (SELECT COUNT(*) FROM events e
+     INNER JOIN event_lists el ON e.event_list_uuid = el.event_list_uuid
+     WHERE el.venue_uuid = v.venue_uuid AND el.visibility = 'public')::bigint AS public_events_count,
+    (SELECT COUNT(*) FROM events e
+     INNER JOIN event_lists el ON e.event_list_uuid = el.event_list_uuid
+     WHERE el.venue_uuid = v.venue_uuid AND el.visibility = 'private')::bigint AS private_events_count
 FROM venues v
 JOIN venue_owners o ON v.owner_uuid = o.owner_uuid
 ORDER BY v.created_at DESC
 `
 
 type ListAllVenuesRow struct {
-	VenueUuid  pgtype.UUID `json:"venue_uuid"`
-	Name       string      `json:"name"`
-	Address    string      `json:"address"`
-	OwnerUuid  pgtype.UUID `json:"owner_uuid"`
-	OwnerName  string      `json:"owner_name"`
-	OwnerEmail string      `json:"owner_email"`
+	VenueUuid          pgtype.UUID `json:"venue_uuid"`
+	Name               string      `json:"name"`
+	Address            string      `json:"address"`
+	OwnerUuid          pgtype.UUID `json:"owner_uuid"`
+	OwnerName          string      `json:"owner_name"`
+	OwnerEmail         string      `json:"owner_email"`
+	PublicEventsCount  int64       `json:"public_events_count"`
+	PrivateEventsCount int64       `json:"private_events_count"`
 }
 
 func (q *Queries) ListAllVenues(ctx context.Context) ([]ListAllVenuesRow, error) {
@@ -95,6 +103,8 @@ func (q *Queries) ListAllVenues(ctx context.Context) ([]ListAllVenuesRow, error)
 			&i.OwnerUuid,
 			&i.OwnerName,
 			&i.OwnerEmail,
+			&i.PublicEventsCount,
+			&i.PrivateEventsCount,
 		); err != nil {
 			return nil, err
 		}

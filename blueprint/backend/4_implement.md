@@ -497,3 +497,17 @@ This file will track backend implementation work sessions, decisions made during
   - New `ErrorCodeTooManyRequests` and `TooManyRequestsError(c, message)` for 429 Too Many Requests.
 - **API (auth)** (`backend/internal/http/auth_handlers.go`):
   - **ResendVerification**: Before deleting tokens and sending, calls `GetLatestVerificationCreatedAtByOwner`; if a token was created within the last 60 seconds, returns 429 with message "Please wait a minute before requesting another verification email." so users cannot trigger back-to-back resends.
+
+## 2026-02-07
+
+### Summary
+
+- **Admin venues list**: Extended `ListAllVenues` to return per-venue counts of public and private events so the backoffice Venues table can show them without extra requests.
+
+### Notes
+
+- **sqlc** (`backend/db/queries/admins.sql`):
+  - **ListAllVenues**: Added two scalar subqueries: `public_events_count` (COUNT of events in event_lists with `visibility = 'public'`) and `private_events_count` (COUNT of events in event_lists with `visibility = 'private'`) per venue; both cast to `bigint`.
+  - Ran `sqlc generate`; `ListAllVenuesRow` now includes `PublicEventsCount int64` and `PrivateEventsCount int64`.
+- **API** (`backend/internal/http/admin_handlers.go`):
+  - **ListVenues** (GET `/api/admin/venues`): Response for each venue now includes `public_events_count` and `private_events_count` in addition to existing fields.

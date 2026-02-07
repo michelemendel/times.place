@@ -27,6 +27,9 @@ go.work.sum
 # env file
 .env
 
+# Devcontainer Postgres data (bind mount, persists across Docker host switches)
+.postgres-data/
+
 # Editor/IDE
 # .idea/
 # .vscode/

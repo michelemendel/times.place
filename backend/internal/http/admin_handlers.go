@@ -93,13 +93,14 @@ func (h *AdminHandler) ListVenues(c echo.Context) error {
 	response := make([]map[string]any, len(venues))
 	for i, v := range venues {
 		response[i] = map[string]any{
-			"venue_uuid":  utils.UUIDToString(v.VenueUuid),
-			"name":        v.Name,
-			"address":     v.Address,
-			"owner_uuid":  utils.UUIDToString(v.OwnerUuid),
-			"owner_name":  v.OwnerName,
-			"owner_email": v.OwnerEmail,
-			// No visibility field
+			"venue_uuid":           utils.UUIDToString(v.VenueUuid),
+			"name":                 v.Name,
+			"address":              v.Address,
+			"owner_uuid":           utils.UUIDToString(v.OwnerUuid),
+			"owner_name":           v.OwnerName,
+			"owner_email":          v.OwnerEmail,
+			"public_events_count":  v.PublicEventsCount,
+			"private_events_count": v.PrivateEventsCount,
 		}
 	}
 

@@ -15,7 +15,7 @@
 {#if $authInitialized && $currentOwnerStore && $currentOwnerStore.is_admin}
   <div class="flex flex-col md:flex-row min-h-[calc(100vh-200px)] gap-6">
     <aside
-      class="w-full md:w-48 flex-shrink-0 bg-gray-50 border border-gray-200 rounded-lg p-4 h-fit"
+      class="w-full md:w-36 flex-shrink-0 bg-gray-50 border border-gray-200 rounded-lg p-4 h-fit"
     >
       <h2 class="text-base font-bold text-gray-800 mb-4 border-b pb-2">
         Backoffice
@@ -38,7 +38,7 @@
         >
       </nav>
     </aside>
-    <main class="flex-1 bg-white border border-gray-200 rounded-lg p-4">
+    <main class="flex-1 min-w-0 bg-white border border-gray-200 rounded-lg p-4">
       <slot />
     </main>
   </div>

@@ -125,17 +125,6 @@
         </a>
       </div>
 
-      <!-- Desktop: [Test Phase] centered in header -->
-      <div
-        class="hidden md:flex absolute left-1/2 -translate-x-1/2 h-full items-center pointer-events-none"
-      >
-        <a
-          href="/demo"
-          class="pointer-events-auto text-red-600 hover:text-red-700 font-medium text-[14px] transition-colors"
-          >[Test Phase]</a
-        >
-      </div>
-
       <!-- Desktop Navigation -->
       <div class="hidden md:flex items-center gap-2">
         <a
@@ -296,11 +285,6 @@
           <div
             class="container mx-auto py-2 flex flex-col gap-0 min-w-0 max-w-full"
           >
-            <a
-              href="/demo"
-              class="text-red-600 hover:text-red-700 font-medium text-[14px] transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"
-              on:click={closeMobileMenu}>[Test Phase]</a
-            >
             <a
               href="/"
               class="text-gray-700 hover:text-gray-900 font-medium text-base transition-colors px-4 py-1.5 hover:bg-gray-200 rounded-md"

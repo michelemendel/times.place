@@ -89,19 +89,23 @@ jobs:
       - name: Frontend build
         run: cd frontend && npm run build
 
-  # Deploy to Render only on push to main (after CI passes).
-  # Optional: set RENDER_DEPLOY_HOOK_URL in repo Secrets to trigger Render's deploy hook after CI.
-  # If unset, the step skips the curl; Render still deploys from the push via its GitHub integration.
-  deploy:
-    name: Deploy to Render
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Trigger Render deploy hook
-        run: |
-          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
-            curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
-          else
-            echo "RENDER_DEPLOY_HOOK_URL not set, skipping deploy hook"
-          fi
+  # ---------------------------------------------------------------------------
+  # Deploy job (commented out): Render is set to "Deploy only when CI passes",
+  # so it watches GitHub commit status and deploys when this workflow succeeds.
+  # No deploy-hook call is needed. Uncomment below if you switch to manual or
+  # webhook-only deploys and want the workflow to trigger Render via deploy hook
+  # (and set RENDER_DEPLOY_HOOK_URL in repo Secrets).
+  # ---------------------------------------------------------------------------
+  # deploy:
+  #   name: Deploy to Render
+  #   runs-on: ubuntu-latest
+  #   needs: build-and-test
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   steps:
+  #     - name: Trigger Render deploy hook
+  #       run: |
+  #         if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+  #           curl -f -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+  #         else
+  #           echo "RENDER_DEPLOY_HOOK_URL not set, skipping deploy hook"
+  #         fi

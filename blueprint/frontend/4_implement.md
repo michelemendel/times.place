@@ -1111,3 +1111,22 @@
 - **Routes/Pages** (`frontend/src/routes/backoffice/venues/+page.svelte`):
   - Table given `min-w-[40rem] w-full` for horizontal scroll consistency with Owners.
   - Added two columns: **Public** (number of public events) and **Private** (number of private events), using `venue.public_events_count` and `venue.private_events_count` from the admin API, with `?? 0` fallback.
+
+## 2026-02-09
+
+### Summary
+
+- **Main page registration CTA**: Added an inline message below the main page subtitle informing unauthenticated visitors they can register to add and manage their own venues, with a link to `/registration`; the message is hidden when the user is logged in.
+- **Navigation cleanup**: Removed Test Phase link and Demo page route to streamline navigation and eliminate unused content.
+
+### Notes
+
+- **Routes/Pages** (`frontend/src/routes/+page.svelte`):
+  - Imported `currentOwnerStore` from `$lib/stores`.
+  - Below the subtitle ("Select a venue to view its event schedules and contact information."), added a conditional block shown only when `!$currentOwnerStore`: "Have a venue? Register to add and manage your own venues." with the word "Register" linking to `/registration`.
+  - Styling matches subtitle (e.g. `text-[10px] md:text-base text-gray-600`); link uses `text-blue-600 hover:text-blue-800 font-medium transition-colors`.
+  - CTA disappears for registered/logged-in users because it is gated on `$currentOwnerStore`.
+- **Routes/Pages** (`frontend/src/routes/+layout.svelte`):
+  - Removed [Test Phase] link from desktop and mobile navigation.
+- **Routes/Pages** (demo):
+  - Removed `frontend/src/routes/demo/` route (demo page and `+page.svelte` deleted) so the Demo/Test Phase page is no longer available.

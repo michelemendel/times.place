@@ -17,6 +17,7 @@
     getPrivateEventListByToken,
     getPublicEventsForEventList,
   } from '$lib/api/public.js';
+  import { currentOwnerStore } from '$lib/stores';
 
   /** @type {string | null} */
   let selectedVenueId = null;
@@ -735,6 +736,17 @@
     <p class="text-[10px] md:text-base text-gray-600 mb-1 md:mb-0">
       Select a venue to view its event schedules and contact information.
     </p>
+    {#if !$currentOwnerStore}
+      <p class="text-[10px] md:text-base text-gray-600 mt-1 md:mt-0.5">
+        Have a venue?
+        <a
+          href="/registration"
+          class="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+          >Register</a
+        >
+        to add and manage your own venues.
+      </p>
+    {/if}
   </div>
 
   <div

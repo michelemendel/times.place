@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /api/
+Disallow: /backoffice/
+Disallow: /venue-owner/
+Disallow: /my/
+
+Sitemap: https://times.place/sitemap.xml

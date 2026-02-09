@@ -1,10 +1,13 @@
 <script>
+  import { page } from '$app/stores';
   import { get } from 'svelte/store';
   import { currentOwnerStore } from '$lib/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { login } from '$lib/api/auth.js';
   import { ApiError } from '$lib/api/client.js';
+
+  $: canonicalUrl = $page.url.origin + $page.url.pathname;
 
   let email = '';
   let password = '';
@@ -97,6 +100,15 @@
 
 <svelte:head>
   <title>Login - times.place</title>
+  <meta name="description" content="Log in to times.place." />
+  <meta property="og:title" content="Login - times.place" />
+  <meta property="og:description" content="Log in to times.place." />
+  <meta property="og:url" content={canonicalUrl} />
+  <link rel="canonical" href={canonicalUrl} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Login - times.place" />
+  <meta name="twitter:description" content="Log in to times.place." />
+  <meta name="twitter:image" content="{$page.url.origin}/favicon.png" />
 </svelte:head>
 
 <div class="max-w-5xl mx-auto px-6 sm:px-8 lg:px-12">

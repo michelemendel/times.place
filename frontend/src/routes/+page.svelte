@@ -95,6 +95,10 @@
       ? $page.url.searchParams.get('list') || null
       : null;
 
+  $: canonicalUrl = $page.url.origin + $page.url.pathname;
+  $: siteUrl = $page.url.origin;
+  $: siteDescription = 'Find venues and their event schedules. Browse event lists and times at times.place.';
+
   /**
    * Update browser URL with current selection
    * @param {string | null} venueId
@@ -718,6 +722,35 @@
 
 <svelte:head>
   <title>Find Venues and Event Times</title>
+  <meta name="description" content="Find venues and event schedules. Select a venue to view event times and contact information." />
+  <meta property="og:title" content="Find Venues and Event Times" />
+  <meta property="og:description" content="Find venues and event schedules. Select a venue to view event times and contact information." />
+  <meta property="og:url" content={canonicalUrl} />
+  <link rel="canonical" href={canonicalUrl} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Find Venues and Event Times" />
+  <meta name="twitter:description" content="Find venues and event schedules. Select a venue to view event times and contact information." />
+  <meta name="twitter:image" content="{$page.url.origin}/favicon.png" />
+  <script type="application/ld+json">
+    {JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@id': siteUrl + '#organization',
+          '@type': 'Organization',
+          name: 'times.place',
+          url: siteUrl,
+          description: siteDescription
+        },
+        {
+          '@type': 'WebSite',
+          name: 'times.place',
+          url: siteUrl,
+          description: siteDescription,
+          publisher: { '@id': siteUrl + '#organization' }
+        }
+      ]})}
+  </script>
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"

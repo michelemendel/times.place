@@ -1,9 +1,20 @@
 <script>
+  import { page } from '$app/stores';
+  $: canonicalUrl = $page.url.origin + $page.url.pathname;
   // About page
 </script>
 
 <svelte:head>
   <title>About - times.place</title>
+  <meta name="description" content="times.place is a venue management and event scheduling platform that helps venues share event schedules with the public. Find prayer times, community events, and more." />
+  <meta property="og:title" content="About - times.place" />
+  <meta property="og:description" content="times.place is a venue management and event scheduling platform that helps venues share event schedules with the public. Find prayer times, community events, and more." />
+  <meta property="og:url" content={canonicalUrl} />
+  <link rel="canonical" href={canonicalUrl} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="About - times.place" />
+  <meta name="twitter:description" content="times.place is a venue management and event scheduling platform that helps venues share event schedules with the public. Find prayer times, community events, and more." />
+  <meta name="twitter:image" content="{$page.url.origin}/favicon.png" />
 </svelte:head>
 
 <div

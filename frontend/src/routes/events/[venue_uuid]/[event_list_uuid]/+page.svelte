@@ -116,6 +116,37 @@
   <title
     >{eventList?.name || 'Event List'} - {venue?.name || 'Venue'} - times.place</title
   >
+  {#if venue && eventList}
+    {@const pageTitle = `${eventList.name || 'Event List'} - ${venue.name || 'Venue'} - times.place`}
+    {@const pageDescription = `View schedule: ${eventList.name || 'Event List'} at ${venue.name || 'Venue'}.`}
+    {@const canonicalUrl = $page.url.origin + $page.url.pathname}
+    <meta name="description" content={pageDescription} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonicalUrl} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content="{$page.url.origin}/favicon.png" />
+    {@const eventListUrl = canonicalUrl}
+    {@const venueLocation = venue.address ? { '@type': 'Place', name: venue.name, address: { '@type': 'PostalAddress', streetAddress: venue.address } } : { '@type': 'Place', name: venue.name }}
+    {@const eventsJsonLd = listEvents.map((ev) => {
+      const startDate = ev.event_date && ev.event_time ? `${ev.event_date}T${ev.event_time}` : null;
+      return {
+        '@type': 'Event',
+        name: ev.event_name || 'Untitled Event',
+        startDate: startDate || undefined,
+        location: venueLocation,
+        url: eventListUrl
+      };
+    })}
+    {#if eventsJsonLd.length > 0}
+      <script type="application/ld+json">
+        {JSON.stringify(eventsJsonLd.length === 1 ? { '@context': 'https://schema.org', ...eventsJsonLd[0] } : { '@context': 'https://schema.org', '@graph': eventsJsonLd })}
+      </script>
+    {/if}
+  {/if}
 </svelte:head>
 
 <div class="w-full min-w-0 max-w-full lg:max-w-[60%] lg:mx-auto">

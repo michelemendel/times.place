@@ -79,19 +79,36 @@ export async function logout() {
 }
 
 /**
+ * True if the session-hint cookie is present (set by backend on login; cleared on logout).
+ * When false, we skip calling /api/auth/refresh to avoid 401 in the console on first visit.
+ * @returns {boolean}
+ */
+function hasSessionHint() {
+  if (typeof document === 'undefined' || !document.cookie) return false;
+  return document.cookie.includes('tp_sess=');
+}
+
+/**
  * Get full /api/auth/me response (owner, venue_count, venue_limit).
  * Use when you need venue limit info (e.g. to grey out "Add Venue").
- * @returns {Promise<{owner: import('$lib/types').VenueOwner, venue_count?: number, venue_limit?: number}>}
+ * When not logged in, returns { owner: null } without throwing.
+ * Skips calling refresh when there is no session hint cookie (avoids 401 on first hit).
+ * @returns {Promise<{owner: import('$lib/types').VenueOwner | null, venue_count?: number, venue_limit?: number}>}
  */
 export async function getAuthMe() {
   const { getAccessToken, setAccessToken } = await import('./client.js');
 
   if (!getAccessToken()) {
+    if (!hasSessionHint()) {
+      currentOwnerStore.set(null);
+      return { owner: null, venue_count: 0, venue_limit: 0 };
+    }
     try {
       const refreshResponse = await api.postJSON('/api/auth/refresh', {});
       setAccessToken(refreshResponse.access_token);
     } catch (refreshError) {
-      throw refreshError;
+      currentOwnerStore.set(null);
+      return { owner: null, venue_count: 0, venue_limit: 0 };
     }
   }
 
@@ -102,8 +119,9 @@ export async function getAuthMe() {
 
 /**
  * Get current authenticated owner
- * Attempts to refresh token if no access token is available but refresh token cookie exists
- * @returns {Promise<import('$lib/types').VenueOwner>}
+ * Attempts to refresh token if no access token is available but refresh token cookie exists.
+ * Returns null when not authenticated (no session or refresh failed).
+ * @returns {Promise<import('$lib/types').VenueOwner | null>}
  */
 export async function getCurrentOwner() {
   const response = await getAuthMe();

@@ -167,9 +167,10 @@ func (h *AuthHandler) setRefreshTokenCookie(c echo.Context, token string) {
 	}
 
 	c.SetCookie(cookie)
+	h.setSessionHintCookie(c, true)
 }
 
-// clearRefreshTokenCookie clears the refresh token cookie
+// clearRefreshTokenCookie clears the refresh token cookie and session hint
 func (h *AuthHandler) clearRefreshTokenCookie(c echo.Context) {
 	cookie := &http.Cookie{
 		Name:     "refresh_token",
@@ -177,6 +178,41 @@ func (h *AuthHandler) clearRefreshTokenCookie(c echo.Context) {
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
+	}
+	c.SetCookie(cookie)
+	h.setSessionHintCookie(c, false)
+}
+
+// setSessionHintCookie sets or clears a readable cookie so the frontend can skip
+// calling /api/auth/refresh when the user has no session (avoids 401 on first visit).
+func (h *AuthHandler) setSessionHintCookie(c echo.Context, present bool) {
+	cookieDomain := os.Getenv("COOKIE_DOMAIN")
+	cookieSecure := os.Getenv("COOKIE_SECURE") == "true"
+	cookieSameSite := http.SameSiteLaxMode
+	sameSiteStr := os.Getenv("COOKIE_SAME_SITE")
+	switch strings.ToLower(sameSiteStr) {
+	case "strict":
+		cookieSameSite = http.SameSiteStrictMode
+	case "none":
+		cookieSameSite = http.SameSiteNoneMode
+	default:
+		cookieSameSite = http.SameSiteLaxMode
+	}
+	cookie := &http.Cookie{
+		Name:     "tp_sess",
+		Value:    "1",
+		Path:     "/",
+		MaxAge:   int(service.RefreshTokenLifetime.Seconds()),
+		HttpOnly: false, // readable by JS so frontend can skip refresh when absent
+		Secure:   cookieSecure,
+		SameSite: cookieSameSite,
+	}
+	if cookieDomain != "" {
+		cookie.Domain = cookieDomain
+	}
+	if !present {
+		cookie.Value = ""
+		cookie.MaxAge = -1
 	}
 	c.SetCookie(cookie)
 }

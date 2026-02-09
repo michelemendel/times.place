@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://times.place/</loc>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://times.place/about</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://times.place/price</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://times.place/disclaimer</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://times.place/registration</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
+    <loc>https://times.place/login</loc>
+    <changefreq>monthly</changefreq>
+  </url>
+</urlset>

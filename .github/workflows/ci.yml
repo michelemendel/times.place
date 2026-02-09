@@ -86,6 +86,9 @@ jobs:
       - name: Frontend dependencies
         run: cd frontend && npm ci
 
+      - name: Frontend sync
+        run: cd frontend && npx svelte-kit sync
+
       - name: Frontend build
         run: cd frontend && npm run build
 

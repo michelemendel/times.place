@@ -8,7 +8,6 @@ export async function listOwners() {
   return api.getJSON('/api/admin/owners');
 }
 
-
 /**
  * Get owner details (admin only)
  * @param {string} uuid

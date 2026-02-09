@@ -105,7 +105,3 @@ If you run `make fbuild` on your host machine and see an error like `Cannot find
 make finstall-clean
 make fbuild
 ```
-
-## My Notes
-
-- [Perplexity Space: times.place](https://www.perplexity.ai/spaces/times-place-0QMkL8qGR16UjuPLu0HfIw)

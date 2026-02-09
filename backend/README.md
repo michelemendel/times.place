@@ -238,7 +238,7 @@ The server will:
 **Connection Details:**
 
 - **Host**: `localhost` (from host) or `postgres` (from inside devcontainer)
-- **Port**: `5432`
+- **Port**: `5434` (host; postgres container uses 5432 internally)
 - **Database**: `timesplace`
 - **User**: `timesplace`
 - **Password**: `timesplace`
@@ -252,7 +252,7 @@ The server will:
 **From host machine:**
 
 - Use `make dbconnect` to connect via docker exec (works from any terminal)
-- Or connect directly: `psql "postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable"`
+- Or connect directly: `psql "postgres://timesplace:timesplace@localhost:5434/timesplace?sslmode=disable"`
 
 **Using GUI Tools (pgAdmin, DBeaver, TablePlus, etc.):**
 
@@ -267,7 +267,7 @@ The server will:
 **Alternative: Direct port (may work from host CLI, but pgAdmin may have issues):**
 
 - Host: `localhost`
-- Port: `5432` (direct postgres port)
+- Port: `5434` (direct postgres port on host)
 - Database: `timesplace`
 - Username: `timesplace`
 - Password: `timesplace`
@@ -341,7 +341,7 @@ All backend-related Makefile targets:
 - `make dbseedclear` - Clear demo data only (does not seed; run `make dbseed` to re-seed)
 - `make devshell` - Open shell in devcontainer (for Warp/external terminals)
 - `make dbconnect` - Connect to database with psql (works from host or inside container)
-- `make dbhost` - Connect to database from host (direct connection via localhost:5432)
+- `make dbhost` - Connect to database from host (direct connection via localhost:5434)
 - `make dburl` - Show database connection URLs
 - `make dbports` - Show port mapping info for GUI tools (pgAdmin, etc.)
 
@@ -398,8 +398,8 @@ Check:
      - Try restarting the runtime
      - Verify Docker is running: `docker info`
 
-4. **Ports `8080` and `5432` are not in use by other services**
-   - Check: `lsof -i :8080` and `lsof -i :5432`
+4. **Ports `8080`, `5433`, and `5434` are not in use by other services**
+   - Check: `lsof -i :8080`, `lsof -i :5433`, `lsof -i :5434`
 
 5. **Try rebuilding**: `make bdevcontainerrebuild`
 
@@ -439,7 +439,7 @@ By design, there is no public sign-up for admin accounts. To grant admin privile
 
 3.  **Access the Backoffice**: Log out and log back in (or refresh). A **Backoffice** link will appear in the user menu.
 
-## GitHub Actions & Render Deploy Hook
+## CI/CD Pipeline - GitHub Actions & Render Deploy Hook
 
 The CI workflow (`.github/workflows/ci.yml`) runs build and tests on every push and PR. On **push to `main`**, it also triggers a Render deploy via a deploy hook.
 

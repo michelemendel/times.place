@@ -239,8 +239,8 @@ devshell:
 
 
 # Backend Database (goose) targets
-# These work both from host (via docker exec) and inside the devcontainer (direct execution)
-# Require DATABASE_URL (e.g. in backend/.env or devcontainer env); no default.
+# These work both from host (via docker exec) and inside the devcontainer (direct execution).
+# DATABASE_URL must be set (e.g. in backend/.env or devcontainer env); no default.
 
 dbup:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
@@ -439,12 +439,12 @@ dbseedrcclear:
 
 dburl:
 	@echo "Database connection URL:"
-	@echo "  From host: postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable"
+	@echo "  From host: postgres://timesplace:timesplace@localhost:5434/timesplace?sslmode=disable"
 	@echo "  From container: postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable"
 
 dbports:
 	@echo "Database port mappings:"
-	@echo "  Host port 5432 → Postgres container port 5432 (direct connection)"
+	@echo "  Host port 5434 → Postgres container port 5432 (direct connection)"
 	@echo "  Host port 5433 → Backend container port 5432 (proxy to postgres)"
 	@echo ""
 	@echo "Connection details for GUI tools (pgAdmin, DBeaver, etc.):"
@@ -455,11 +455,11 @@ dbports:
 	@echo "  Username: timesplace"
 	@echo "  Password: timesplace"
 	@echo ""
-	@echo "  Alternative: Port 5432 (direct, may work from CLI but not pgAdmin)"
+	@echo "  Alternative: Port 5434 (direct to postgres container)"
 
 dbhost:
-	@echo "Connecting to database from host (direct connection via localhost:5432)..."
-	@psql "postgres://timesplace:timesplace@localhost:5432/timesplace?sslmode=disable"
+	@echo "Connecting to database from host (direct connection via localhost:5434)..."
+	@psql "postgres://timesplace:timesplace@localhost:5434/timesplace?sslmode=disable"
 
 dbconnect:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
@@ -499,7 +499,7 @@ btest:
 	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
 		echo "Resetting test database..."; \
 		TEST_DB_URL="$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}"; \
-		MAIN_DB_URL="$$DATABASE_URL"; \
+		MAIN_DB_URL="$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}"; \
 		psql "$$MAIN_DB_URL" -c "DROP DATABASE IF EXISTS timesplace_test;" || true; \
 		psql "$$MAIN_DB_URL" -c "CREATE DATABASE timesplace_test;"; \
 		echo "Running migrations on test database..."; \
@@ -571,6 +571,11 @@ devcontainerup:
 devcontainerdown:
 	@echo "Stopping devcontainer..."
 	@docker compose -f .devcontainer/docker-compose.yml down
+
+# Stop the devcontainer stack started by Cursor ("Reopen in Container"; project name timesplace_devcontainer).
+devcontainerdown-cursor:
+	@echo "Stopping Cursor devcontainer (timesplace_devcontainer)..."
+	@docker compose -f .devcontainer/docker-compose.yml -p timesplace_devcontainer down
 
 devcontainerrebuild:
 	@echo "Rebuilding devcontainer..."

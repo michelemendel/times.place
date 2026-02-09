@@ -31,7 +31,8 @@ services:
       POSTGRES_HOST_AUTH_METHOD: trust
     command: ["postgres", "-c", "listen_addresses=*"]
     ports:
-      - "5432:5432"
+      # Use 5434 on host to avoid conflict with local Postgres or other containers on 5432
+      - "5434:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U timesplace"]
       interval: 5s

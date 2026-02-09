@@ -87,7 +87,7 @@ This file will track backend implementation work sessions, decisions made during
 
 - **Dev container**:
   - Postgres service exposes port `5432:5432` directly (host:container).
-  - External tools (pgAdmin, CLI) connect via `localhost:5432`.
+  - External tools (pgAdmin, CLI) connect via `localhost:5433` (proxy) or `localhost:5434` (direct to postgres).
   - Docker's native port mapping works reliably, so no proxy needed.
   - (Previously used socat proxy on port 5433, but removed as unnecessary.)
 

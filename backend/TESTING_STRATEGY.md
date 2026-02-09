@@ -182,11 +182,11 @@ If you want a separate DB that is recreated each run:
   run: |
     psql "$DATABASE_URL" -c "DROP DATABASE IF EXISTS timesplace_test;"
     psql "$DATABASE_URL" -c "CREATE DATABASE timesplace_test;"
-    goose -dir backend/db/migrations postgres "postgres://timesplace:timesplace@localhost:5432/timesplace_test?sslmode=disable" up
+    goose -dir backend/db/migrations postgres "postgres://timesplace:timesplace@localhost:5434/timesplace_test?sslmode=disable" up
 
 - name: Run tests
   env:
-    TEST_DATABASE_URL: postgres://timesplace:timesplace@localhost:5432/timesplace_test?sslmode=disable
+    TEST_DATABASE_URL: postgres://timesplace:timesplace@localhost:5434/timesplace_test?sslmode=disable
   run: cd backend && go test ./... -v
 ```
 

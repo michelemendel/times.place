@@ -95,12 +95,12 @@
           />
         </svg>
 
-        <!-- Event List -->
+        <!-- Schedule -->
         <div
           class="bg-purple-100 border-2 border-purple-300 rounded-lg px-6 py-4 text-center min-w-[200px]"
         >
           <div class="font-bold text-[14px] md:text-lg text-purple-900">
-            Event List
+            Schedule
           </div>
           <div class="text-[10px] md:text-sm text-purple-700 mt-1">
             A collection of events
@@ -153,17 +153,17 @@
         <li>An optional comment or description</li>
       </ul>
       <p>
-        Events are grouped into <strong>event lists</strong>, which can
-        represent a day's schedule, a weekly pattern, or any other logical
-        grouping. Event lists belong to a <strong>venue</strong>, and venues are
-        managed by an <strong>owner</strong>.
+        Events are grouped into <strong>schedules</strong>, which can represent a
+        day’s schedule, a weekly pattern, or any other logical grouping. Schedules
+        belong to a <strong>venue</strong>, and venues are managed by an
+        <strong>owner</strong>.
       </p>
       <div class="p-4 bg-red-50 border-l-4 border-red-500 rounded mt-4">
         <p class="font-semibold text-[12px] md:text-base text-red-900 mb-2">
           Note for Venue Owners:
         </p>
         <p class="text-[12px] md:text-base text-red-800">
-          While both event lists and individual events can have dates, it's best
+          While both schedules and individual events can have dates, it's best
           to use one or the other (or neither). Using both in the same list can
           be confusing to your visitors.
         </p>
@@ -182,7 +182,7 @@
       For Venue Owners
     </h2>
     <p>
-      Register and manage your venues, create event lists, and keep your
+      Register and manage your venues, create schedules, and keep your
       schedules up to date. You have full control over your venue information
       and event times.
     </p>
@@ -238,23 +238,23 @@
     </h2>
     <p>
       times.place includes a visibility feature as a security measure to help
-      you control who can see your event list and event information.
+      you control who can see your schedule and event information.
     </p>
     <p>
-      <strong>Public visibility:</strong> Event lists marked as public are visible
+      <strong>Public visibility:</strong> Schedules marked as public are visible
       to everyone and appear in search results. A venue appears in the public venue
-      list if it has at least one public event list. This is ideal for community
+      list if it has at least one public schedule. This is ideal for community
       events that you want to share broadly.
     </p>
     <p>
-      <strong>Private visibility:</strong> Event lists marked as private are only
+      <strong>Private visibility:</strong> Schedules marked as private are only
       accessible via a special shareable link. This link contains a secure token
-      that you can share with specific people. Private event lists do not appear
+      that you can share with specific people. Private schedules do not appear
       in public searches, providing an additional layer of privacy and security for
       your information.
     </p>
     <p>
-      As a venue owner, you choose the visibility setting for each event list,
+      As a venue owner, you choose the visibility setting for each schedule,
       giving you granular control over who can access your schedules.
     </p>
 

@@ -410,7 +410,7 @@
     if (!list) return;
     if (
       !confirm(
-        `Are you sure you want to delete the event list "${list.name || 'Untitled Event List'}"? This will also delete all events in this list.`,
+        `Are you sure you want to delete the schedule "${list.name || 'Untitled Schedule'}"? This will also delete all events in this schedule.`,
       )
     ) {
       return;
@@ -2015,7 +2015,7 @@
           <div class="space-y-2 md:space-y-4">
             <div>
               <h3 class="text-[12px] md:text-[14px] font-bold text-gray-800">
-                Event Lists
+                Schedules
               </h3>
             </div>
 
@@ -2023,7 +2023,7 @@
               <p
                 class="text-[10px] md:text-[14px] text-gray-500 py-2 md:py-4 text-center"
               >
-                No event lists yet. Click "+ Add Event List" to create one.
+                No schedules yet. Click "+ Add Schedule" to create one.
               </p>
             {/if}
 
@@ -2054,7 +2054,7 @@
                     on:click={() => deleteEventList(listData.event_list_uuid)}
                     class="px-1.5 md:px-2 py-0.5 md:py-1 bg-red-600 hover:bg-red-700 text-white text-[9px] md:text-sm rounded transition-colors"
                   >
-                    Delete Event List
+                    Delete Schedule
                   </button>
                 </div>
 
@@ -2062,7 +2062,7 @@
                   <label
                     for="event-list-name-{listData.event_list_uuid}"
                     class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
-                    >Event List Name (optional)</label
+                    >Schedule Name (optional)</label
                   >
                   <div class="relative">
                     <input
@@ -2586,7 +2586,7 @@
               on:click={addEventList}
               class="px-2 md:px-3 py-0.5 md:py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] md:text-[14px] rounded-lg transition-colors"
             >
-              + Add Event List
+              + Add Schedule
             </button>
           </div>
         </div>
@@ -2605,7 +2605,7 @@
             <label
               for="preview-event-list"
               class="block text-[10px] md:text-[12px] font-medium text-gray-700 mb-0.5 md:mb-1"
-              >Select Event List</label
+              >Select Schedule</label
             >
             <select
               id="preview-event-list"
@@ -2614,7 +2614,7 @@
             >
               {#each eventListsData as listData}
                 <option value={listData.event_list_uuid}
-                  >{listData.name || 'Untitled Event List'}</option
+                  >{listData.name || 'Untitled Schedule'}</option
                 >
               {/each}
             </select>
@@ -2703,7 +2703,7 @@
             {#if previewEventList}
               <div class="mt-6">
                 <h3 class="text-2xl font-semibold mb-1 text-gray-900">
-                  {previewEventList.name || 'Untitled Event List'}
+                  {previewEventList.name || 'Untitled Schedule'}
                 </h3>
                 {#if previewEventList.date}
                   <p class="text-sm text-gray-600 mb-2">

@@ -71,7 +71,7 @@
         eventLists.find((el) => el.event_list_uuid === eventListUuid) || null;
 
       if (!eventList) {
-        throw new Error('Event list not found.');
+        throw new Error('Schedule not found.');
       }
 
       // Fetch events
@@ -87,7 +87,7 @@
       venue = null;
       eventList = null;
       listEvents = [];
-      loadError = e instanceof Error ? e.message : 'Failed to load event list.';
+      loadError = e instanceof Error ? e.message : 'Failed to load schedule.';
     } finally {
       loading = false;
     }
@@ -114,11 +114,11 @@
 
 <svelte:head>
   <title
-    >{eventList?.name || 'Event List'} - {venue?.name || 'Venue'} - times.place</title
+    >{eventList?.name || 'Schedule'} - {venue?.name || 'Venue'} - times.place</title
   >
   {#if venue && eventList}
-    {@const pageTitle = `${eventList.name || 'Event List'} - ${venue.name || 'Venue'} - times.place`}
-    {@const pageDescription = `View schedule: ${eventList.name || 'Event List'} at ${venue.name || 'Venue'}.`}
+    {@const pageTitle = `${eventList.name || 'Schedule'} - ${venue.name || 'Venue'} - times.place`}
+    {@const pageDescription = `View schedule: ${eventList.name || 'Schedule'} at ${venue.name || 'Venue'}.`}
     {@const canonicalUrl = $page.url.origin + $page.url.pathname}
     <meta name="description" content={pageDescription} />
     <meta property="og:title" content={pageTitle} />
@@ -157,7 +157,7 @@
   {:else if loadError || !venue || !eventList}
     <div class="text-center py-4 md:py-6">
       <p class="text-[12px] md:text-sm text-gray-600">
-        {loadError || 'Event list not found.'}
+        {loadError || 'Schedule not found.'}
       </p>
       <button
         on:click={goBack}
@@ -263,7 +263,7 @@
         <h2
           class="text-[14px] md:text-2xl font-semibold mb-0.5 md:mb-1 text-gray-900"
         >
-          {eventList.name || 'Untitled Event List'}
+          {eventList.name || 'Untitled Schedule'}
         </h2>
         {#if eventList.date}
           <p class="text-[10px] md:text-sm text-gray-600 mb-1 md:mb-2">
@@ -296,7 +296,7 @@
       {#if listEvents.length === 0}
         <div class="py-2 md:py-4 text-center">
           <p class="text-[10px] md:text-sm text-gray-500">
-            No events scheduled for this list.
+            No events scheduled.
           </p>
         </div>
       {:else}

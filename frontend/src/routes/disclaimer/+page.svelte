@@ -27,7 +27,7 @@
       Accuracy of Information
     </h2>
     <p>
-      times.place is a platform that allows venue owners to publish their event schedules and venue information. We are <strong>not responsible</strong> for the accuracy, completeness, or timeliness of the data displayed on this site. All venue details, event lists, event names, times, and other information are provided and maintained by the respective venue owners. It is the sole responsibility of venue owners to ensure that their published information is correct and up to date.
+      times.place is a platform that allows venue owners to publish their event schedules and venue information. We are <strong>not responsible</strong> for the accuracy, completeness, or timeliness of the data displayed on this site. All venue details, schedules, event names, times, and other information are provided and maintained by the respective venue owners. It is the sole responsibility of venue owners to ensure that their published information is correct and up to date.
     </p>
 
     <h2 class="text-2xl font-semibold mt-8 mb-4 text-gray-900">

@@ -80,7 +80,7 @@
       venue = null;
       eventList = null;
       listEvents = [];
-      loadError = e instanceof Error ? e.message : 'Failed to load event list.';
+      loadError = e instanceof Error ? e.message : 'Failed to load schedule.';
     } finally {
       loading = false;
     }
@@ -103,14 +103,14 @@
 
 <svelte:head>
   <title
-    >{eventList?.name || 'Event List'} - {venue?.name || 'Venue'} - times.place</title
+    >{eventList?.name || 'Schedule'} - {venue?.name || 'Venue'} - times.place</title
   >
 </svelte:head>
 
 <div class="w-full min-w-0 max-w-full lg:max-w-[60%] lg:mx-auto">
   {#if !owner}
     <div class="text-center py-4 md:py-6">
-      <p class="text-[12px] md:text-sm text-gray-600">Please log in to view event lists.</p>
+      <p class="text-[12px] md:text-sm text-gray-600">Please log in to view schedules.</p>
     </div>
   {:else if loading}
     <div class="text-center py-4 md:py-6">
@@ -119,7 +119,7 @@
   {:else if !venue || !eventList}
     <div class="text-center py-4 md:py-6">
       <p class="text-[12px] md:text-sm text-gray-600">
-        {loadError || 'Event list not found.'}
+        {loadError || 'Schedule not found.'}
       </p>
       <button
         on:click={goBack}
@@ -211,7 +211,7 @@
       <!-- Event List Header -->
       <div class="mb-2 md:mb-4">
         <h2 class="text-[14px] md:text-2xl font-semibold mb-0.5 md:mb-1 text-gray-900">
-          {eventList.name || 'Untitled Event List'}
+          {eventList.name || 'Untitled Schedule'}
         </h2>
         {#if eventList.date}
           <p class="text-[10px] md:text-sm text-gray-600 mb-1 md:mb-2">
@@ -242,7 +242,7 @@
       {#if listEvents.length === 0}
         <div class="py-2 md:py-4 text-center">
           <p class="text-[10px] md:text-sm text-gray-500">
-            No events scheduled for this list.
+            No events scheduled.
           </p>
         </div>
       {:else}

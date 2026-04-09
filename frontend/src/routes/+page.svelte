@@ -97,7 +97,7 @@
 
   $: canonicalUrl = $page.url.origin + $page.url.pathname;
   $: siteUrl = $page.url.origin;
-  $: siteDescription = 'Find venues and their event schedules. Browse event lists and times at times.place.';
+  $: siteDescription = 'Find venues and their event schedules. Browse schedules and times at times.place.';
 
   /**
    * Update browser URL with current selection
@@ -223,7 +223,7 @@
       };
     } catch (err) {
       console.error('Failed to load event lists', err);
-      loadError = 'Failed to load event lists. Please try again.';
+      loadError = 'Failed to load schedules. Please try again.';
     } finally {
       isLoadingListsAndEvents = false;
     }
@@ -1056,7 +1056,7 @@
               <label
                 for="event-list-select"
                 class="block text-[10px] md:text-sm font-medium text-gray-700 mb-0.5 md:mb-1"
-                >Select Event List</label
+                >Select Schedule</label
               >
               <select
                 id="event-list-select"
@@ -1154,7 +1154,7 @@
     {:else}
       <p class="text-gray-500 text-center text-[10px] md:text-sm">
         The search works across venue names, addresses, comments, owner
-        information, event list names, and event names.
+        information, schedule names, and event names.
       </p>
     {/if}
   </div>

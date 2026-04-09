@@ -289,14 +289,14 @@
 </script>
 
 <svelte:head>
-  <title>Event Lists - {venue?.name || 'Venue'} - times.place</title>
+  <title>Schedules - {venue?.name || 'Venue'} - times.place</title>
 </svelte:head>
 
 <div class="w-full min-w-0 max-w-full lg:max-w-[60%] lg:mx-auto">
   {#if !owner}
     <div class="text-center py-4 md:py-8">
       <p class="text-[12px] md:text-base text-gray-600">
-        Please log in to view event lists.
+        Please log in to view schedules.
       </p>
     </div>
   {:else if isLoading}
@@ -394,11 +394,10 @@
         <h2
           class="text-[14px] md:text-2xl font-semibold text-gray-900 mb-1 md:mb-2"
         >
-          No event lists yet
+          No schedules yet
         </h2>
         <p class="text-[10px] md:text-base text-gray-600 mb-2 md:mb-6">
-          This venue doesn't have any event lists. Edit the venue to add event
-          lists.
+          This venue doesn't have any schedules. Edit the venue to add schedules.
         </p>
         <button
           on:click={() =>
@@ -423,7 +422,7 @@
                   <h3
                     class="text-[14px] md:text-xl font-bold text-gray-900 mb-0.5 md:mb-1"
                   >
-                    {eventList.name || 'Untitled Event List'}
+                    {eventList.name || 'Untitled Schedule'}
                   </h3>
                   {#if eventList.date}
                     <p
@@ -501,7 +500,7 @@
                   <button
                     on:click={() => printEventList(eventList)}
                     class="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1 md:py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200 text-[10px] md:text-base"
-                    title="Print this event list"
+                    title="Print this schedule"
                   >
                     <svg
                       class="w-3.5 h-3.5 md:w-5 md:h-5"
@@ -556,7 +555,7 @@
               {:else}
                 <div class="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-gray-200">
                   <p class="text-[10px] md:text-sm text-gray-500">
-                    No events in this list
+                    No events scheduled
                   </p>
                 </div>
               {/if}
@@ -609,7 +608,7 @@
           </button>
         </div>
         <p class="text-[12px] md:text-base text-gray-700 mb-2 md:mb-4">
-          Share this link to allow others to view the event list <strong
+          Share this link to allow others to view the schedule <strong
             >{linkModalEventList?.name || 'Untitled'}</strong
           >:
         </p>

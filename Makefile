@@ -3,6 +3,23 @@
 .PHONY: dbup dbdown dbreset dbstatus goosecreate dbverify
 .PHONY: sqlcgenerate bstart bstop brestart dbconnect dbconnect-renderdotcom devshell
 
+# -----------------------------------------------------------------------------
+# Host vs devcontainer execution model
+#
+# This project is designed to be runnable from either:
+#   - inside the devcontainer (Cursor “Reopen in Container”, or any shell running
+#     in the backend container), or
+#   - the host machine (e.g. Warp), which controls the container via Docker.
+#
+# Many targets use a long `if ... else ...` to do the right thing in both cases:
+#   - Inside devcontainer: run commands directly (paths like /workspace/...).
+#   - On host: find the running backend container and run the same commands via
+#     `docker exec ...` so builds/run use the container’s OS/arch and env.
+#
+# Detection heuristic:
+#   - `-f /.dockerenv` is typically true inside Docker containers.
+# -----------------------------------------------------------------------------
+
 help:
 	@echo "Available commands:"
 	@echo ""
@@ -54,9 +71,9 @@ help:
 	@echo "  make btestcover   - Run backend tests with coverage"
 	@echo ""
 	@echo "Backend Database Access (works from host or inside devcontainer):"
-	@echo "  make dbconnect        - Connect to database with psql"
+	@echo "  make dbconnect     - Connect to database with psql"
 	@echo "  make dbconnect-renderdotcom - Connect to Render.com Postgres (uses DATABASE_URL_RENDER_COM from backend/.env)"
-	@echo "  make dbhost           - Connect to database from host (direct connection)"
+	@echo "  make dbhost        - Connect to database from host (direct connection)"
 	@echo "  make dburl         - Show database connection URLs"
 	@echo "  make dbports       - Show port mapping info for GUI tools"
 	@echo ""
@@ -99,7 +116,7 @@ finstall-clean:
 # When run from host, build inside backend container so the binary matches container arch (avoids Exec format error)
 
 bbuild:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		cd backend && mkdir -p bin && go build -buildvcs=false -o bin/api ./cmd/api; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
@@ -112,8 +129,8 @@ bbuild:
 	fi
 
 bstart: bbuild
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
-		echo "Starting backend server..."; \
+	@if [ -f /.dockerenv ]; then \
+		echo "Starting backend server inside devcontainer..."; \
 		cd /workspace/backend && ./bin/api; \
 	else \
 		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
@@ -123,7 +140,7 @@ bstart: bbuild
 			echo "Or run this command from inside the devcontainer"; \
 			exit 1; \
 		fi; \
-		echo "Starting backend server..."; \
+		echo "Starting backend server inside devcontainer but from host terminal..."; \
 		docker exec -it $$CONTAINER_NAME bash -c "cd /workspace/backend && ./bin/api"; \
 	fi
 
@@ -133,7 +150,7 @@ pstart: bbuild
 		echo "Error: Frontend build directory not found. Run 'make fbuild' first."; \
 		exit 1; \
 	fi
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Starting backend server (serving built frontend)..."; \
 		cd /workspace/backend && ./bin/api; \
 	else \
@@ -152,7 +169,7 @@ binstall:
 	cd backend && go mod download
 
 bstop:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Stopping backend server (inside devcontainer)..."; \
 		pkill -f "backend/bin/api" || pkill -f "times.place" || echo "No running server process found."; \
 	else \
@@ -243,7 +260,7 @@ devshell:
 # DATABASE_URL must be set (e.g. in backend/.env or devcontainer env); no default.
 
 dbup:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Running migrations (inside devcontainer)..."; \
 		cd /workspace/backend && goose -dir db/migrations postgres "$$DATABASE_URL" up; \
 	else \
@@ -259,7 +276,7 @@ dbup:
 	fi
 
 dbdown:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Rolling back last migration (inside devcontainer)..."; \
 		cd /workspace/backend && goose -dir db/migrations postgres "$$DATABASE_URL" down; \
 	else \
@@ -275,7 +292,7 @@ dbdown:
 	fi
 
 dbreset:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Rolling back ALL migrations (inside devcontainer)..."; \
 		cd /workspace/backend && goose -dir db/migrations postgres "$$DATABASE_URL" reset; \
 	else \
@@ -291,7 +308,7 @@ dbreset:
 	fi
 
 dbstatus:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Migration status (inside devcontainer):"; \
 		cd /workspace/backend && goose -dir db/migrations postgres "$$DATABASE_URL" status; \
 	else \
@@ -307,7 +324,7 @@ dbstatus:
 	fi
 
 dbverify:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Verifying database schema (inside devcontainer)..."; \
 		echo ""; \
 		echo "=== Migration Status ==="; \
@@ -343,7 +360,7 @@ goosecreate:
 		echo "Error: NAME is required. Usage: make goosecreate NAME=migration_name"; \
 		exit 1; \
 	fi
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Creating new migration: $(NAME) (inside devcontainer)"; \
 		cd /workspace/backend && goose -dir db/migrations create $(NAME) sql; \
 	else \
@@ -375,7 +392,7 @@ sqlcgenerate:
 # These work both from host (via docker exec) and inside the devcontainer (direct execution)
 
 dbseed:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Seeding test data (inside devcontainer)..."; \
 		cd /workspace/backend && go run ./cmd/cli/seed/main.go; \
 	else \
@@ -391,7 +408,7 @@ dbseed:
 	fi
 
 dbseedclear:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Clearing demo data only (inside devcontainer)..."; \
 		cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear-demo-only; \
 	else \
@@ -462,7 +479,7 @@ dbhost:
 	@psql "postgres://timesplace:timesplace@localhost:5434/timesplace?sslmode=disable"
 
 dbconnect:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Connecting to Postgres database (inside devcontainer)..."; \
 		psql "$$DATABASE_URL"; \
 	else \
@@ -496,7 +513,7 @@ dbconnect-renderdotcom:
 # Tests use a separate test database that is reset before each test run
 
 btest:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Resetting test database..."; \
 		TEST_DB_URL="$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}"; \
 		MAIN_DB_URL="$${DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace?sslmode=disable}"; \
@@ -523,7 +540,7 @@ btest:
 	fi
 
 btestcover:
-	@if [ -f /.dockerenv ] || [ -n "$${DEVCONTAINER}" ]; then \
+	@if [ -f /.dockerenv ]; then \
 		echo "Resetting test database..."; \
 		TEST_DB_URL="$${TEST_DATABASE_URL:-postgres://timesplace:timesplace@postgres:5432/timesplace_test?sslmode=disable}"; \
 		MAIN_DB_URL="$$DATABASE_URL"; \

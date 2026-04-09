@@ -450,7 +450,7 @@
                   />
                 </svg>
                 <span
-                  >{getEventListCount(venue)} event list{getEventListCount(
+                  >{getEventListCount(venue)} schedule{getEventListCount(
                     venue,
                   ) !== 1
                     ? 's'
@@ -471,7 +471,7 @@
                   <p
                     class="text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-3"
                   >
-                    Event Lists:
+                    Schedules:
                   </p>
                   <div class="space-y-0.5 md:space-y-2">
                     {#each venueEventLists as eventList (eventList.event_list_uuid)}
@@ -606,7 +606,7 @@
         <p class="text-[12px] md:text-base text-gray-700 mb-3 md:mb-6">
           Are you sure you want to delete <span class="font-semibold"
             >"{deleteConfirmVenue.name}"</span
-          >? This will also delete all associated event lists and events. This
+          >? This will also delete all associated schedules and events. This
           action cannot be undone.
         </p>
         <div class="flex flex-row gap-2 md:gap-3 justify-end">

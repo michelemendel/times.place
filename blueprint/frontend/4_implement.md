@@ -1130,3 +1130,25 @@
   - Removed [Test Phase] link from desktop and mobile navigation.
 - **Routes/Pages** (demo):
   - Removed `frontend/src/routes/demo/` route (demo page and `+page.svelte` deleted) so the Demo/Test Phase page is no longer available.
+
+## 2026-04-09
+
+### Summary
+
+- **Nearby venue search**: Added “Enable location” and **radius filtering** to the main page venue dropdown, and display **distance** for each venue + selected venue details.
+- **Why**: Help visitors find venues near them while keeping the core search UX unchanged.
+
+### Notes
+
+- **Routes/Pages** (`frontend/src/routes/+page.svelte`):
+  - Added geolocation consent UX (`Enable location to see distance`) using `navigator.geolocation.getCurrentPosition`.
+  - Added radius selector (Any/1/2/5/10/25/50/100 km) and refetch logic when radius changes.
+  - Dropdown now displays `venue.distance_km` (formatted) next to venue name when location is granted.
+  - Selected venue details show “Distance” when available.
+  - Client rounds coordinates to **4 decimals** before sending to the backend.
+- **API Client** (`frontend/src/lib/api/public.js`):
+  - Extended `listPublicVenues(query, opts)` to optionally pass `lat`, `lng`, and `radius_km` query params to `/api/public/venues`.
+- **Types** (`frontend/src/lib/types.ts`):
+  - Added optional `distance_km?: number | null` to `Venue` for public venues responses with distance.
+- **Utilities** (`frontend/src/lib/utils/geo.ts`):
+  - Added helpers for coordinate rounding and distance formatting (`m` for sub-1km, otherwise `km`).

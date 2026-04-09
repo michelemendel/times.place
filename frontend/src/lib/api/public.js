@@ -14,11 +14,19 @@ import { api } from './client.js';
  * List public venues, optionally filtered by a search query.
  * Uses cache-busting param so new venues always show (avoids stale cache).
  * @param {string} [query]
+ * @param {{ lat?: number, lng?: number, radius_km?: number }} [opts]
  * @returns {Promise<import('../types').Venue[]>}
  */
-export async function listPublicVenues(query) {
+export async function listPublicVenues(query, opts) {
   const params = new URLSearchParams();
   if (query && query.trim()) params.set('query', query.trim());
+  if (opts && typeof opts.lat === 'number' && typeof opts.lng === 'number') {
+    params.set('lat', String(opts.lat));
+    params.set('lng', String(opts.lng));
+    if (typeof opts.radius_km === 'number') {
+      params.set('radius_km', String(opts.radius_km));
+    }
+  }
   params.set('_', String(Date.now())); // cache-bust
   const qs = `?${params.toString()}`;
   return /** @type {Promise<import('../types').Venue[]>} */ (

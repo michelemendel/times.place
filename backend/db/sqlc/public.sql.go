@@ -318,6 +318,127 @@ func (q *Queries) ListPublicVenues(ctx context.Context) ([]ListPublicVenuesRow, 
 	return items, nil
 }
 
+const listPublicVenuesWithDistance = `-- name: ListPublicVenuesWithDistance :many
+WITH venues_with_distance AS (
+  SELECT
+    v.venue_uuid,
+    v.name,
+    v.banner_image,
+    v.address,
+    v.geolocation,
+    v.comment,
+    v.timezone,
+    v.private_link_token,
+    v.created_at,
+    v.modified_at,
+    o.name AS owner_name,
+    o.email AS owner_email,
+    CASE
+      WHEN btrim(split_part(v.geolocation, ',', 1)) ~ '^-?[0-9]+(\\.[0-9]+)?$'
+       AND btrim(split_part(v.geolocation, ',', 2)) ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN
+        ROUND(
+          (
+            2 * 6371 * ASIN(
+              SQRT(
+                POWER(SIN(RADIANS((btrim(split_part(v.geolocation, ',', 1))::double precision - $2::double precision) / 2)), 2) +
+                COS(RADIANS($2::double precision)) * COS(RADIANS(btrim(split_part(v.geolocation, ',', 1))::double precision)) *
+                POWER(SIN(RADIANS((btrim(split_part(v.geolocation, ',', 2))::double precision - $3::double precision) / 2)), 2)
+              )
+            )
+          )::numeric,
+          4
+        )::double precision
+      ELSE NULL
+    END AS distance_km
+  FROM venues v
+  INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
+  WHERE EXISTS (
+      SELECT 1 FROM event_lists
+      WHERE event_lists.venue_uuid = v.venue_uuid
+        AND event_lists.visibility = 'public'
+    )
+)
+SELECT
+  venue_uuid,
+  name,
+  banner_image,
+  address,
+  geolocation,
+  comment,
+  timezone,
+  private_link_token,
+  created_at,
+  modified_at,
+  owner_name,
+  owner_email,
+  distance_km
+FROM venues_with_distance
+WHERE ($1::double precision IS NULL OR (distance_km IS NOT NULL AND distance_km <= $1::double precision))
+ORDER BY (distance_km IS NULL) ASC, distance_km ASC, created_at DESC
+`
+
+type ListPublicVenuesWithDistanceParams struct {
+	RadiusKm pgtype.Float8 `json:"radius_km"`
+	UserLat  float64       `json:"user_lat"`
+	UserLng  float64       `json:"user_lng"`
+}
+
+type ListPublicVenuesWithDistanceRow struct {
+	VenueUuid        pgtype.UUID        `json:"venue_uuid"`
+	Name             string             `json:"name"`
+	BannerImage      string             `json:"banner_image"`
+	Address          string             `json:"address"`
+	Geolocation      string             `json:"geolocation"`
+	Comment          pgtype.Text        `json:"comment"`
+	Timezone         string             `json:"timezone"`
+	PrivateLinkToken pgtype.UUID        `json:"private_link_token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
+	OwnerName        string             `json:"owner_name"`
+	OwnerEmail       string             `json:"owner_email"`
+	DistanceKm       interface{}        `json:"distance_km"`
+}
+
+// Show any venue that has at least one public event list, optionally annotated with distance from a user point.
+// Params:
+//
+//	user_lat (double precision)
+//	user_lng (double precision)
+//	radius_km (double precision, nullable)
+func (q *Queries) ListPublicVenuesWithDistance(ctx context.Context, arg ListPublicVenuesWithDistanceParams) ([]ListPublicVenuesWithDistanceRow, error) {
+	rows, err := q.db.Query(ctx, listPublicVenuesWithDistance, arg.RadiusKm, arg.UserLat, arg.UserLng)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPublicVenuesWithDistanceRow{}
+	for rows.Next() {
+		var i ListPublicVenuesWithDistanceRow
+		if err := rows.Scan(
+			&i.VenueUuid,
+			&i.Name,
+			&i.BannerImage,
+			&i.Address,
+			&i.Geolocation,
+			&i.Comment,
+			&i.Timezone,
+			&i.PrivateLinkToken,
+			&i.CreatedAt,
+			&i.ModifiedAt,
+			&i.OwnerName,
+			&i.OwnerEmail,
+			&i.DistanceKm,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchPublicVenues = `-- name: SearchPublicVenues :many
 SELECT DISTINCT
     v.venue_uuid,
@@ -395,6 +516,150 @@ func (q *Queries) SearchPublicVenues(ctx context.Context, dollar_1 pgtype.Text) 
 			&i.ModifiedAt,
 			&i.OwnerName,
 			&i.OwnerEmail,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchPublicVenuesWithDistance = `-- name: SearchPublicVenuesWithDistance :many
+WITH venues_with_distance AS (
+  SELECT DISTINCT
+    v.venue_uuid,
+    v.name,
+    v.banner_image,
+    v.address,
+    v.geolocation,
+    v.comment,
+    v.timezone,
+    v.private_link_token,
+    v.created_at,
+    v.modified_at,
+    o.name AS owner_name,
+    o.email AS owner_email,
+    CASE
+      WHEN btrim(split_part(v.geolocation, ',', 1)) ~ '^-?[0-9]+(\\.[0-9]+)?$'
+       AND btrim(split_part(v.geolocation, ',', 2)) ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN
+        ROUND(
+          (
+            2 * 6371 * ASIN(
+              SQRT(
+                POWER(SIN(RADIANS((btrim(split_part(v.geolocation, ',', 1))::double precision - $3::double precision) / 2)), 2) +
+                COS(RADIANS($3::double precision)) * COS(RADIANS(btrim(split_part(v.geolocation, ',', 1))::double precision)) *
+                POWER(SIN(RADIANS((btrim(split_part(v.geolocation, ',', 2))::double precision - $4::double precision) / 2)), 2)
+              )
+            )
+          )::numeric,
+          4
+        )::double precision
+      ELSE NULL
+    END AS distance_km
+  FROM venues v
+  INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
+  WHERE EXISTS (
+      SELECT 1 FROM event_lists el
+      WHERE el.venue_uuid = v.venue_uuid
+        AND el.visibility = 'public'
+    )
+    AND (
+      v.name ILIKE '%' || $1 || '%'
+      OR v.address ILIKE '%' || $1 || '%'
+      OR v.comment ILIKE '%' || $1 || '%'
+      OR EXISTS (
+        SELECT 1 FROM event_lists el
+        WHERE el.venue_uuid = v.venue_uuid
+          AND (el.name ILIKE '%' || $1 || '%' OR el.comment ILIKE '%' || $1 || '%')
+      )
+      OR EXISTS (
+        SELECT 1 FROM events e
+        INNER JOIN event_lists el ON e.event_list_uuid = el.event_list_uuid
+        WHERE el.venue_uuid = v.venue_uuid
+          AND (e.event_name ILIKE '%' || $1 || '%' OR e.comment ILIKE '%' || $1 || '%')
+      )
+    )
+)
+SELECT
+  venue_uuid,
+  name,
+  banner_image,
+  address,
+  geolocation,
+  comment,
+  timezone,
+  private_link_token,
+  created_at,
+  modified_at,
+  owner_name,
+  owner_email,
+  distance_km
+FROM venues_with_distance
+WHERE ($2::double precision IS NULL OR (distance_km IS NOT NULL AND distance_km <= $2::double precision))
+ORDER BY (distance_km IS NULL) ASC, distance_km ASC, created_at DESC
+`
+
+type SearchPublicVenuesWithDistanceParams struct {
+	Column1  pgtype.Text   `json:"column_1"`
+	RadiusKm pgtype.Float8 `json:"radius_km"`
+	UserLat  float64       `json:"user_lat"`
+	UserLng  float64       `json:"user_lng"`
+}
+
+type SearchPublicVenuesWithDistanceRow struct {
+	VenueUuid        pgtype.UUID        `json:"venue_uuid"`
+	Name             string             `json:"name"`
+	BannerImage      string             `json:"banner_image"`
+	Address          string             `json:"address"`
+	Geolocation      string             `json:"geolocation"`
+	Comment          pgtype.Text        `json:"comment"`
+	Timezone         string             `json:"timezone"`
+	PrivateLinkToken pgtype.UUID        `json:"private_link_token"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
+	OwnerName        string             `json:"owner_name"`
+	OwnerEmail       string             `json:"owner_email"`
+	DistanceKm       interface{}        `json:"distance_km"`
+}
+
+// Search public venues, optionally annotated with distance from a user point.
+// Params:
+//
+//	query text
+//	user_lat (double precision)
+//	user_lng (double precision)
+//	radius_km (double precision, nullable)
+func (q *Queries) SearchPublicVenuesWithDistance(ctx context.Context, arg SearchPublicVenuesWithDistanceParams) ([]SearchPublicVenuesWithDistanceRow, error) {
+	rows, err := q.db.Query(ctx, searchPublicVenuesWithDistance,
+		arg.Column1,
+		arg.RadiusKm,
+		arg.UserLat,
+		arg.UserLng,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SearchPublicVenuesWithDistanceRow{}
+	for rows.Next() {
+		var i SearchPublicVenuesWithDistanceRow
+		if err := rows.Scan(
+			&i.VenueUuid,
+			&i.Name,
+			&i.BannerImage,
+			&i.Address,
+			&i.Geolocation,
+			&i.Comment,
+			&i.Timezone,
+			&i.PrivateLinkToken,
+			&i.CreatedAt,
+			&i.ModifiedAt,
+			&i.OwnerName,
+			&i.OwnerEmail,
+			&i.DistanceKm,
 		); err != nil {
 			return nil, err
 		}

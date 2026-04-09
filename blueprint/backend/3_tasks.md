@@ -69,9 +69,16 @@
 ## Public endpoints
 
 - [x] `GET /api/public/venues` (+ optional `?query=` search)
+- [x] Public venues: optional `lat/lng` params return `distance_km`; optional `radius_km` filters within radius
 - [x] `GET /api/public/venues/:venue_uuid/event-lists` (public-only)
 - [x] `GET /api/public/venues/by-token/:token`
 - [x] `GET /api/public/event-lists/by-token/:token`
+
+## Geocoding (address-only venues)
+
+- [x] Add geocode cache table (`geocode_cache`) and sqlc queries for cache + venue backfill
+- [x] Best-effort server-side geocode on venue create/update when address exists but `geolocation` is empty
+- [x] Backfill CLI + Makefile targets (`make geocodebackfill`, `make geocodebackfill-dry`)
 
 ## Testing
 

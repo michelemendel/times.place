@@ -9,6 +9,7 @@
     formatTimeString,
     formatEventListDate,
   } from '$lib/utils/datetime.js';
+  import { formatDistanceKm, roundCoord4 } from '$lib/utils/geo';
   import BannerImage from '$lib/BannerImage.svelte';
   import {
     listPublicVenues,
@@ -65,6 +66,47 @@
   let isLoadingVenues = false;
   let isLoadingListsAndEvents = false;
   let loadError = '';
+
+  // User location (optional, after consent)
+  /** @type {'unknown' | 'prompting' | 'granted' | 'denied' | 'error'} */
+  let locationStatus = 'unknown';
+  /** @type {{ lat: number; lng: number } | null} */
+  let userCoords = null;
+  /** @type {number | null} */
+  let radiusKm = null;
+
+  /** @returns {{ lat: number, lng: number, radius_km?: number } | undefined} */
+  function getPublicVenuesLocationOpts() {
+    if (!userCoords) return undefined;
+    const opts = { lat: userCoords.lat, lng: userCoords.lng };
+    if (typeof radiusKm === 'number') {
+      return { ...opts, radius_km: radiusKm };
+    }
+    return opts;
+  }
+
+  async function enableLocation() {
+    if (!browser || !navigator?.geolocation) {
+      locationStatus = 'error';
+      return;
+    }
+    locationStatus = 'prompting';
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        userCoords = {
+          lat: roundCoord4(pos.coords.latitude),
+          lng: roundCoord4(pos.coords.longitude),
+        };
+        locationStatus = 'granted';
+        await loadVenues(venueSearchQuery || undefined);
+      },
+      () => {
+        userCoords = null;
+        locationStatus = 'denied';
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  }
 
   /**
    * Get timestamp string from event list (API may use snake_case or camelCase).
@@ -132,7 +174,7 @@
     isLoadingVenues = true;
     loadError = '';
     try {
-      venues = await listPublicVenues(query ?? '');
+      venues = await listPublicVenues(query ?? '', getPublicVenuesLocationOpts());
     } catch (err) {
       console.error('Failed to load venues', err);
       loadError = 'Failed to load venues. Please try again.';
@@ -381,12 +423,14 @@
   // Visible venues (public list plus any token-derived venue)
   $: visibleVenues = venues;
 
-  // Sorted venues
-  $: sortedVenues = [...visibleVenues].sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
+  // When location is enabled, the backend returns venues already sorted by distance.
+  // Otherwise, we sort alphabetically for a stable UX.
+  $: sortedVenues =
+    locationStatus === 'granted'
+      ? [...visibleVenues]
+      : [...visibleVenues].sort((a, b) => a.name.localeCompare(b.name));
 
-  // When user searches, the backend returns venues matching query across venue name, address, comment, event list names, and event names. We use that list as-is.
+  // Use the backend result ordering as-is (or alphabetical fallback above).
   $: filteredVenues = sortedVenues;
 
   // Position fixed dropdown when it opens so it is not clipped by overflow
@@ -790,6 +834,48 @@
       class="mb-2 md:mb-2 relative no-print-venue-dropdown"
       bind:this={venueDropdownRef}
     >
+      {#if browser}
+        <div class="mb-1 flex flex-wrap items-center gap-2">
+          {#if locationStatus !== 'granted'}
+            <button
+              type="button"
+              on:click={enableLocation}
+              disabled={locationStatus === 'prompting'}
+              class="text-[10px] md:text-sm font-medium py-1 px-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-800 disabled:opacity-50"
+            >
+              {locationStatus === 'prompting'
+                ? 'Requesting location…'
+                : 'Enable location to see distance'}
+            </button>
+          {:else}
+            <div class="flex items-center gap-2">
+              <label class="text-[10px] md:text-sm text-gray-600" for="radius-km"
+                >Radius</label
+              >
+              <select
+                id="radius-km"
+                class="text-[10px] md:text-sm py-1 px-2 border border-gray-300 rounded-md bg-white"
+                on:change={async (e) => {
+                  const v = /** @type {HTMLSelectElement} */ (e.target).value;
+                  radiusKm = v ? Number(v) : null;
+                  await loadVenues(venueSearchQuery || undefined);
+                  showVenueDropdown = true;
+                }}
+              >
+                <option value="" selected={radiusKm === null}>Any</option>
+                <option value="0.5" selected={radiusKm === 0.5}>500 m</option>
+                <option value="1" selected={radiusKm === 1}>1 km</option>
+                <option value="2" selected={radiusKm === 2}>2 km</option>
+                <option value="5" selected={radiusKm === 5}>5 km</option>
+                <option value="10" selected={radiusKm === 10}>10 km</option>
+                <option value="25" selected={radiusKm === 25}>25 km</option>
+                <option value="50" selected={radiusKm === 50}>50 km</option>
+                <option value="100" selected={radiusKm === 100}>100 km</option>
+              </select>
+            </div>
+          {/if}
+        </div>
+      {/if}
       <div class="relative">
         <input
           type="text"
@@ -854,7 +940,14 @@
                   role="option"
                   aria-selected={highlightedVenueIndex === index}
                 >
-                  {venue.name}
+                  <div class="flex items-center justify-between gap-2 min-w-0">
+                    <span class="truncate">{venue.name}</span>
+                    {#if locationStatus === 'granted'}
+                      <span class="text-[11px] md:text-sm text-gray-500 whitespace-nowrap">
+                        {formatDistanceKm(venue.distance_km)}
+                      </span>
+                    {/if}
+                  </div>
                 </button>
               {/each}
             {:else if venueSearchQuery}
@@ -938,6 +1031,12 @@
                 >
                   <span class="font-medium text-gray-700">Geolocation:</span>
                   {selectedVenue.geolocation}
+                </p>
+              {/if}
+              {#if locationStatus === 'granted'}
+                <p class="text-[12px] md:text-sm text-gray-600 mb-0 md:mb-2">
+                  <span class="font-medium text-gray-700">Distance:</span>
+                  {formatDistanceKm(selectedVenue.distance_km)}
                 </p>
               {/if}
               {#if selectedVenue.timezone}

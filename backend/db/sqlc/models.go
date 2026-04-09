@@ -42,6 +42,15 @@ type EventList struct {
 	ModifiedAt       pgtype.Timestamptz `json:"modified_at"`
 }
 
+type GeocodeCache struct {
+	NormalizedAddress string             `json:"normalized_address"`
+	Lat               float64            `json:"lat"`
+	Lng               float64            `json:"lng"`
+	DisplayName       string             `json:"display_name"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
 type PasswordResetToken struct {
 	TokenHash string             `json:"token_hash"`
 	OwnerUuid pgtype.UUID        `json:"owner_uuid"`

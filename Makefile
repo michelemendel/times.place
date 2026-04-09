@@ -2,6 +2,7 @@
 .PHONY: devcontainerup devcontainerdown devcontainerrebuild
 .PHONY: dbup dbdown dbreset dbstatus goosecreate dbverify
 .PHONY: sqlcgenerate bstart bstop brestart dbconnect dbconnect-renderdotcom devshell
+.PHONY: geocodebackfill geocodebackfill-dry
 
 # -----------------------------------------------------------------------------
 # Host vs devcontainer execution model
@@ -421,6 +422,38 @@ dbseedclear:
 		fi; \
 		echo "Clearing demo data only (from host via docker exec)..."; \
 		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/seed/main.go -clear-demo-only"; \
+	fi
+
+geocodebackfill:
+	@if [ -f /.dockerenv ]; then \
+		echo "Backfilling venue geolocations from address (inside devcontainer)..."; \
+		cd /workspace/backend && go run ./cmd/cli/geocode/main.go; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Backfilling venue geolocations (from host via docker exec)..."; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/geocode/main.go"; \
+	fi
+
+geocodebackfill-dry:
+	@if [ -f /.dockerenv ]; then \
+		echo "Backfilling venue geolocations (dry-run, inside devcontainer)..."; \
+		cd /workspace/backend && go run ./cmd/cli/geocode/main.go -dry-run; \
+	else \
+		CONTAINER_NAME=$$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -1); \
+		if [ -z "$$CONTAINER_NAME" ]; then \
+			echo "Error: Backend container not found. Is the devcontainer running?"; \
+			echo "Try: make devcontainerup or use Cursor's 'Reopen in Container'"; \
+			echo "Or run this command from inside the devcontainer"; \
+			exit 1; \
+		fi; \
+		echo "Backfilling venue geolocations (dry-run, from host via docker exec)..."; \
+		docker exec $$CONTAINER_NAME bash -c "cd /workspace/backend && go run ./cmd/cli/geocode/main.go -dry-run"; \
 	fi
 
 # Seed Render.com database from local machine only; uses DATABASE_URL_RENDER_COM from backend/.env

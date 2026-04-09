@@ -22,6 +22,8 @@ export interface Venue {
   banner_image: string;
   address: string;
   geolocation: string;
+  /** Distance from user (km). Present when public venues called with lat/lng. */
+  distance_km?: number | null;
   /** Owner display name; set by public API, not by owner API */
   owner_name?: string;
   /** Owner email; set by public API, not by owner API */

@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/labstack/echo/v4"
 	sqlc "github.com/michelemendel/times.place/db/sqlc"
+	"github.com/michelemendel/times.place/internal/service"
 	"github.com/michelemendel/times.place/internal/store"
 )
 
@@ -53,6 +54,7 @@ type VenueResponse struct {
 	BannerImage      string `json:"banner_image"`
 	Address          string `json:"address"`
 	Geolocation      string `json:"geolocation"`
+	DistanceKm       *float64 `json:"distance_km"`
 	Comment          string `json:"comment"`
 	Timezone         string `json:"timezone"`
 	PrivateLinkToken string `json:"private_link_token"`
@@ -87,6 +89,7 @@ func venueToResponse(venue sqlc.Venue) VenueResponse {
 		BannerImage:      venue.BannerImage,
 		Address:          venue.Address,
 		Geolocation:      venue.Geolocation,
+		DistanceKm:       nil,
 		Comment:          textToString(venue.Comment),
 		Timezone:         venue.Timezone,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
@@ -218,12 +221,19 @@ func (h *VenueHandler) Create(c echo.Context) error {
 	}
 
 	// Create venue
+	geolocation := req.Geolocation
+	if geolocation == "" && req.Address != "" {
+		if geo, _ := service.MaybeGeocodeAddress(ctx, h.store.Queries, req.Address); geo != "" {
+			geolocation = geo
+		}
+	}
+
 	venue, err := h.store.Queries.CreateVenue(ctx, sqlc.CreateVenueParams{
 		OwnerUuid:        ownerUUID,
 		Name:             req.Name,
 		BannerImage:      req.BannerImage,
 		Address:          req.Address,
-		Geolocation:      req.Geolocation,
+		Geolocation:      geolocation,
 		Comment:          comment,
 		Timezone:         req.Timezone,
 		PrivateLinkToken: privateLinkToken,
@@ -358,6 +368,11 @@ func (h *VenueHandler) Update(c echo.Context) error {
 	geolocation := existingVenue.Geolocation
 	if req.Geolocation != nil {
 		geolocation = *req.Geolocation
+	}
+	if geolocation == "" && address != "" {
+		if geo, _ := service.MaybeGeocodeAddress(ctx, h.store.Queries, address); geo != "" {
+			geolocation = geo
+		}
 	}
 
 	var comment pgtype.Text

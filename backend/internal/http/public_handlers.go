@@ -1,7 +1,11 @@
 package http
 
 import (
+	"math"
 	"net/http"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -46,6 +50,7 @@ func venueRowToResponse(venue sqlc.ListPublicVenuesRow) VenueResponse {
 		BannerImage:      venue.BannerImage,
 		Address:          venue.Address,
 		Geolocation:      venue.Geolocation,
+		DistanceKm:       nil,
 		Comment:          textToString(venue.Comment),
 		Timezone:         venue.Timezone,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
@@ -65,6 +70,7 @@ func searchVenueRowToResponse(venue sqlc.SearchPublicVenuesRow) VenueResponse {
 		BannerImage:      venue.BannerImage,
 		Address:          venue.Address,
 		Geolocation:      venue.Geolocation,
+		DistanceKm:       nil,
 		Comment:          textToString(venue.Comment),
 		Timezone:         venue.Timezone,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
@@ -84,6 +90,7 @@ func venueTokenRowToResponse(venue sqlc.GetVenueByTokenRow) VenueResponse {
 		BannerImage:      venue.BannerImage,
 		Address:          venue.Address,
 		Geolocation:      venue.Geolocation,
+		DistanceKm:       nil,
 		Comment:          textToString(venue.Comment),
 		Timezone:         venue.Timezone,
 		PrivateLinkToken: uuidToString(venue.PrivateLinkToken),
@@ -96,6 +103,48 @@ func venueTokenRowToResponse(venue sqlc.GetVenueByTokenRow) VenueResponse {
 
 // Handlers
 
+type latLng struct {
+	Lat float64
+	Lng float64
+}
+
+func parseGeolocation(geolocation string) *latLng {
+	parts := strings.Split(geolocation, ",")
+	if len(parts) != 2 {
+		return nil
+	}
+	lat, err := strconv.ParseFloat(strings.TrimSpace(parts[0]), 64)
+	if err != nil {
+		return nil
+	}
+	lng, err := strconv.ParseFloat(strings.TrimSpace(parts[1]), 64)
+	if err != nil {
+		return nil
+	}
+	return &latLng{Lat: lat, Lng: lng}
+}
+
+func haversineKm(a, b latLng) float64 {
+	const earthRadiusKm = 6371.0
+	toRad := func(deg float64) float64 { return deg * (math.Pi / 180) }
+
+	dLat := toRad(b.Lat - a.Lat)
+	dLng := toRad(b.Lng - a.Lng)
+
+	lat1 := toRad(a.Lat)
+	lat2 := toRad(b.Lat)
+
+	sinDLat := math.Sin(dLat / 2)
+	sinDLng := math.Sin(dLng / 2)
+
+	h := sinDLat*sinDLat + math.Cos(lat1)*math.Cos(lat2)*sinDLng*sinDLng
+	return 2 * earthRadiusKm * math.Asin(math.Sqrt(h))
+}
+
+func roundTo4Decimals(v float64) float64 {
+	return math.Round(v*1e4) / 1e4
+}
+
 // ListVenues handles GET /api/public/venues
 func (h *PublicHandler) ListVenues(c echo.Context) error {
 	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
@@ -104,32 +153,140 @@ func (h *PublicHandler) ListVenues(c echo.Context) error {
 	// Check for search query parameter
 	query := c.QueryParam("query")
 
+	latStr := c.QueryParam("lat")
+	lngStr := c.QueryParam("lng")
+	radiusStr := c.QueryParam("radius_km")
+
+	hasUserLocation := latStr != "" && lngStr != ""
+	var userLat, userLng float64
+	var radiusKm pgtype.Float8
+
+	if hasUserLocation {
+		var err error
+		userLat, err = strconv.ParseFloat(latStr, 64)
+		if err != nil {
+			return ValidationError(c, "Invalid lat")
+		}
+		userLng, err = strconv.ParseFloat(lngStr, 64)
+		if err != nil {
+			return ValidationError(c, "Invalid lng")
+		}
+		if radiusStr != "" {
+			r, err := strconv.ParseFloat(radiusStr, 64)
+			if err != nil {
+				return ValidationError(c, "Invalid radius_km")
+			}
+			radiusKm = pgtype.Float8{Float64: r, Valid: true}
+		} else {
+			radiusKm = pgtype.Float8{Valid: false}
+		}
+	}
+
 	var response []VenueResponse
 
 	if query != "" {
-		// Use search query
-		searchVenues, err := h.store.Queries.SearchPublicVenues(ctx, pgtype.Text{
-			String: query,
-			Valid:  true,
-		})
-		if err != nil {
-			return InternalError(c, "Failed to search venues")
-		}
-		// Convert to response format
-		response = make([]VenueResponse, len(searchVenues))
-		for i, venue := range searchVenues {
-			response[i] = searchVenueRowToResponse(venue)
+		if hasUserLocation {
+			searchVenues, err := h.store.Queries.SearchPublicVenues(ctx, pgtype.Text{
+				String: query,
+				Valid:  true,
+			})
+			if err != nil {
+				return InternalError(c, "Failed to search venues")
+			}
+
+			user := latLng{Lat: userLat, Lng: userLng}
+			tmp := make([]VenueResponse, 0, len(searchVenues))
+			for _, venue := range searchVenues {
+				r := searchVenueRowToResponse(venue)
+				if coords := parseGeolocation(venue.Geolocation); coords != nil {
+					d := roundTo4Decimals(haversineKm(user, *coords))
+					r.DistanceKm = &d
+				}
+				if radiusKm.Valid && (r.DistanceKm == nil || *r.DistanceKm > radiusKm.Float64) {
+					continue
+				}
+				tmp = append(tmp, r)
+			}
+			sort.Slice(tmp, func(i, j int) bool {
+				ai, aj := tmp[i].DistanceKm, tmp[j].DistanceKm
+				if ai == nil && aj == nil {
+					return tmp[i].CreatedAt > tmp[j].CreatedAt
+				}
+				if ai == nil {
+					return false
+				}
+				if aj == nil {
+					return true
+				}
+				if *ai == *aj {
+					return tmp[i].CreatedAt > tmp[j].CreatedAt
+				}
+				return *ai < *aj
+			})
+			response = tmp
+		} else {
+			// Use search query
+			searchVenues, err := h.store.Queries.SearchPublicVenues(ctx, pgtype.Text{
+				String: query,
+				Valid:  true,
+			})
+			if err != nil {
+				return InternalError(c, "Failed to search venues")
+			}
+			// Convert to response format
+			response = make([]VenueResponse, len(searchVenues))
+			for i, venue := range searchVenues {
+				response[i] = searchVenueRowToResponse(venue)
+			}
 		}
 	} else {
-		// Use list query
-		venues, err := h.store.Queries.ListPublicVenues(ctx)
-		if err != nil {
-			return InternalError(c, "Failed to list venues")
-		}
-		// Convert to response format
-		response = make([]VenueResponse, len(venues))
-		for i, venue := range venues {
-			response[i] = venueRowToResponse(venue)
+		if hasUserLocation {
+			venues, err := h.store.Queries.ListPublicVenues(ctx)
+			if err != nil {
+				return InternalError(c, "Failed to list venues")
+			}
+
+			user := latLng{Lat: userLat, Lng: userLng}
+			tmp := make([]VenueResponse, 0, len(venues))
+			for _, venue := range venues {
+				r := venueRowToResponse(venue)
+				if coords := parseGeolocation(venue.Geolocation); coords != nil {
+					d := roundTo4Decimals(haversineKm(user, *coords))
+					r.DistanceKm = &d
+				}
+				if radiusKm.Valid && (r.DistanceKm == nil || *r.DistanceKm > radiusKm.Float64) {
+					continue
+				}
+				tmp = append(tmp, r)
+			}
+			sort.Slice(tmp, func(i, j int) bool {
+				ai, aj := tmp[i].DistanceKm, tmp[j].DistanceKm
+				if ai == nil && aj == nil {
+					return tmp[i].CreatedAt > tmp[j].CreatedAt
+				}
+				if ai == nil {
+					return false
+				}
+				if aj == nil {
+					return true
+				}
+				if *ai == *aj {
+					return tmp[i].CreatedAt > tmp[j].CreatedAt
+				}
+				return *ai < *aj
+			})
+			response = tmp
+		} else {
+			// Use list query
+			venues, err := h.store.Queries.ListPublicVenues(ctx)
+			if err != nil {
+				return InternalError(c, "Failed to list venues")
+			}
+			// Convert to response format
+			response = make([]VenueResponse, len(venues))
+			for i, venue := range venues {
+				response[i] = venueRowToResponse(venue)
+			}
 		}
 	}
 

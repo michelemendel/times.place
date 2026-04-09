@@ -511,3 +511,38 @@ This file will track backend implementation work sessions, decisions made during
   - Ran `sqlc generate`; `ListAllVenuesRow` now includes `PublicEventsCount int64` and `PrivateEventsCount int64`.
 - **API** (`backend/internal/http/admin_handlers.go`):
   - **ListVenues** (GET `/api/admin/venues`): Response for each venue now includes `public_events_count` and `private_events_count` in addition to existing fields.
+
+## 2026-04-09
+
+### Summary
+
+- **Public venues: distance + radius**: Extended `GET /api/public/venues` to optionally return `distance_km` when the client provides `lat/lng`, and to filter results by `radius_km` when provided.
+- **Geocoding cache + backfill**: Added server-side address geocoding with caching so address-only venues can get `geolocation`, plus a CLI/Makefile backfill path for existing data.
+
+### Notes
+
+- **sqlc**:
+  - Updated `backend/db/queries/public.sql`:
+    - Added `ListPublicVenuesWithDistance` and `SearchPublicVenuesWithDistance` (Haversine in SQL; `distance_km` rounded to **4 decimals**).
+    - Added optional `radius_km` filtering and distance-first ordering.
+  - Added `backend/db/queries/geocode_cache.sql`:
+    - `GetGeocodeCache`, `UpsertGeocodeCache`, `ListVenuesNeedingGeocode`, `SetVenueGeolocation`.
+  - Ran `sqlc generate` so generated types and query methods are available in `backend/db/sqlc/`.
+- **API**:
+  - Updated `backend/internal/http/public_handlers.go`:
+    - Parses optional `lat`, `lng`, `radius_km` query params.
+    - Uses distance-aware sqlc queries when `lat/lng` are present and annotates each venue with `distance_km`.
+  - Updated `backend/internal/http/venue_handlers.go`:
+    - Added `distance_km` field to `VenueResponse` (null for owner-scoped endpoints).
+    - Best-effort geocode on create/update when `geolocation` is empty and `address` is present.
+- **Migrations / schema**:
+  - Added `backend/db/migrations/00012_geocode_cache.sql` and updated `backend/db/schema.sql` with `geocode_cache` table.
+- **Service**:
+  - Added `backend/internal/service/geocode.go`:
+    - Best-effort Nominatim lookup with DB caching via `geocode_cache`.
+    - Normalizes address keys for stable cache hits.
+- **Backfill tooling**:
+  - Added `backend/cmd/cli/geocode/main.go` to backfill `venues.geolocation` for rows with address but no coordinates.
+  - Added Makefile targets:
+    - `make geocodebackfill`
+    - `make geocodebackfill-dry`

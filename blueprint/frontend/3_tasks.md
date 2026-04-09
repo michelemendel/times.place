@@ -316,7 +316,7 @@
   - [x] Make banner (the image) shorter (reduce height)
 - [x] Fix image to fit in banner space
 - [x] Change name of Demo page to something like "Test Phase", center it, and make font 22px, and put in brackets: [Test Phase]
-- [ ] New Feature: Main Page: Add the possibility to search near me. The distance can be hardcoded. Set it to a radius of 500 meter.
+- [x] New Feature: Main Page: Add the possibility to search near me (enable location, show distance, and allow radius filtering).
 - [x] Add updated time on each event list
 
 ## Deployment

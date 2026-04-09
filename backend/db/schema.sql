@@ -43,6 +43,16 @@ CREATE TABLE venues (
     modified_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Cache for address -> lat/lng geocoding results (to avoid repeated external lookups)
+CREATE TABLE geocode_cache (
+    normalized_address text PRIMARY KEY,
+    lat double precision NOT NULL,
+    lng double precision NOT NULL,
+    display_name text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Create event_lists table
 CREATE TABLE event_lists (
     event_list_uuid uuid PRIMARY KEY DEFAULT gen_random_uuid(),

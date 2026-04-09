@@ -22,6 +22,69 @@ WHERE EXISTS (
   )
 ORDER BY v.created_at DESC;
 
+-- name: ListPublicVenuesWithDistance :many
+-- Show any venue that has at least one public event list, optionally annotated with distance from a user point.
+-- Params:
+--   user_lat (double precision)
+--   user_lng (double precision)
+--   radius_km (double precision, nullable)
+WITH venues_with_distance AS (
+  SELECT
+    v.venue_uuid,
+    v.name,
+    v.banner_image,
+    v.address,
+    v.geolocation,
+    v.comment,
+    v.timezone,
+    v.private_link_token,
+    v.created_at,
+    v.modified_at,
+    o.name AS owner_name,
+    o.email AS owner_email,
+    CASE
+      WHEN btrim(split_part(v.geolocation, ',', 1)) ~ '^-?[0-9]+(\\.[0-9]+)?$'
+       AND btrim(split_part(v.geolocation, ',', 2)) ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN
+        ROUND(
+          (
+            2 * 6371 * ASIN(
+              SQRT(
+                POWER(SIN(RADIANS((btrim(split_part(v.geolocation, ',', 1))::double precision - sqlc.arg(user_lat)::double precision) / 2)), 2) +
+                COS(RADIANS(sqlc.arg(user_lat)::double precision)) * COS(RADIANS(btrim(split_part(v.geolocation, ',', 1))::double precision)) *
+                POWER(SIN(RADIANS((btrim(split_part(v.geolocation, ',', 2))::double precision - sqlc.arg(user_lng)::double precision) / 2)), 2)
+              )
+            )
+          )::numeric,
+          4
+        )::double precision
+      ELSE NULL
+    END AS distance_km
+  FROM venues v
+  INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
+  WHERE EXISTS (
+      SELECT 1 FROM event_lists
+      WHERE event_lists.venue_uuid = v.venue_uuid
+        AND event_lists.visibility = 'public'
+    )
+)
+SELECT
+  venue_uuid,
+  name,
+  banner_image,
+  address,
+  geolocation,
+  comment,
+  timezone,
+  private_link_token,
+  created_at,
+  modified_at,
+  owner_name,
+  owner_email,
+  distance_km
+FROM venues_with_distance
+WHERE (sqlc.narg(radius_km)::double precision IS NULL OR (distance_km IS NOT NULL AND distance_km <= sqlc.narg(radius_km)::double precision))
+ORDER BY (distance_km IS NULL) ASC, distance_km ASC, created_at DESC;
+
 -- name: SearchPublicVenues :many
 SELECT DISTINCT
     v.venue_uuid,
@@ -60,6 +123,86 @@ WHERE EXISTS (
     )
   )
 ORDER BY v.created_at DESC;
+
+-- name: SearchPublicVenuesWithDistance :many
+-- Search public venues, optionally annotated with distance from a user point.
+-- Params:
+--   query text
+--   user_lat (double precision)
+--   user_lng (double precision)
+--   radius_km (double precision, nullable)
+WITH venues_with_distance AS (
+  SELECT DISTINCT
+    v.venue_uuid,
+    v.name,
+    v.banner_image,
+    v.address,
+    v.geolocation,
+    v.comment,
+    v.timezone,
+    v.private_link_token,
+    v.created_at,
+    v.modified_at,
+    o.name AS owner_name,
+    o.email AS owner_email,
+    CASE
+      WHEN btrim(split_part(v.geolocation, ',', 1)) ~ '^-?[0-9]+(\\.[0-9]+)?$'
+       AND btrim(split_part(v.geolocation, ',', 2)) ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN
+        ROUND(
+          (
+            2 * 6371 * ASIN(
+              SQRT(
+                POWER(SIN(RADIANS((btrim(split_part(v.geolocation, ',', 1))::double precision - sqlc.arg(user_lat)::double precision) / 2)), 2) +
+                COS(RADIANS(sqlc.arg(user_lat)::double precision)) * COS(RADIANS(btrim(split_part(v.geolocation, ',', 1))::double precision)) *
+                POWER(SIN(RADIANS((btrim(split_part(v.geolocation, ',', 2))::double precision - sqlc.arg(user_lng)::double precision) / 2)), 2)
+              )
+            )
+          )::numeric,
+          4
+        )::double precision
+      ELSE NULL
+    END AS distance_km
+  FROM venues v
+  INNER JOIN venue_owners o ON o.owner_uuid = v.owner_uuid
+  WHERE EXISTS (
+      SELECT 1 FROM event_lists el
+      WHERE el.venue_uuid = v.venue_uuid
+        AND el.visibility = 'public'
+    )
+    AND (
+      v.name ILIKE '%' || $1 || '%'
+      OR v.address ILIKE '%' || $1 || '%'
+      OR v.comment ILIKE '%' || $1 || '%'
+      OR EXISTS (
+        SELECT 1 FROM event_lists el
+        WHERE el.venue_uuid = v.venue_uuid
+          AND (el.name ILIKE '%' || $1 || '%' OR el.comment ILIKE '%' || $1 || '%')
+      )
+      OR EXISTS (
+        SELECT 1 FROM events e
+        INNER JOIN event_lists el ON e.event_list_uuid = el.event_list_uuid
+        WHERE el.venue_uuid = v.venue_uuid
+          AND (e.event_name ILIKE '%' || $1 || '%' OR e.comment ILIKE '%' || $1 || '%')
+      )
+    )
+)
+SELECT
+  venue_uuid,
+  name,
+  banner_image,
+  address,
+  geolocation,
+  comment,
+  timezone,
+  private_link_token,
+  created_at,
+  modified_at,
+  owner_name,
+  owner_email,
+  distance_km
+FROM venues_with_distance
+WHERE (sqlc.narg(radius_km)::double precision IS NULL OR (distance_km IS NOT NULL AND distance_km <= sqlc.narg(radius_km)::double precision))
+ORDER BY (distance_km IS NULL) ASC, distance_km ASC, created_at DESC;
 
 -- name: GetPublicEventListsByVenue :many
 SELECT 

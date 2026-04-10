@@ -1152,3 +1152,19 @@
   - Added optional `distance_km?: number | null` to `Venue` for public venues responses with distance.
 - **Utilities** (`frontend/src/lib/utils/geo.ts`):
   - Added helpers for coordinate rounding and distance formatting (`m` for sub-1km, otherwise `km`).
+
+## 2026-04-10
+
+### Summary
+
+- **Location permission UX**: Removed the uncommon “click to enable distances” first step by automatically requesting location on page load, while keeping a fallback control when permission is blocked.
+- **Why**: Align with standard “ask on first use” behavior and avoid a dead-looking button when the browser is set to “Never allow”.
+
+### Notes
+
+- **Routes/Pages** (`frontend/src/routes/+page.svelte`):
+  - Automatically calls location enable logic during `onMount()` so distances can appear without an extra click.
+  - Uses the Permissions API (when available) to detect `geolocation` permission state and avoid repeatedly triggering prompts when permission is already denied.
+  - Updated the inline UI near the venue dropdown:
+    - Replaced the always-visible enable button with status-driven messaging (“Requesting…”, “Location blocked — distances hidden”, “Location unavailable…”).
+    - When blocked/denied, shows a short hint explaining that location must be changed in browser site settings (Allow/Ask) and the page reloaded.

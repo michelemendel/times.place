@@ -74,6 +74,7 @@
   let userCoords = null;
   /** @type {number | null} */
   let radiusKm = null;
+  let showLocationPermissionHelp = false;
 
   /** @returns {{ lat: number, lng: number, radius_km?: number } | undefined} */
   function getPublicVenuesLocationOpts() {
@@ -90,6 +91,22 @@
       locationStatus = 'error';
       return;
     }
+
+    // If the user has set "Never allow / Block", browsers won't show a prompt again.
+    // Detect that early (when possible) so the UI doesn't look like it did nothing.
+    try {
+      // @ts-ignore - Permissions API types vary across environments
+      const perm = await navigator?.permissions?.query?.({ name: 'geolocation' });
+      const state = perm?.state;
+      if (state === 'denied') {
+        showLocationPermissionHelp = true;
+        locationStatus = 'denied';
+        return;
+      }
+    } catch {
+      // Fall through to geolocation request.
+    }
+
     locationStatus = 'prompting';
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -98,14 +115,41 @@
           lng: roundCoord4(pos.coords.longitude),
         };
         locationStatus = 'granted';
+        showLocationPermissionHelp = false;
         await loadVenues(venueSearchQuery || undefined);
       },
       () => {
         userCoords = null;
+        showLocationPermissionHelp = true;
         locationStatus = 'denied';
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
+  }
+
+  async function autoEnableLocationIfPossible() {
+    if (!browser) return;
+    if (locationStatus !== 'unknown') return;
+    if (!navigator?.geolocation) {
+      locationStatus = 'error';
+      return;
+    }
+
+    // Prefer Permissions API when available to avoid repeatedly triggering a prompt
+    // when the user already denied geolocation.
+    try {
+      // @ts-ignore - Permissions API types vary across environments
+      const perm = await navigator?.permissions?.query?.({ name: 'geolocation' });
+      const state = perm?.state;
+      if (state === 'denied') {
+        locationStatus = 'denied';
+        return;
+      }
+    } catch {
+      // If we can't query permissions, fall back to requesting location once.
+    }
+
+    await enableLocation();
   }
 
   /**
@@ -318,6 +362,10 @@
   onMount(async () => {
     // Initial venues load (no search)
     await loadVenues();
+
+    // Request location automatically so distances can show without extra clicks.
+    // If the user has denied location previously, we detect that and avoid prompting.
+    await autoEnableLocationIfPossible();
 
     // If a token is present, resolve it and update selection.
     if (privateLinkToken) {
@@ -836,18 +884,7 @@
     >
       {#if browser}
         <div class="mb-1 flex flex-wrap items-center gap-2">
-          {#if locationStatus !== 'granted'}
-            <button
-              type="button"
-              on:click={enableLocation}
-              disabled={locationStatus === 'prompting'}
-              class="text-[10px] md:text-sm font-medium py-1 px-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-800 disabled:opacity-50"
-            >
-              {locationStatus === 'prompting'
-                ? 'Requesting location…'
-                : 'Enable location to see distance'}
-            </button>
-          {:else}
+          {#if locationStatus === 'granted'}
             <div class="flex items-center gap-2">
               <label class="text-[10px] md:text-sm text-gray-600" for="radius-km"
                 >Radius</label
@@ -872,6 +909,33 @@
                 <option value="50" selected={radiusKm === 50}>50 km</option>
                 <option value="100" selected={radiusKm === 100}>100 km</option>
               </select>
+            </div>
+          {:else if locationStatus === 'prompting'}
+            <div class="text-[10px] md:text-sm text-gray-600">Requesting location…</div>
+          {:else if locationStatus === 'denied'}
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-2">
+                <div class="text-[10px] md:text-sm text-gray-600">
+                  Location blocked — distances hidden
+                </div>
+                <button
+                  type="button"
+                  on:click={enableLocation}
+                  class="text-[10px] md:text-sm font-medium py-1 px-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-800"
+                >
+                  Enable location
+                </button>
+              </div>
+              {#if showLocationPermissionHelp}
+                <div class="text-[10px] md:text-sm text-gray-500">
+                  You’ve blocked location for this site in browser settings. Change the
+                  site’s Location permission to “Allow” (or “Ask”), then reload.
+                </div>
+              {/if}
+            </div>
+          {:else if locationStatus === 'error'}
+            <div class="text-[10px] md:text-sm text-gray-600">
+              Location unavailable — distances hidden
             </div>
           {/if}
         </div>

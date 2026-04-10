@@ -11,6 +11,7 @@
   } from '$lib/utils/datetime.js';
   import { formatDistanceKm, roundCoord4 } from '$lib/utils/geo';
   import BannerImage from '$lib/BannerImage.svelte';
+  import LandingGettingStarted from '$lib/components/LandingGettingStarted.svelte';
   import {
     listPublicVenues,
     getPublicEventListsForVenue,
@@ -1319,6 +1320,10 @@
         The search works across venue names, addresses, comments, owner
         information, schedule names, and event names.
       </p>
+
+      {#if !$currentOwnerStore}
+        <LandingGettingStarted />
+      {/if}
     {/if}
   </div>
 </div>
